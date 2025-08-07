@@ -1,28 +1,37 @@
 package program;
 
+import java.util.HashSet;
+
 abstract class BaseCommand {
     abstract void execute(ProgramState programState);
     @Override
     abstract public String toString();
     //abstract List<BaseCommands> extend();
-    final String NO_LABEL = "-1";
-    final String EXIT_LABEL = "Exit";
+    static final String NO_LABEL = "-1";
+    static final String EXIT_LABEL = "Exit";
     String label;
     int index;
     int cycles;
     protected BaseCommand(String label, int index) {
-        setLabel(label);
+        this.label = label;
         this.index = index;
     }
-    void setLabel(String label) {
-        if(label.equals(NO_LABEL)) {
-            label = "   ";
+    String getLabel() {
+        return label;
+    }
+    protected String displayLabel(){
+        if(label.equals(NO_LABEL)){
+            return "   ";
         }
         else if(label.length() == 2){
-            label += " ";
+            return label + " ";
         }
-        this.label = label;
+
+        return label;
     }
+
+
+    abstract HashSet<String>  getPresentVariables();
 }
 
 class Increase extends BaseCommand {
@@ -44,7 +53,14 @@ class Increase extends BaseCommand {
     @Override
     public String toString() {
 
-        return String.format("#%d (B) [ %s ] %s <- %s + 1 (%d)", index+1, label, variableName, variableName, cycles);
+        return String.format("#%d (B) [ %s ] %s <- %s + 1 (%d)", index+1, displayLabel(), variableName, variableName, cycles);
+    }
+
+    @Override
+    HashSet<String> getPresentVariables() {
+        HashSet<String> variables = new HashSet<>();
+        variables.add(variableName);
+        return variables;
     }
 }
 
@@ -68,7 +84,14 @@ class Decrease extends BaseCommand {
 
     @Override
     public String toString() {
-        return String.format("#%d (B) [ %s ] %s <- %s - 1 (%d)", index+1, label, variableName, variableName, cycles);
+        return String.format("#%d (B) [ %s ] %s <- %s - 1 (%d)", index+1, displayLabel(), variableName, variableName, cycles);
+    }
+
+    @Override
+    HashSet<String> getPresentVariables() {
+        HashSet<String> variables = new HashSet<>();
+        variables.add(variableName);
+        return variables;
     }
 }
 
@@ -99,7 +122,14 @@ class JumpNotZero extends BaseCommand {
 
     @Override
     public String toString() {
-        return String.format("#%d (B) [ %s ] IF %s != 0 GOTO %s (%d)", index+1, label, variableName, targetLabel, cycles);
+        return String.format("#%d (B) [ %s ] IF %s != 0 GOTO %s (%d)", index+1, displayLabel(), variableName, targetLabel, cycles);
+    }
+
+    @Override
+    HashSet<String> getPresentVariables() {
+        HashSet<String> variables = new HashSet<>();
+        variables.add(variableName);
+        return variables;
     }
 }
 
@@ -118,7 +148,14 @@ class Neutral extends BaseCommand {
 
     @Override
     public String toString() {
-        return String.format("#%d (B) [ %s ] %s <- %s (%d)", index+1, label, variableName, variableName, cycles);
+        return String.format("#%d (B) [ %s ] %s <- %s (%d)", index+1, displayLabel(), variableName, variableName, cycles);
+    }
+
+    @Override
+    HashSet<String> getPresentVariables() {
+        HashSet<String> variables = new HashSet<>();
+        variables.add(variableName);
+        return variables;
     }
 }
 
@@ -139,7 +176,14 @@ class ZeroVariable extends BaseCommand {
 
     @Override
     public String toString() {
-        return String.format("#%d (S) [ %s ] %s <- 0 (%d)", index+1, label, variableName, cycles);
+        return String.format("#%d (S) [ %s ] %s <- 0 (%d)", index+1, displayLabel(), variableName, cycles);
+    }
+
+    @Override
+    HashSet<String> getPresentVariables() {
+        HashSet<String> variables = new HashSet<>();
+        variables.add(variableName);
+        return variables;
     }
 }
 
@@ -162,7 +206,12 @@ class GotoLabel extends BaseCommand {
 
     @Override
     public String toString() {
-        return String.format("#%d (S) [ %s ] GOTO %s (%d)", index+1, label, targetLabel, cycles);
+        return String.format("#%d (S) [ %s ] GOTO %s (%d)", index+1, displayLabel(), targetLabel, cycles);
+    }
+
+    @Override
+    HashSet<String> getPresentVariables() {
+        return new HashSet<>();
     }
 }
 
@@ -187,7 +236,15 @@ class Assignment extends BaseCommand {
 
     @Override
     public String toString() {
-        return String.format("#%d (S) [ %s ] %s <- %s (%d)", index+1, label, variableName, otherVariableName, cycles);
+        return String.format("#%d (S) [ %s ] %s <- %s (%d)", index+1, displayLabel(), variableName, otherVariableName, cycles);
+    }
+
+    @Override
+    HashSet<String> getPresentVariables() {
+        HashSet<String> variables = new HashSet<>();
+        variables.add(variableName);
+        variables.add(otherVariableName);
+        return variables;
     }
 
 }
@@ -212,7 +269,14 @@ class ConstantAssignment extends BaseCommand {
 
     @Override
     public String toString() {
-        return String.format("#%d (S) [ %s ] %s <- %d (%d)", index+1, label, variableName, value, cycles);
+        return String.format("#%d (S) [ %s ] %s <- %d (%d)", index+1, displayLabel(), variableName, value, cycles);
+    }
+
+    @Override
+    HashSet<String> getPresentVariables() {
+        HashSet<String> variables = new HashSet<>();
+        variables.add(variableName);
+        return variables;
     }
 }
 
@@ -245,7 +309,14 @@ class JumpZero extends BaseCommand {
 
     @Override
     public String toString() {
-        return String.format("#%d (S) [ %s ] IF %s = 0 GOTO %s (%d)", index+1, label, variableName, targetLabel, cycles);
+        return String.format("#%d (S) [ %s ] IF %s = 0 GOTO %s (%d)", index+1, displayLabel(), variableName, targetLabel, cycles);
+    }
+
+    @Override
+    HashSet<String> getPresentVariables() {
+        HashSet<String> variables = new HashSet<>();
+        variables.add(variableName);
+        return variables;
     }
 }
 
@@ -280,7 +351,14 @@ class JumpEqualConstant extends BaseCommand {
 
     @Override
     public String toString() {
-        return String.format("#%d (S) [ %s ] IF %s = %d GOTO %s (%d)", index+1, label, variableName, value, targetLabel, cycles);
+        return String.format("#%d (S) [ %s ] IF %s = %d GOTO %s (%d)", index+1, displayLabel(), variableName, value, targetLabel, cycles);
+    }
+
+    @Override
+    HashSet<String> getPresentVariables() {
+        HashSet<String> variables = new HashSet<>();
+        variables.add(variableName);
+        return variables;
     }
 
 }
@@ -316,6 +394,14 @@ class JumpEqualVariable extends BaseCommand {
 
     @Override
     public String toString() {
-        return String.format("#%d (S) [ %s ] IF %s = %s GOTO %s (%d)", index+1, label, variableName, otherVariableName, targetLabel, cycles);
+        return String.format("#%d (S) [ %s ] IF %s = %s GOTO %s (%d)", index+1, displayLabel(), variableName, otherVariableName, targetLabel, cycles);
+    }
+
+    @Override
+    HashSet<String> getPresentVariables() {
+        HashSet<String> variables = new HashSet<>();
+        variables.add(variableName);
+        variables.add(otherVariableName);
+        return variables;
     }
 }

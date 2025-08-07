@@ -1,6 +1,7 @@
 package program;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 
 /*
@@ -18,7 +19,7 @@ class ProgramState {
     int cyclesCount;
     boolean done;
 
-    ProgramState(List<Integer> input, List<String> presentVariables, List<BaseCommand> commands, HashMap<String, Integer> labelToIndex) {
+    ProgramState(List<Integer> input, HashSet<String> presentVariables, List<BaseCommand> commands, HashMap<String, Integer> labelToIndex) {
         variables = new HashMap<>();
         variables.put("y", new Variable("y", 0));
         for (int i = 0; i < input.size(); i++) {
