@@ -34,12 +34,25 @@ public class Api {
         curProgram = new Program(name, commands);
     }
 
-    public static ProgramResult ExecuteProgram(List<Integer> input, int expansionLevel){
-        return curProgram.execute(input);
+    public static ProgramResult executeProgram(List<Integer> input, int expansionLevel){
+        Program p = curProgram;
+        if(expansionLevel > 0){
+            p = curProgram.expand(expansionLevel);
+        }
+
+        return p.execute(input);
     }
 
-    public static String GetProgram(int expansionLevel){
-        return curProgram.toString();
+    public void expandProgram(int expansionLevel){
+        curProgram = curProgram.expand(expansionLevel);
+    }
+
+    public static String getProgram(int expansionLevel){
+        Program p = curProgram;
+        if(expansionLevel > 0){
+            p = curProgram.expand(expansionLevel);
+        }
+        return p.toString();
     }
 
 }

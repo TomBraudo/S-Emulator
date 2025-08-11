@@ -1,25 +1,29 @@
 package program;
 
-import org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.List;
-
 import java.util.*;
 
 public class Main {
     public static void main(String[] args) {
         try {
-            Api.loadSProgram("C:\\Users\\Tom\\OneDrive\\Desktop\\EX 1\\synthetic.xml");
+            //Api.loadSProgram("C:\\Users\\Tom\\OneDrive\\Desktop\\EX 1\\error-1.xml");
+            List<BaseCommand> commands = new ArrayList<>();
+            commands.add(new Assignment("y", "x1",  BaseCommand.NO_LABEL,0, null));
+            Program p = new Program("Id", commands);
+            Program p2 = p.expand(1);
+            Program p3 = p.expand(2);
+            System.out.println(p.execute(java.util.List.of(10)).getResult());
+            System.out.println("-----------------------------------");
+            System.out.println(p2.execute(java.util.List.of(10)).getResult());
+            System.out.println("-----------------------------------");
+            System.out.println(p3.execute(java.util.List.of(10)).getResult());
+
         }
         catch (Exception e) {
-            e.printStackTrace();
+            System.out.println("Error: " + e.getMessage());
+            System.out.println("Stack Trace:" + Arrays.toString(e.getStackTrace()));
         }
-        ProgramResult res = Api.ExecuteProgram(new ArrayList<>(java.util.List.of(15, 2, 3)), 1);
-        System.out.println("The program:");
-        System.out.println(Api.GetProgram(0));
-        System.out.println("Result: " + res.getResult());
-        for(AbstractMap.SimpleEntry<String, Integer> entry : res.getVariableToValue()){
-            System.out.printf("%s=%d%n", entry.getKey(), entry.getValue());
-        }
-        System.out.printf("Number of steps: %d", res.getCycles());
+
+
 
     }
 }

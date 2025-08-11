@@ -29,28 +29,30 @@ class CommandFactory {
         return switch (name) {
 
             // ===== BASIC COMMANDS =====
-            case "DECREASE" -> new Decrease(variable, safeLabel, index);
-            case "INCREASE" -> new Increase(variable, safeLabel, index);
+            case "DECREASE" -> new Decrease(variable, safeLabel, index, null);
+            case "INCREASE" -> new Increase(variable, safeLabel, index, null);
             case "JUMP_NOT_ZERO" ->
                     new JumpNotZero(
                             variable,
                             argMap.get("JNZLabel"), // label to jump to
                             safeLabel,
-                            index
+                            index,
+                            null
                     );
-            case "NEUTRAL" -> new Neutral(variable, safeLabel, index);
+            case "NEUTRAL" -> new Neutral(variable, safeLabel, index, null);
 
             // ===== SYNTHETIC COMMANDS =====
 
             case "ZERO_VARIABLE" ->
-                    new ZeroVariable(variable, safeLabel, index);
+                    new ZeroVariable(variable, safeLabel, index, null);
 
             case "ASSIGNMENT" ->
                     new Assignment(
                             variable,
                             argMap.get("assignedVariable"), // variable to copy from
                             safeLabel,
-                            index
+                            index,
+                            null
                     );
 
             case "CONSTANT_ASSIGNMENT" ->
@@ -58,14 +60,16 @@ class CommandFactory {
                             variable,
                             Integer.parseInt(argMap.get("constantValue")),
                             safeLabel,
-                            index
+                            index,
+                            null
                     );
 
             case "GOTO_LABEL" ->
                     new GotoLabel(
                             argMap.get("gotoLabel"), // label to jump to
                             safeLabel,
-                            index
+                            index,
+                            null
                     );
 
             case "JUMP_ZERO" ->
@@ -73,7 +77,8 @@ class CommandFactory {
                             variable,
                             argMap.get("JZLabel"), // label to jump to
                             safeLabel,
-                            index
+                            index,
+                            null
                     );
 
             case "JUMP_EQUAL_CONSTANT" ->
@@ -82,7 +87,8 @@ class CommandFactory {
                             Integer.parseInt(argMap.get("constantValue")),
                             argMap.get("JEConstantLabel"), // target label
                             safeLabel,
-                            index
+                            index,
+                            null
                     );
 
             case "JUMP_EQUAL_VARIABLE" ->
@@ -91,7 +97,8 @@ class CommandFactory {
                             argMap.get("variableName"),     // other variable name
                             argMap.get("JEVariableLabel"),  // target label
                             safeLabel,
-                            index
+                            index,
+                            null
                     );
 
             default -> throw new IllegalArgumentException("Unknown command name: " + name);

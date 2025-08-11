@@ -1,9 +1,8 @@
 package program;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import XMLHandler.*;
 
 public class Program {
@@ -34,6 +33,26 @@ public class Program {
         return new ProgramResult(programState.cyclesCount, programState.variables);
     }
 
+    private int getMaxWorkVariable(){
+        int max = 0;
+        for (String variables : presentVariables) {
+            if (variables.charAt(0) == 'z'){
+                max = Math.max(max, Integer.parseInt(variables.substring(1)));
+            }
+        }
+
+        return max;
+    }
+    private int getMaxLabel(){
+        int max = 0;
+        for (String label : labels) {
+            if (label.charAt(0) == 'L'){
+                max = Math.max(max, Integer.parseInt(label.substring(1)));
+            }
+        }
+        return max;
+    }
+
     void unpackCommands(){
         inputVariables = new ArrayList<>();
         presentVariables = new HashSet<>();
@@ -58,6 +77,23 @@ public class Program {
         }
     }
 
+    Program expand(int level){
+        List<BaseCommand> newCommands = new ArrayList<>();
+        AtomicInteger nextAvailableLabel = new AtomicInteger(getMaxLabel()+1);
+        AtomicInteger nextAvailableVariable = new AtomicInteger(getMaxWorkVariable()+1);
+        AtomicInteger realIndex = new AtomicInteger(0);
+        for(BaseCommand command : commands){
+            newCommands.addAll(command.expand(level, nextAvailableVariable, nextAvailableLabel, realIndex));
+        }
+        return new Program(name, newCommands);
+    }
+
+    int getMaxExpansionLevel(){
+        return commands.stream()
+                .mapToInt(BaseCommand::getExpansionLevel)
+                .max()
+                .orElse(0);
+    }
 
     @Override
     public String toString(){
