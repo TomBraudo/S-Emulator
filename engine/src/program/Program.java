@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import XMLHandler.*;
 
 public class Program {
     String name;
@@ -24,13 +25,13 @@ public class Program {
         Result at programState.variables.get("y")
         Cycles count at programState.cyclesCount
      */
-    ProgramState execute(List<Integer> input){
+    ProgramResult execute(List<Integer> input){
         ProgramState programState = new ProgramState(input, presentVariables, commands, labelToIndex);
         while (!programState.done && programState.currentCommandIndex < commands.size()){
             BaseCommand command = commands.get(programState.currentCommandIndex);
             command.execute(programState);
         }
-        return programState;
+        return new ProgramResult(programState.cyclesCount, programState.variables);
     }
 
     void unpackCommands(){

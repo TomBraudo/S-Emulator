@@ -8,7 +8,7 @@ abstract class BaseCommand {
     abstract public String toString();
     //abstract List<BaseCommands> extend();
     static final String NO_LABEL = "-1";
-    static final String EXIT_LABEL = "Exit";
+    static final String EXIT_LABEL = "EXIT";
     String label;
     int index;
     int cycles;

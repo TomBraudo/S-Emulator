@@ -1,23 +1,25 @@
 package program;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
+import org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.List;
+
+import java.util.*;
 
 public class Main {
     public static void main(String[] args) {
-        List<Integer> input = new ArrayList<Integer>();
-        input.add(10);
-        List<BaseCommand> commands = new ArrayList<>();
-        commands.add(new Decrease("x1", "L1", 0));
-        commands.add(new Increase("y", "-1", 1));
-        commands.add(new JumpNotZero("x1", "L1", "-1", 2));
-        Program p = new Program("Identity function", commands);
-        System.out.println(p.toString());
+        try {
+            Api.loadSProgram("C:\\Users\\Tom\\OneDrive\\Desktop\\EX 1\\synthetic.xml");
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+        ProgramResult res = Api.ExecuteProgram(new ArrayList<>(java.util.List.of(15, 2, 3)), 1);
+        System.out.println("The program:");
+        System.out.println(Api.GetProgram(0));
+        System.out.println("Result: " + res.getResult());
+        for(AbstractMap.SimpleEntry<String, Integer> entry : res.getVariableToValue()){
+            System.out.printf("%s=%d%n", entry.getKey(), entry.getValue());
+        }
+        System.out.printf("Number of steps: %d", res.getCycles());
 
-        ProgramState result = p.execute(input);
-        System.out.println("Output: " + result.variables.get("y").getValue());
-        System.out.println("Number of cycles: " + result.cyclesCount);
     }
 }
