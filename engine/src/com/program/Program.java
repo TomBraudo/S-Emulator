@@ -1,9 +1,12 @@
 package com.program;
 
 import com.api.ProgramResult;
+import com.api.Statistic;
+import com.commands.Variable;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 public class Program {
     String name;
@@ -30,7 +33,7 @@ public class Program {
             com.commands.BaseCommand command = commands.get(programState.currentCommandIndex);
             command.execute(programState);
         }
-        return new ProgramResult(programState.cyclesCount, programState.variables);
+        return new ProgramResult(programState.cyclesCount, variableToValue(programState));
     }
 
     private int getMaxWorkVariable(){
@@ -88,7 +91,7 @@ public class Program {
         return new Program(name, newCommands);
     }
 
-    int getMaxExpansionLevel(){
+    public int getMaxExpansionLevel(){
         return commands.stream()
                 .mapToInt(com.commands.BaseCommand::getExpansionLevel)
                 .max()
@@ -103,6 +106,16 @@ public class Program {
             }
         }
     }
+
+    private HashMap<String,Integer> variableToValue(ProgramState state){
+        return (HashMap<String, Integer>) state.variables.values().stream()
+                .collect(Collectors.toMap(Variable::getName, Variable::getValue));
+    }
+
+    public List<String> getInputVariables() {
+        return Collections.unmodifiableList(inputVariables);
+    }
+
 
     @Override
     public String toString(){

@@ -13,7 +13,7 @@ public class Statistic {
     private int result;
     private int cyclesCount;
 
-    static void saveRunDetails(int expansionLevel, List<Integer> input, int result, int cyclesCount) {
+    public static void saveRunDetails(int expansionLevel, List<Integer> input, int result, int cyclesCount) {
         Statistic statistic = new Statistic();
         statistic.index = globalIndex++;
         statistic.expansionLevel = expansionLevel;

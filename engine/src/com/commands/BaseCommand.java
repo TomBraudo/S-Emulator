@@ -39,7 +39,7 @@ public abstract class BaseCommand {
     }
 
     protected void verifyLabel(String label) {
-        if (!label.equals(EXIT_LABEL) && !label.matches("L[1-9]\\d?")) {
+        if (!label.equals(NO_LABEL) && !label.equals(EXIT_LABEL) && !label.matches("L[1-9]\\d?")) {
             throw new IllegalArgumentException("Invalid label format");
         }
     }

@@ -35,8 +35,8 @@ public class Api {
                             instruction.getSInstructionArguments().getSInstructionArgument(),
                     i));
         }
-        curProgram.verifyLegal();
         curProgram = new Program(name, commands);
+        curProgram.verifyLegal();
     }
 
     public static ProgramResult executeProgram(List<Integer> input, int expansionLevel){
@@ -45,7 +45,9 @@ public class Api {
             p = curProgram.expand(expansionLevel);
         }
 
-        return p.execute(input);
+        ProgramResult res = p.execute(input);
+        Statistic.saveRunDetails(expansionLevel, input, res.getResult(), res.getCycles());
+        return res;
     }
 
     public static void expandProgram(int expansionLevel){
@@ -62,6 +64,14 @@ public class Api {
 
     public static boolean isLoaded(){
         return curProgram != null;
+    }
+
+    public static int getMaxLevel(){
+        return curProgram.getMaxExpansionLevel();
+    }
+
+    public static List<String> getInputVariableNames(){
+        return curProgram.getInputVariables();
     }
 
 }

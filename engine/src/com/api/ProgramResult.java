@@ -7,25 +7,26 @@ import java.util.*;
 public class ProgramResult{
     private final int cycles;
     private int result;
-    private List<AbstractMap.SimpleEntry<String,Integer>> variableToValue;
-    public ProgramResult(int cycles, HashMap<String, Variable> variables){
+    public record VariableToValue(String variable, int value){}
+    private List<VariableToValue> variableToValue;
+    public ProgramResult(int cycles, HashMap<String, Integer> variables){
         this.cycles = cycles;
         UnpackVariables(variables);
 
     }
 
-    private void UnpackVariables(HashMap<String, Variable> variables){
+    private void UnpackVariables(HashMap<String, Integer> variables){
         this.variableToValue = new ArrayList<>();
         for (String variableName: variables.keySet()){
             if (variableName.equals("y")){
-                result = variables.get(variableName).getValue();
+                result = variables.get(variableName);
             }
             else {
-                variableToValue.add(new AbstractMap.SimpleEntry<>(variableName, variables.get(variableName).getValue()));
+                variableToValue.add(new VariableToValue(variableName, variables.get(variableName)));
             }
-
-            variableToValue.sort(Comparator.comparing(AbstractMap.SimpleEntry::getKey));
         }
+        variableToValue.sort(Comparator.comparing(VariableToValue::variable));
+        variableToValue.addFirst(new VariableToValue("y", variables.get("y")));
     }
 
     public int getCycles() {
@@ -34,7 +35,7 @@ public class ProgramResult{
     public int getResult() {
         return result;
     }
-    public List<AbstractMap.SimpleEntry<String,Integer>> getVariableToValue() {
-        return variableToValue;
+    public List<VariableToValue> getVariableToValue() {
+        return Collections.unmodifiableList(variableToValue);
     }
 }
