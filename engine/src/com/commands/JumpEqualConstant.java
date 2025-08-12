@@ -53,20 +53,17 @@ class JumpEqualConstant extends BaseCommand {
     }
 
     @Override
-    public List<BaseCommand> expand(int level, AtomicInteger nextAvailableVariable, AtomicInteger nextAvailableLabel, AtomicInteger realIndex) {
-        if(level == 0){
-            return List.of(new JumpEqualConstant(variableName, value, targetLabel, label, realIndex.getAndIncrement(), creator));
-        }
+    public List<BaseCommand> expand(AtomicInteger nextAvailableVariable, AtomicInteger nextAvailableLabel, AtomicInteger realIndex) {
         List<BaseCommand> commands = new ArrayList<>();
         String L1 = "L"+ nextAvailableLabel.getAndIncrement();
-        String z1 = "Z"+ nextAvailableLabel.getAndIncrement();
-        commands.addAll(new Assignment(z1, variableName, label, realIndex.getAndIncrement(),this).expand(level-1, nextAvailableVariable, nextAvailableLabel, realIndex));
+        String z1 = "z"+ nextAvailableVariable.getAndIncrement();
+        commands.add(new Assignment(z1, variableName, label, realIndex.getAndIncrement(),this));
         for(int i = 0; i < value; i++){
-            commands.addAll(new JumpZero(z1, L1, NO_LABEL, realIndex.getAndIncrement(),this).expand(level-1, nextAvailableVariable, nextAvailableLabel, realIndex));
+            commands.add(new JumpZero(z1, L1, NO_LABEL, realIndex.getAndIncrement(),this));
             commands.add(new Decrease(z1,NO_LABEL, realIndex.getAndIncrement(), this));
         }
         commands.add(new JumpNotZero(z1, L1, NO_LABEL, realIndex.getAndIncrement(), this));
-        commands.addAll(new GotoLabel(targetLabel, NO_LABEL, realIndex.getAndIncrement(),this).expand(level-1, nextAvailableVariable, nextAvailableLabel, realIndex));
+        commands.add(new GotoLabel(targetLabel, NO_LABEL, realIndex.getAndIncrement(),this));
         commands.add(new Neutral(variableName, L1, realIndex.getAndIncrement(),this));
         return commands;
     }

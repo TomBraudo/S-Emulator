@@ -39,11 +39,8 @@ class GotoLabel extends BaseCommand {
     }
 
     @Override
-    public List<BaseCommand> expand(int level, AtomicInteger nextAvailableVariable, AtomicInteger nextAvailableLabel, AtomicInteger realIndex) {
-        if(level == 0){
-            return List.of(new GotoLabel(targetLabel, label, realIndex.getAndIncrement(), creator));
-        }
-        String nextVar = "z" + nextAvailableLabel.getAndIncrement();
+    public List<BaseCommand> expand(AtomicInteger nextAvailableVariable, AtomicInteger nextAvailableLabel, AtomicInteger realIndex) {
+        String nextVar = "z" + nextAvailableVariable.getAndIncrement();
         List<BaseCommand> commands = new ArrayList<>();
         commands.add(new Increase(nextVar, label, realIndex.getAndIncrement(), this));
         commands.add(new JumpNotZero(nextVar, targetLabel, NO_LABEL, realIndex.getAndIncrement(), this));

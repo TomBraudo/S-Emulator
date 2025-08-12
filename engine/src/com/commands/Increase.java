@@ -38,7 +38,7 @@ class Increase extends BaseCommand {
     }
 
     @Override
-    public List<BaseCommand> expand(int level, AtomicInteger nextAvailableVariable, AtomicInteger nextAvailableLabel, AtomicInteger realIndex) {
+    public List<BaseCommand> expand(AtomicInteger nextAvailableVariable, AtomicInteger nextAvailableLabel, AtomicInteger realIndex) {
         return List.of(new Increase(variableName, label, realIndex.getAndIncrement(), creator));
     }
 

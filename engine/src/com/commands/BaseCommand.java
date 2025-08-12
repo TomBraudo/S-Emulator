@@ -2,7 +2,6 @@ package com.commands;
 
 import com.program.ProgramState;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -47,14 +46,14 @@ public abstract class BaseCommand {
     protected void appendCreators(StringBuilder sb){
         BaseCommand curCreator = creator;
         while (curCreator != null){
-            sb.append(" <<< ").append(curCreator.toString());
+            sb.append(" <<< ").append(curCreator);
             curCreator = curCreator.creator;
         }
     }
 
 
     public abstract HashSet<String>  getPresentVariables();
-    public abstract List<BaseCommand> expand(int level, AtomicInteger nextAvailableVariable, AtomicInteger nextAvailableLabel, AtomicInteger realIndex);
+    public abstract List<BaseCommand> expand(AtomicInteger nextAvailableVariable, AtomicInteger nextAvailableLabel, AtomicInteger realIndex);
     public abstract int getExpansionLevel();
     public abstract String getTargetLabel();
 }

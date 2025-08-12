@@ -1,7 +1,7 @@
 package com.program;
 
 import com.api.ProgramResult;
-import com.api.Statistic;
+import com.commands.BaseCommand;
 import com.commands.Variable;
 
 import java.util.*;
@@ -81,14 +81,20 @@ public class Program {
     }
 
     public Program expand(int level){
-        List<com.commands.BaseCommand> newCommands = new ArrayList<>();
+        List<BaseCommand> currentCommands = commands;
         AtomicInteger nextAvailableLabel = new AtomicInteger(getMaxLabel()+1);
         AtomicInteger nextAvailableVariable = new AtomicInteger(getMaxWorkVariable()+1);
         AtomicInteger realIndex = new AtomicInteger(0);
-        for(com.commands.BaseCommand command : commands){
-            newCommands.addAll(command.expand(level, nextAvailableVariable, nextAvailableLabel, realIndex));
+        for(int i = 0; i < level; i++){
+            List<BaseCommand> newCommands = new ArrayList<>();
+            realIndex.set(0);
+            for(BaseCommand command : currentCommands){
+                newCommands.addAll(command.expand(nextAvailableVariable, nextAvailableLabel, realIndex));
+            }
+            currentCommands = newCommands;
         }
-        return new Program(name, newCommands);
+
+        return new Program(name, currentCommands);
     }
 
     public int getMaxExpansionLevel(){

@@ -41,12 +41,10 @@ class ConstantAssignment extends BaseCommand {
     }
 
     @Override
-    public List<BaseCommand> expand(int level, AtomicInteger nextAvailableVariable, AtomicInteger nextAvailableLabel, AtomicInteger realIndex) {
-        if(level == 0){
-            return List.of(new ConstantAssignment(variableName, value, label, realIndex.getAndIncrement(), creator));
-        }
+    public List<BaseCommand> expand(AtomicInteger nextAvailableVariable, AtomicInteger nextAvailableLabel, AtomicInteger realIndex) {
+
         List<BaseCommand> commands = new ArrayList<>();
-        commands.addAll(new ZeroVariable(variableName, label, realIndex.getAndIncrement(), this).expand(level-1, nextAvailableVariable, nextAvailableLabel, realIndex));
+        commands.add(new ZeroVariable(variableName, label, realIndex.getAndIncrement(), this));
         for(int i = 0; i < value; i++){
             commands.add(new Increase(variableName, NO_LABEL, realIndex.getAndIncrement(), this));
         }

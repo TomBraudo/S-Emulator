@@ -38,10 +38,7 @@ class ZeroVariable extends BaseCommand {
     }
 
     @Override
-    public List<BaseCommand> expand(int level, AtomicInteger nextAvailableVariable, AtomicInteger nextAvailableLabel, AtomicInteger realIndex) {
-        if(level == 0){
-            return List.of(new ZeroVariable(variableName, label, realIndex.getAndIncrement(), creator));
-        }
+    public List<BaseCommand> expand(AtomicInteger nextAvailableVariable, AtomicInteger nextAvailableLabel, AtomicInteger realIndex) {
         List<BaseCommand> commands = new ArrayList<>();
         String L1 = "L" + nextAvailableLabel.getAndIncrement();
         commands.add(new Neutral(variableName, label, realIndex.getAndIncrement(),this));

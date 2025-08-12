@@ -30,7 +30,7 @@ class Decrease extends BaseCommand {
         sb.append(String.format("#%d (B) [ %s ] %s <- %s - 1 (%d)", index+1, displayLabel(), variableName, variableName, cycles));
         BaseCommand curCreator = creator;
         while (curCreator != null){
-            sb.append(" <<< ").append(curCreator.toString());
+            sb.append(" <<< ").append(curCreator);
             curCreator = curCreator.creator;
         }
 
@@ -45,7 +45,7 @@ class Decrease extends BaseCommand {
     }
 
     @Override
-    public List<BaseCommand> expand(int level, AtomicInteger nextAvailableVariable, AtomicInteger nextAvailableLabel, AtomicInteger realIndex) {
+    public List<BaseCommand> expand(AtomicInteger nextAvailableVariable, AtomicInteger nextAvailableLabel, AtomicInteger realIndex) {
         return List.of(new Decrease(variableName, label, realIndex.getAndIncrement(), creator));
     }
 

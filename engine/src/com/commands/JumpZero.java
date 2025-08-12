@@ -51,14 +51,11 @@ class JumpZero extends BaseCommand {
     }
 
     @Override
-    public List<BaseCommand> expand(int level, AtomicInteger nextAvailableVariable, AtomicInteger nextAvailableLabel, AtomicInteger realIndex) {
-        if(level == 0){
-            return List.of(new JumpZero(variableName, targetLabel, label, realIndex.getAndIncrement(), creator));
-        }
+    public List<BaseCommand> expand(AtomicInteger nextAvailableVariable, AtomicInteger nextAvailableLabel, AtomicInteger realIndex) {
         List<BaseCommand> commands = new ArrayList<>();
         String L1 = "L"+ nextAvailableLabel.getAndIncrement();
         commands.add(new JumpNotZero(variableName, L1, label, realIndex.getAndIncrement(), this));
-        commands.addAll(new GotoLabel(targetLabel, NO_LABEL, realIndex.getAndIncrement(), this).expand(level-1, nextAvailableVariable, nextAvailableLabel, realIndex));
+        commands.add(new GotoLabel(targetLabel, NO_LABEL, realIndex.getAndIncrement(), this));
         commands.add(new Neutral(variableName, L1, realIndex.getAndIncrement(), this));
         return commands;
     }
