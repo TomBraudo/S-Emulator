@@ -5,12 +5,11 @@
 //
 
 
-package XMLHandler;
+package com.XMLHandler;
 
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlAttribute;
-import jakarta.xml.bind.annotation.XmlElement;
 import jakarta.xml.bind.annotation.XmlRootElement;
 import jakarta.xml.bind.annotation.XmlType;
 
@@ -24,9 +23,7 @@ import jakarta.xml.bind.annotation.XmlType;
  * <complexType>
  *   <complexContent>
  *     <restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
- *       <sequence>
- *         <element ref="{}S-Instructions"/>
- *       </sequence>
+ *       <attribute name="value" use="required" type="{http://www.w3.org/2001/XMLSchema}string" />
  *       <attribute name="name" use="required" type="{http://www.w3.org/2001/XMLSchema}string" />
  *     </restriction>
  *   </complexContent>
@@ -36,39 +33,37 @@ import jakarta.xml.bind.annotation.XmlType;
  * 
  */
 @XmlAccessorType(XmlAccessType.FIELD)
-@XmlType(name = "", propOrder = {
-    "sInstructions"
-})
-@XmlRootElement(name = "S-Program")
-public class SProgram {
+@XmlType(name = "")
+@XmlRootElement(name = "S-Instruction-Argument")
+public class SInstructionArgument {
 
-    @XmlElement(name = "S-Instructions", required = true)
-    protected SInstructions sInstructions;
+    @XmlAttribute(name = "value", required = true)
+    protected String value;
     @XmlAttribute(name = "name", required = true)
     protected String name;
 
     /**
-     * Gets the value of the sInstructions property.
+     * Gets the value of the value property.
      * 
      * @return
      *     possible object is
-     *     {@link SInstructions }
+     *     {@link String }
      *     
      */
-    public SInstructions getSInstructions() {
-        return sInstructions;
+    public String getValue() {
+        return value;
     }
 
     /**
-     * Sets the value of the sInstructions property.
+     * Sets the value of the value property.
      * 
      * @param value
      *     allowed object is
-     *     {@link SInstructions }
+     *     {@link String }
      *     
      */
-    public void setSInstructions(SInstructions value) {
-        this.sInstructions = value;
+    public void setValue(String value) {
+        this.value = value;
     }
 
     /**

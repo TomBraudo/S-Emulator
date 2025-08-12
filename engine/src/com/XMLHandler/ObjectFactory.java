@@ -5,7 +5,7 @@
 //
 
 
-package XMLHandler;
+package com.XMLHandler;
 
 import javax.xml.namespace.QName;
 import jakarta.xml.bind.JAXBElement;

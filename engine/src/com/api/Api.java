@@ -1,5 +1,9 @@
-package program;
-import XMLHandler.*;
+package com.api;
+import com.XMLHandler.SInstruction;
+import com.XMLHandler.SProgram;
+import com.commands.BaseCommand;
+import com.commands.CommandFactory;
+import com.program.Program;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.Unmarshaller;
@@ -31,6 +35,7 @@ public class Api {
                             instruction.getSInstructionArguments().getSInstructionArgument(),
                     i));
         }
+        curProgram.verifyLegal();
         curProgram = new Program(name, commands);
     }
 
@@ -43,7 +48,7 @@ public class Api {
         return p.execute(input);
     }
 
-    public void expandProgram(int expansionLevel){
+    public static void expandProgram(int expansionLevel){
         curProgram = curProgram.expand(expansionLevel);
     }
 
@@ -53,6 +58,10 @@ public class Api {
             p = curProgram.expand(expansionLevel);
         }
         return p.toString();
+    }
+
+    public static boolean isLoaded(){
+        return curProgram != null;
     }
 
 }

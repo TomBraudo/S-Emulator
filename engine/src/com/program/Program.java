@@ -1,19 +1,19 @@
-package program;
+package com.program;
+
+import com.api.ProgramResult;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import XMLHandler.*;
-
 public class Program {
     String name;
-    List<BaseCommand> commands;
+    List<com.commands.BaseCommand> commands;
     HashSet<String> presentVariables;
     HashMap<String, Integer> labelToIndex;
     List<String> inputVariables;
     List<String> labels;
 
-    Program(String name, List<BaseCommand> commands){
+    public Program(String name, List<com.commands.BaseCommand> commands){
         this.name = name;
         this.commands = commands;
         unpackCommands();
@@ -24,10 +24,10 @@ public class Program {
         Result at programState.variables.get("y")
         Cycles count at programState.cyclesCount
      */
-    ProgramResult execute(List<Integer> input){
+    public ProgramResult execute(List<Integer> input){
         ProgramState programState = new ProgramState(input, presentVariables, commands, labelToIndex);
         while (!programState.done && programState.currentCommandIndex < commands.size()){
-            BaseCommand command = commands.get(programState.currentCommandIndex);
+            com.commands.BaseCommand command = commands.get(programState.currentCommandIndex);
             command.execute(programState);
         }
         return new ProgramResult(programState.cyclesCount, programState.variables);
@@ -59,8 +59,8 @@ public class Program {
         labelToIndex = new HashMap<>();
         labels = new ArrayList<>();
         for(int i = 0; i < commands.size(); i++){
-            BaseCommand command = commands.get(i);
-            if(!command.getLabel().equals(BaseCommand.NO_LABEL)){
+            com.commands.BaseCommand command = commands.get(i);
+            if(!command.getLabel().equals(com.commands.BaseCommand.NO_LABEL)){
                 //The only label that matters is the first of its kind in the program.
                 if(!labelToIndex.containsKey(command.getLabel())){
                     labelToIndex.put(command.getLabel(), i);
@@ -77,12 +77,12 @@ public class Program {
         }
     }
 
-    Program expand(int level){
-        List<BaseCommand> newCommands = new ArrayList<>();
+    public Program expand(int level){
+        List<com.commands.BaseCommand> newCommands = new ArrayList<>();
         AtomicInteger nextAvailableLabel = new AtomicInteger(getMaxLabel()+1);
         AtomicInteger nextAvailableVariable = new AtomicInteger(getMaxWorkVariable()+1);
         AtomicInteger realIndex = new AtomicInteger(0);
-        for(BaseCommand command : commands){
+        for(com.commands.BaseCommand command : commands){
             newCommands.addAll(command.expand(level, nextAvailableVariable, nextAvailableLabel, realIndex));
         }
         return new Program(name, newCommands);
@@ -90,9 +90,18 @@ public class Program {
 
     int getMaxExpansionLevel(){
         return commands.stream()
-                .mapToInt(BaseCommand::getExpansionLevel)
+                .mapToInt(com.commands.BaseCommand::getExpansionLevel)
                 .max()
                 .orElse(0);
+    }
+
+    public void verifyLegal(){
+        for(com.commands.BaseCommand command : commands){
+            String targetLabel = command.getTargetLabel();
+            if(!targetLabel.equals(com.commands.BaseCommand.NO_LABEL) && !targetLabel.equals(com.commands.BaseCommand.EXIT_LABEL) && !labelToIndex.containsKey(targetLabel)){
+                throw new IllegalArgumentException("Target Label is not in list");
+            }
+        }
     }
 
     @Override
@@ -120,7 +129,7 @@ public class Program {
         }
         sb.append("\n");
         sb.append("The program: \n");
-        for(BaseCommand command : commands){
+        for(com.commands.BaseCommand command : commands){
             sb.append(command.toString()).append("\n");
         }
 

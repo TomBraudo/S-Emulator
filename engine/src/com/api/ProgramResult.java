@@ -1,4 +1,6 @@
-package program;
+package com.api;
+
+import com.commands.Variable;
 
 import java.util.*;
 
@@ -6,7 +8,7 @@ public class ProgramResult{
     private final int cycles;
     private int result;
     private List<AbstractMap.SimpleEntry<String,Integer>> variableToValue;
-    ProgramResult(int cycles, HashMap<String, Variable> variables){
+    public ProgramResult(int cycles, HashMap<String, Variable> variables){
         this.cycles = cycles;
         UnpackVariables(variables);
 

@@ -1,4 +1,7 @@
-package program;
+package com.program;
+
+import com.commands.BaseCommand;
+import com.commands.Variable;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -7,19 +10,19 @@ import java.util.List;
 /*
     The class is a helper for running full programs
  */
-class ProgramState {
+public class ProgramState {
     /*
         Assuming the building of the programState singleton object is smart,
         and every variable that is present in the program is entered into this map.
     */
-    HashMap<String, Variable> variables;
-    List<BaseCommand> commands;
-    int currentCommandIndex;
-    HashMap<String, Integer> labelToIndex;
-    int cyclesCount;
-    boolean done;
+    public HashMap<String, Variable> variables;
+    public List<com.commands.BaseCommand> commands;
+    public int currentCommandIndex;
+    public HashMap<String, Integer> labelToIndex;
+    public int cyclesCount;
+    public boolean done;
 
-    ProgramState(List<Integer> input, HashSet<String> presentVariables, List<BaseCommand> commands, HashMap<String, Integer> labelToIndex) {
+    ProgramState(List<Integer> input, HashSet<String> presentVariables, List<com.commands.BaseCommand> commands, HashMap<String, Integer> labelToIndex) {
         variables = new HashMap<>();
         variables.put("y", new Variable("y", 0));
         for (int i = 0; i < input.size(); i++) {

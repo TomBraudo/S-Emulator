@@ -1,0 +1,80 @@
+package com.commands;
+
+import com.program.ProgramState;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+
+public abstract class BaseCommand {
+    public abstract void execute(ProgramState programState);
+    @Override
+    abstract public String toString();
+    //abstract List<BaseCommands> extend();
+    public static final String NO_LABEL = "-1";
+    public static final String EXIT_LABEL = "EXIT";
+    String label;
+    int index;
+    int cycles;
+    BaseCommand creator; //nullable
+    protected BaseCommand(String label, int index, BaseCommand creator) {
+        verifyLabel(label);
+        this.creator = creator;
+        this.label = label;
+        this.index = index;
+    }
+    public String getLabel() {
+        return label;
+    }
+    protected String displayLabel(){
+        if(label.equals(NO_LABEL)){
+            return "   ";
+        }
+        else if(label.length() == 2){
+            return label + " ";
+        }
+
+        return label;
+    }
+
+    protected void verifyLabel(String label) {
+        if (!label.equals(EXIT_LABEL) && !label.matches("L[1-9]\\d?")) {
+            throw new IllegalArgumentException("Invalid label format");
+        }
+    }
+
+    protected void appendCreators(StringBuilder sb){
+        BaseCommand curCreator = creator;
+        while (curCreator != null){
+            sb.append(" <<< ").append(curCreator.toString());
+            curCreator = curCreator.creator;
+        }
+    }
+
+
+    public abstract HashSet<String>  getPresentVariables();
+    public abstract List<BaseCommand> expand(int level, AtomicInteger nextAvailableVariable, AtomicInteger nextAvailableLabel, AtomicInteger realIndex);
+    public abstract int getExpansionLevel();
+    public abstract String getTargetLabel();
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

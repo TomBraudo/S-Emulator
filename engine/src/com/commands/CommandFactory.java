@@ -1,10 +1,10 @@
-package program;
-import XMLHandler.SInstructionArgument;
+package com.commands;
+import com.XMLHandler.SInstructionArgument;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-class CommandFactory {
+public class CommandFactory {
 
     private static Map<String, String> mapArgs(List<SInstructionArgument> argsList) {
         Map<String, String> argsMap = new HashMap<>();

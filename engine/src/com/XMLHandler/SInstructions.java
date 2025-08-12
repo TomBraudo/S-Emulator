@@ -5,7 +5,7 @@
 //
 
 
-package XMLHandler;
+package com.XMLHandler;
 
 import java.util.ArrayList;
 import java.util.List;
