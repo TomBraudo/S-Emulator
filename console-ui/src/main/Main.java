@@ -11,6 +11,7 @@ public class Main {
         mainMenu.addItem(new ExpandProgramItem());
         mainMenu.addItem(new ExecuteProgramItem());
         mainMenu.addItem(new HistoryItem());
+        mainMenu.addItem(new StateItem());
 
         mainMenu.run();
     }

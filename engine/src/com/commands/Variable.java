@@ -1,6 +1,8 @@
 package com.commands;
 
-public class Variable {
+import java.io.Serializable;
+
+public class Variable implements Serializable {
     private final String name;
     private int value;
 

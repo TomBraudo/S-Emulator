@@ -4,11 +4,12 @@ import com.api.ProgramResult;
 import com.commands.BaseCommand;
 import com.commands.Variable;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-public class Program {
+public class Program implements Serializable {
     String name;
     List<com.commands.BaseCommand> commands;
     HashSet<String> presentVariables;
@@ -27,6 +28,7 @@ public class Program {
         Result at programState.variables.get("y")
         Cycles count at programState.cyclesCount
      */
+    public String getName() {return name;}
     public ProgramResult execute(List<Integer> input){
         ProgramState programState = new ProgramState(input, presentVariables, commands, labelToIndex);
         while (!programState.done && programState.currentCommandIndex < commands.size()){

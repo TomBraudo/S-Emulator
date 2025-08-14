@@ -2,12 +2,13 @@ package com.commands;
 
 import com.program.ProgramState;
 
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public abstract class BaseCommand {
+public abstract class BaseCommand implements Serializable {
     public abstract void execute(ProgramState programState);
     @Override
     abstract public String toString();

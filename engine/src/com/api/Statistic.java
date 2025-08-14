@@ -1,10 +1,11 @@
 package com.api;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class Statistic {
+public class Statistic implements Serializable {
     static List<Statistic> statistics = new ArrayList<>();
     private static int globalIndex = 1;
     private int index;
@@ -24,7 +25,7 @@ public class Statistic {
     }
 
     public static List<Statistic> getStatistics() {
-        return Collections.unmodifiableList(statistics);
+        return statistics;
     }
 
     public int getIndex() {
@@ -34,7 +35,7 @@ public class Statistic {
         return expansionLevel;
     }
     public List<Integer> getInput() {
-        return Collections.unmodifiableList(input);
+        return input;
     }
     public int getResult() {
         return result;
@@ -42,4 +43,7 @@ public class Statistic {
     public int getCyclesCount() {
         return cyclesCount;
     }
+    public static int getGlobalIndex() {return globalIndex;}
+    static void setGlobalIndex(int globalIndex) {Statistic.globalIndex = globalIndex;}
+    static void setStatistics(List<Statistic> statistics) {Statistic.statistics = statistics;}
 }
