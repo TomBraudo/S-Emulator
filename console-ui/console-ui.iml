@@ -7,7 +7,7 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="engine" exported="" />
-    <orderEntry type="library" exported="" name="angus-activation" level="project" />
+    <orderEntry type="module" module-name="engine" />
+    <orderEntry type="library" name="angus-activation" level="project" />
   </component>
 </module>

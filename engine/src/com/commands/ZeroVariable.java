@@ -25,9 +25,14 @@ class ZeroVariable extends BaseCommand {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append(String.format("#%d (S) [ %s ] %s <- 0 (%d)", index+1, displayLabel(), variableName, cycles));
+        sb.append(toStringBase());
         appendCreators(sb);
         return sb.toString();
+    }
+
+    @Override
+    protected String toStringBase() {
+        return String.format("#%d (S) [ %s ] %s <- 0 (%d)", index+1, displayLabel(), variableName, cycles);
     }
 
     @Override

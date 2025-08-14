@@ -30,10 +30,12 @@ class Assignment extends BaseCommand {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append(String.format("#%d (S) [ %s ] %s <- %s (%d)", index + 1, displayLabel(), variableName, otherVariableName, cycles));
+        sb.append(toStringBase());
         appendCreators(sb);
         return sb.toString();
     }
+
+
 
     @Override
     public HashSet<String> getPresentVariables() {
@@ -72,5 +74,10 @@ class Assignment extends BaseCommand {
     @Override
     public String getTargetLabel() {
         return NO_LABEL;
+    }
+
+    @Override
+    protected String toStringBase() {
+        return String.format("#%d (S) [ %s ] %s <- %s (%d)", index + 1, displayLabel(), variableName, otherVariableName, cycles);
     }
 }

@@ -28,7 +28,7 @@ class ConstantAssignment extends BaseCommand {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append(String.format("#%d (S) [ %s ] %s <- %d (%d)", index+1, displayLabel(), variableName, value, cycles));
+        sb.append(toStringBase());
         appendCreators(sb);
         return sb.toString();
     }
@@ -59,5 +59,10 @@ class ConstantAssignment extends BaseCommand {
     @Override
     public String getTargetLabel() {
         return NO_LABEL;
+    }
+
+    @Override
+    protected String toStringBase() {
+        return String.format("#%d (S) [ %s ] %s <- %d (%d)", index+1, displayLabel(), variableName, value, cycles);
     }
 }

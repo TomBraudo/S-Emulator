@@ -4,6 +4,7 @@ import com.program.ProgramState;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class BaseCommand {
@@ -44,10 +45,9 @@ public abstract class BaseCommand {
     }
 
     protected void appendCreators(StringBuilder sb){
-        BaseCommand curCreator = creator;
-        while (curCreator != null){
-            sb.append(" <<< ").append(curCreator);
-            curCreator = curCreator.creator;
+        if(creator != null){
+            sb.append(" <<< ").append(creator.toStringBase());
+            creator.appendCreators(sb);
         }
     }
 
@@ -56,6 +56,7 @@ public abstract class BaseCommand {
     public abstract List<BaseCommand> expand(AtomicInteger nextAvailableVariable, AtomicInteger nextAvailableLabel, AtomicInteger realIndex);
     public abstract int getExpansionLevel();
     public abstract String getTargetLabel();
+    protected abstract String toStringBase();
 }
 
 

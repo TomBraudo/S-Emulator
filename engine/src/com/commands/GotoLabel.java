@@ -28,9 +28,14 @@ class GotoLabel extends BaseCommand {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append(String.format("#%d (S) [ %s ] GOTO %s (%d)", index+1, displayLabel(), targetLabel, cycles));
+        sb.append(toStringBase());
         appendCreators(sb);
         return sb.toString();
+    }
+
+    @Override
+    public String toStringBase() {
+        return String.format("#%d (S) [ %s ] GOTO %s (%d)", index+1, displayLabel(), targetLabel, cycles);
     }
 
     @Override

@@ -38,9 +38,14 @@ class JumpZero extends BaseCommand {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append(String.format("#%d (S) [ %s ] IF %s = 0 GOTO %s (%d)", index+1, displayLabel(), variableName, targetLabel, cycles));
+        sb.append(toStringBase());
         appendCreators(sb);
         return sb.toString();
+    }
+
+    @Override
+    public String toStringBase() {
+        return String.format("#%d (S) [ %s ] IF %s = 0 GOTO %s (%d)", index+1, displayLabel(), variableName, targetLabel, cycles);
     }
 
     @Override

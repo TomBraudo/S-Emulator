@@ -22,9 +22,14 @@ class Neutral extends BaseCommand {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append(String.format("#%d (B) [ %s ] %s <- %s (%d)", index+1, displayLabel(), variableName, variableName, cycles));
+        sb.append(toStringBase());
         appendCreators(sb);
         return sb.toString();
+    }
+
+    @Override
+    public String toStringBase() {
+        return String.format("#%d (B) [ %s ] %s <- %s (%d)", index+1, displayLabel(), variableName, variableName, cycles);
     }
 
     @Override

@@ -27,14 +27,14 @@ class Decrease extends BaseCommand {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append(String.format("#%d (B) [ %s ] %s <- %s - 1 (%d)", index+1, displayLabel(), variableName, variableName, cycles));
-        BaseCommand curCreator = creator;
-        while (curCreator != null){
-            sb.append(" <<< ").append(curCreator);
-            curCreator = curCreator.creator;
-        }
-
+        sb.append(toStringBase());
+        appendCreators(sb);
         return sb.toString();
+    }
+
+    @Override
+    public String toStringBase() {
+        return String.format("#%d (B) [ %s ] %s <- %s - 1 (%d)", index+1, displayLabel(), variableName, variableName, cycles);
     }
 
     @Override
@@ -58,4 +58,6 @@ class Decrease extends BaseCommand {
     public String getTargetLabel() {
         return NO_LABEL;
     }
+
+
 }
