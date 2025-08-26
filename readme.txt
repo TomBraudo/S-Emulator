@@ -84,9 +84,18 @@ Error handling and termination
 - Termination happens when execution reaches EXIT or the instruction pointer moves past the last command.
 - Illegal or missing label targets cause a validation error before execution.
 
-Build and runtime requirements
-- Java 21 is required.
-- A run script is provided to compile and execute without manual setup.
+Save and Load System (Bonus)
+- Purpose
+  - Provide a portable, human-readable way to persist programs, so work can be shared, versioned, and resumed later.
+- What is saved
+  - Program definition: name, ordered commands with labels, and the inferred order of input variables.
+  - Statistics history: the run history for the currently loaded program.
+- Loading semantics
+  - Validation: on load, labels are re-indexed and control-flow targets are verified; malformed or incompatible files are rejected with clear errors.
+  - Compatibility: the loader tolerates additional metadata fields and ignores unknown, non-essential properties to enable forward compatibility.
+- Design choices
+  - Deterministic representation to make diffs meaningful and files easy to review.
+  - Separation of concerns: serialization/deserialization kept distinct from the execution engine.
 
 How to run
 - Run the included run.bat script.
@@ -104,12 +113,11 @@ Typical usage flow in the run script
 
 Zip submission structure
 - root/
-  - run.sh or run.bat (mandatory; runs the program end-to-end)
+  - run.bat
   - README.md (this file)
-  - src/… (source code)
-  - any build files (e.g., pom.xml/gradle files if used)
-  - examples/ (optional sample inputs and expected outputs)
-
+  - console-ui.jar
+  - engine.jar
+  - lib/ (JAXB jars)
 
 - Name: Tom Braudo
 - ID: 324182914
