@@ -2,6 +2,8 @@
 
 Project name: S-Emulator
 
+Bonuses implemented: Save and load system.
+
 Architecture at a glance
 - Layering
   - Core engine: the interpreter, program model, command hierarchy, and expansion logic.
@@ -26,7 +28,7 @@ Core engine model
     - currentCommandIndex: instruction pointer.
     - cyclesCount: cumulative cost.
     - done: termination flag used by EXIT jumps.
-    - labelToIndex: the resolved label table used for branching.
+    - labelToIndex: the resolved label table used for jumps.
 - ProgramResult
   - Immutable value returned at the end with:
     - cycles: total cycles consumed.
