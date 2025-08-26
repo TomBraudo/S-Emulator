@@ -25,7 +25,12 @@ public class Statistic implements Serializable {
     }
 
     public static List<Statistic> getStatistics() {
-        return statistics;
+        return Collections.unmodifiableList(statistics);
+    }
+
+    static void clearStatistics(){
+        statistics.clear();
+        globalIndex = 1;
     }
 
     public int getIndex() {
@@ -35,7 +40,7 @@ public class Statistic implements Serializable {
         return expansionLevel;
     }
     public List<Integer> getInput() {
-        return input;
+        return Collections.unmodifiableList( input);
     }
     public int getResult() {
         return result;

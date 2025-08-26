@@ -12,11 +12,9 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 public class Api {
@@ -30,6 +28,7 @@ public class Api {
         JAXBContext ctx = JAXBContext.newInstance(SProgram.class);
         Unmarshaller um = ctx.createUnmarshaller();
         createProgramFromSProgram((SProgram) um.unmarshal(new File(path)));
+        Statistic.clearStatistics();
     }
 
     private static void createProgramFromSProgram(SProgram sp){
@@ -134,7 +133,6 @@ public class Api {
 
     }
 
-
     public static void loadState(String path){
         if(!path.endsWith(".dat")){
             throw new IllegalArgumentException("The path provided is not a valid state file.\n" + path);
@@ -153,4 +151,3 @@ public class Api {
         }
     }
 }
-

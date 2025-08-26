@@ -1,7 +1,4 @@
 package com.api;
-
-import com.commands.Variable;
-
 import java.util.*;
 
 public class ProgramResult{
