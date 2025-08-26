@@ -46,8 +46,9 @@ public class Api {
                             instruction.getSInstructionArguments().getSInstructionArgument(),
                     i));
         }
-        curProgram = new Program(name, commands);
-        curProgram.verifyLegal();
+        Program p = new Program(name, commands);
+        p.verifyLegal();
+        curProgram = p;
     }
 
     public static ProgramResult executeProgram(List<Integer> input, int expansionLevel){
@@ -59,10 +60,6 @@ public class Api {
         ProgramResult res = p.execute(input);
         Statistic.saveRunDetails(expansionLevel, input, res.getResult(), res.getCycles());
         return res;
-    }
-
-    public static void expandProgram(int expansionLevel){
-        curProgram = curProgram.expand(expansionLevel);
     }
 
     public static String getProgram(int expansionLevel){
