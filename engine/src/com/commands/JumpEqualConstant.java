@@ -51,8 +51,23 @@ class JumpEqualConstant extends BaseCommand {
     }
 
     @Override
-    public HashSet<String> getPresentVariables() {
-        HashSet<String> variables = new HashSet<>();
+    public BaseCommand copy(List<String> variables, List<Integer> constants, List<String> labels, int index, BaseCommand creator) {
+        return new JumpEqualConstant(variables.get(0), constants.get(0), labels.get(0), labels.get(1), index, creator);
+    }
+
+    @Override
+    protected List<String> getLabelsForCopy() {
+        return List.of(targetLabel, label);
+    }
+
+    @Override
+    protected List<Integer> getConstantsForCopy() {
+        return List.of(value);
+    }
+
+    @Override
+    public List<String> getPresentVariables() {
+        List<String> variables = new ArrayList<>();
         variables.add(variableName);
         return variables;
     }

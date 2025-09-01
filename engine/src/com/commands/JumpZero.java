@@ -49,8 +49,23 @@ class JumpZero extends BaseCommand {
     }
 
     @Override
-    public HashSet<String> getPresentVariables() {
-        HashSet<String> variables = new HashSet<>();
+    public BaseCommand copy(List<String> variables, List<Integer> constants, List<String> labels, int index, BaseCommand creator) {
+        return new JumpZero(variables.get(0), labels.get(0), labels.get(1), index, creator);
+    }
+
+    @Override
+    protected List<String> getLabelsForCopy() {
+        return List.of(targetLabel, label);
+    }
+
+    @Override
+    protected List<Integer> getConstantsForCopy() {
+        return List.of();
+    }
+
+    @Override
+    public List<String> getPresentVariables() {
+        List<String> variables = new ArrayList<>();
         variables.add(variableName);
         return variables;
     }

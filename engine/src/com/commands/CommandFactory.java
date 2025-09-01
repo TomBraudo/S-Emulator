@@ -1,10 +1,36 @@
 package com.commands;
-import com.XMLHandler.SInstructionArgument;
+import com.XMLHandlerV2.SInstructionArgument;
+import com.program.Program;
+
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class CommandFactory {
+
+    private static final Map<String, List<com.XMLHandlerV2.SInstruction>> FUNCTIONS = new HashMap<>();
+
+    public static void registerFunctions(com.XMLHandlerV2.SFunctions functions) {
+        FUNCTIONS.clear();
+        if (functions == null) return;
+        for (com.XMLHandlerV2.SFunction f : functions.getSFunction()) {
+            FUNCTIONS.put(f.getName(), f.getSInstructions().getSInstruction());
+        }
+    }
+
+    private static List<String> parseFunctionArgs(String csv) {
+        if (csv == null || csv.isBlank()) return List.of();
+        String[] parts = csv.split(",");
+        List<String> out = new ArrayList<>(parts.length);
+        for (String p : parts) {
+            String t = p.trim();
+            if (!t.isEmpty()) out.add(t);
+        }
+        return out;
+    }
+
+
 
     private static Map<String, String> mapArgs(List<SInstructionArgument> argsList) {
         Map<String, String> argsMap = new HashMap<>();
@@ -100,6 +126,15 @@ public class CommandFactory {
                             index,
                             null
                     );
+            case "QUOTE" ->{
+                String functionName = argMap.get("functionName");
+                if (functionName == null) throw new IllegalArgumentException("Missing function name");
+                List<com.XMLHandlerV2.SInstruction> functionInstructions = FUNCTIONS.get(functionName);
+                if (functionInstructions == null) throw new IllegalArgumentException("QUOTE function not found: " + functionName);
+                Program p = Program.createProgram(functionName, functionInstructions);
+                List<String> fnArgs = parseFunctionArgs(argMap.get("functionArguments"));
+                yield new Quatation(variable, p, fnArgs, label, index, null);
+            }
 
             default -> throw new IllegalArgumentException("Unknown command name: " + name);
         };

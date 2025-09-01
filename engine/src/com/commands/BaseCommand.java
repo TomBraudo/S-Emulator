@@ -3,9 +3,7 @@ package com.commands;
 import com.program.ProgramState;
 
 import java.io.Serializable;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class BaseCommand implements Serializable {
@@ -53,11 +51,14 @@ public abstract class BaseCommand implements Serializable {
     }
 
 
-    public abstract HashSet<String>  getPresentVariables();
+    public abstract List<String> getPresentVariables();
     public abstract List<BaseCommand> expand(AtomicInteger nextAvailableVariable, AtomicInteger nextAvailableLabel, AtomicInteger realIndex);
     public abstract int getExpansionLevel();
     public abstract String getTargetLabel();
     protected abstract String toStringBase();
+    public abstract BaseCommand copy(List<String> variables, List<Integer> constants, List<String> labels, int index, BaseCommand creator);
+    protected abstract List<String> getLabelsForCopy();
+    protected abstract List<Integer> getConstantsForCopy();
 }
 
 

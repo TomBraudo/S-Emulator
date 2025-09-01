@@ -1,7 +1,9 @@
 package com.program;
 
+import com.XMLHandlerV2.SInstruction;
 import com.api.ProgramResult;
 import com.commands.BaseCommand;
+import com.commands.CommandFactory;
 import com.commands.Variable;
 
 import java.io.Serializable;
@@ -72,7 +74,7 @@ public class Program implements Serializable {
                 }
                 labels.add(command.getLabel());
             }
-            HashSet<String> commandVariables = command.getPresentVariables();
+            List<String> commandVariables = command.getPresentVariables();
             presentVariables.addAll(commandVariables);
             for(String variable : commandVariables){
                 if(variable.startsWith("x") && !inputVariables.contains(variable)){
@@ -156,5 +158,42 @@ public class Program implements Serializable {
 
         return sb.toString();
     }
+
+    public HashSet<String> getPresentVariables() {
+        return (HashSet<String>) Collections.unmodifiableCollection(presentVariables);
+    }
+
+    public List<String> getLabels() {
+        return Collections.unmodifiableList(labels);
+    }
+
+    public List<BaseCommand> getCommands() {
+        return Collections.unmodifiableList(commands);
+    }
+
+    public static Program createProgram(String name, List<SInstruction> instructions) {
+        List<BaseCommand> commands = new ArrayList<>();
+
+        for (int i = 0; i < instructions.size(); i++) {
+            SInstruction ins = instructions.get(i);
+
+            commands.add(
+                    CommandFactory.createCommand(
+                            ins.getName(),
+                            ins.getSVariable(),
+                            ins.getSLabel(),
+                            ins.getSInstructionArguments() == null
+                                    ? null
+                                    : ins.getSInstructionArguments().getSInstructionArgument(),
+                            i
+                    )
+            );
+        }
+
+        Program program = new Program(name, commands);
+        program.verifyLegal();
+        return program;
+    }
+
 
 }

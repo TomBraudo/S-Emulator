@@ -5,6 +5,7 @@ import com.program.ProgramState;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 class Assignment extends BaseCommand {
@@ -38,8 +39,8 @@ class Assignment extends BaseCommand {
 
 
     @Override
-    public HashSet<String> getPresentVariables() {
-        HashSet<String> variables = new HashSet<>();
+    public List<String> getPresentVariables() {
+        List<String> variables = new ArrayList<>();
         variables.add(variableName);
         variables.add(otherVariableName);
         return variables;
@@ -79,5 +80,20 @@ class Assignment extends BaseCommand {
     @Override
     protected String toStringBase() {
         return String.format("#%d (S) [ %s ] %s <- %s (%d)", index + 1, displayLabel(), variableName, otherVariableName, cycles);
+    }
+
+    @Override
+    public BaseCommand copy(List<String> variables, List<Integer> constants, List<String> labels, int index, BaseCommand creator) {
+        return new Assignment(variables.get(0), variables.get(1), labels.get(0), index, creator);
+    }
+
+    @Override
+    protected List<String> getLabelsForCopy() {
+        return List.of(label);
+    }
+
+    @Override
+    protected List<Integer> getConstantsForCopy() {
+        return List.of();
     }
 }

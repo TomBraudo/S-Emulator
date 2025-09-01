@@ -2,6 +2,7 @@ package com.commands;
 
 import com.program.ProgramState;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -36,8 +37,23 @@ class Increase extends BaseCommand {
     }
 
     @Override
-    public HashSet<String> getPresentVariables() {
-        HashSet<String> variables = new HashSet<>();
+    public BaseCommand copy(List<String> variables, List<Integer> constants, List<String> labels, int index, BaseCommand creator) {
+        return new Increase(variables.get(0), labels.get(0), index, creator);
+    }
+
+    @Override
+    protected List<String> getLabelsForCopy() {
+        return List.of(label);
+    }
+
+    @Override
+    protected List<Integer> getConstantsForCopy() {
+        return List.of();
+    }
+
+    @Override
+    public List<String> getPresentVariables() {
+        List<String> variables = new ArrayList<>();
         variables.add(variableName);
         return variables;
     }

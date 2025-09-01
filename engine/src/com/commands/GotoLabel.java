@@ -39,8 +39,23 @@ class GotoLabel extends BaseCommand {
     }
 
     @Override
-    public HashSet<String> getPresentVariables() {
-        return new HashSet<>();
+    public BaseCommand copy(List<String> variables, List<Integer> constants, List<String> labels, int index, BaseCommand creator) {
+        return new GotoLabel(labels.get(0), labels.get(1), index, creator);
+    }
+
+    @Override
+    protected List<String> getLabelsForCopy() {
+        return List.of(targetLabel, label);
+    }
+
+    @Override
+    protected List<Integer> getConstantsForCopy() {
+        return List.of();
+    }
+
+    @Override
+    public List<String> getPresentVariables() {
+        return new ArrayList<>();
     }
 
     @Override
@@ -61,4 +76,6 @@ class GotoLabel extends BaseCommand {
     public String getTargetLabel() {
         return targetLabel;
     }
+
+
 }

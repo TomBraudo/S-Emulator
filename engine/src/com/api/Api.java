@@ -1,7 +1,5 @@
 package com.api;
-import com.XMLHandler.SInstruction;
-import com.XMLHandler.SProgram;
-import com.commands.BaseCommand;
+import com.XMLHandlerV2.SProgram;
 import com.commands.CommandFactory;
 import com.program.Program;
 import jakarta.xml.bind.JAXBContext;
@@ -27,29 +25,12 @@ public class Api {
     public static void loadSProgram(String path) throws JAXBException {
         JAXBContext ctx = JAXBContext.newInstance(SProgram.class);
         Unmarshaller um = ctx.createUnmarshaller();
-        createProgramFromSProgram((SProgram) um.unmarshal(new File(path)));
+        SProgram sp = ((SProgram) um.unmarshal(new File(path)));
+        CommandFactory.registerFunctions(sp.getSFunctions());
+        curProgram = Program.createProgram(sp.getName(), sp.getSInstructions().getSInstruction());
         Statistic.clearStatistics();
     }
 
-    private static void createProgramFromSProgram(SProgram sp){
-        String name = sp.getName();
-        List<BaseCommand> commands = new ArrayList<BaseCommand>();
-        List<SInstruction> instructions = sp.getSInstructions().getSInstruction();
-        for(int i = 0; i < instructions.size(); i++){
-            SInstruction instruction = instructions.get(i);
-            commands.add(CommandFactory.createCommand(
-                    instruction.getName(),
-                    instruction.getSVariable(),
-                    instruction.getSLabel(),
-                    instruction.getSInstructionArguments() == null
-                            ? null :
-                            instruction.getSInstructionArguments().getSInstructionArgument(),
-                    i));
-        }
-        Program p = new Program(name, commands);
-        p.verifyLegal();
-        curProgram = p;
-    }
 
     public static ProgramResult executeProgram(List<Integer> input, int expansionLevel){
         Program p = curProgram;
