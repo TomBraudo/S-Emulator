@@ -1,4 +1,5 @@
 package com.commands;
+import com.XMLHandlerV2.SInstruction;
 import com.XMLHandlerV2.SInstructionArgument;
 import com.program.Program;
 
@@ -126,17 +127,28 @@ public class CommandFactory {
                             index,
                             null
                     );
-            case "QUOTE" ->{
-                String functionName = argMap.get("functionName");
-                if (functionName == null) throw new IllegalArgumentException("Missing function name");
-                List<com.XMLHandlerV2.SInstruction> functionInstructions = FUNCTIONS.get(functionName);
-                if (functionInstructions == null) throw new IllegalArgumentException("QUOTE function not found: " + functionName);
-                Program p = Program.createProgram(functionName, functionInstructions);
+            case "QUOTE" -> {
+                Program p = getProgramFromArg(argMap);
                 List<String> fnArgs = parseFunctionArgs(argMap.get("functionArguments"));
-                yield new Quatation(variable, p, fnArgs, label, index, null);
+                yield new Quotation(variable, p, fnArgs, safeLabel, index, null);
+            }
+
+            case "JUMP_EQUAL_FUNCTION" -> {
+                Program p = getProgramFromArg(argMap);
+                List<String> fnArgs = parseFunctionArgs(argMap.get("functionArguments"));
+                String targetLabel = argMap.get("JEFunctionLabel");
+                yield new JumpEqualFunction(variable, targetLabel, p, fnArgs, safeLabel, index, null);
             }
 
             default -> throw new IllegalArgumentException("Unknown command name: " + name);
         };
+    }
+
+    private static Program getProgramFromArg(Map<String, String> argMap) {
+        String functionName = argMap.get("functionName");
+        if (functionName == null) throw new IllegalArgumentException("Missing function name");
+        List<SInstruction> functionInstructions = FUNCTIONS.get(functionName);
+        if (functionInstructions == null) throw new IllegalArgumentException("QUOTE function not found: " + functionName);
+        return Program.createProgram(functionName, functionInstructions);
     }
 }

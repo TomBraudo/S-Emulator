@@ -7,12 +7,12 @@ import com.program.ProgramState;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class Quatation extends BaseCommand{
+public class Quotation extends BaseCommand{
     Program p;
     String variableName;
     List<String> input;
 
-    protected Quatation(String variableName, Program p, List<String> input, String label, int index, BaseCommand creator) {
+    protected Quotation(String variableName, Program p, List<String> input, String label, int index, BaseCommand creator) {
         super(label, index, creator);
         this.p = p;
         this.variableName = variableName;
@@ -32,8 +32,10 @@ public class Quatation extends BaseCommand{
 
     @Override
     public String toString() {
-        return String.format("#%d (S) [ %s ] %s <- (%s,", index + 1, displayLabel(), variableName, p.getName()) +
-                String.join(",", input) + ")" + "(5 + depends on input...)";
+        StringBuilder sb = new StringBuilder();
+        sb.append(toStringBase());
+        appendCreators(sb);
+        return sb.toString();
     }
 
     @Override
@@ -46,7 +48,7 @@ public class Quatation extends BaseCommand{
     public BaseCommand copy(List<String> variables, List<Integer> constants, List<String> labels, int index, BaseCommand creator) {
         String v = variables.get(0);
         List<String> input = new ArrayList<>(variables.subList(1, variables.size()));
-        return new Quatation(v, p, input, labels.get(0), index, creator);
+        return new Quotation(v, p, input, labels.get(0), index, creator);
     }
 
     @Override
@@ -75,13 +77,14 @@ public class Quatation extends BaseCommand{
         String Lend = "L" + nextAvailableLabel.getAndIncrement();
 
         for(BaseCommand command : p.getCommands()){
-            List<String> variables = command.getPresentVariables();
+            List<String> variables = new ArrayList<>(command.getPresentVariables());
             variables.replaceAll(oldToNewVariables::get);
-            List<String> labels = command.getLabelsForCopy();
+            List<String> labels = new ArrayList<>(command.getLabelsForCopy());
             labels.replaceAll(oldToNewLabels::get);
             List<Integer> constants = command.getConstantsForCopy();
             commands.add(command.copy(variables, constants, labels, realIndex.getAndIncrement(), this));
         }
+        commands.add(new Neutral(variableName, Lend, realIndex.getAndIncrement(), this));
 
         return commands;
     }
@@ -104,10 +107,11 @@ public class Quatation extends BaseCommand{
         List<String> pLabels = p.getLabels();
         HashMap<String, String> oldToNewLabels = new HashMap<>();
         for(String s : pLabels){
-            if(!s.equals(BaseCommand.EXIT_LABEL) && !s.equals(BaseCommand.NO_LABEL) && !oldToNewLabels.containsKey(s)) {
+            if(!s.equals(BaseCommand.EXIT_LABEL) && !oldToNewLabels.containsKey(s)) {
                 oldToNewLabels.put(s, "L" + nextAvailableLabel.getAndIncrement());
             }
         }
+        oldToNewLabels.put(BaseCommand.NO_LABEL, BaseCommand.NO_LABEL);
 
         return oldToNewLabels;
     }

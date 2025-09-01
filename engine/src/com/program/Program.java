@@ -160,11 +160,11 @@ public class Program implements Serializable {
     }
 
     public HashSet<String> getPresentVariables() {
-        return (HashSet<String>) Collections.unmodifiableCollection(presentVariables);
+        return new HashSet<>(presentVariables);
     }
 
     public List<String> getLabels() {
-        return Collections.unmodifiableList(labels);
+        return new ArrayList<>(labelToIndex.keySet());
     }
 
     public List<BaseCommand> getCommands() {
