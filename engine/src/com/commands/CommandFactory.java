@@ -9,28 +9,12 @@ import java.util.List;
 import java.util.Map;
 
 public class CommandFactory {
-
-    private static final Map<String, List<com.XMLHandlerV2.SInstruction>> FUNCTIONS = new HashMap<>();
+    
 
     public static void registerFunctions(com.XMLHandlerV2.SFunctions functions) {
-        FUNCTIONS.clear();
-        if (functions == null) return;
-        for (com.XMLHandlerV2.SFunction f : functions.getSFunction()) {
-            FUNCTIONS.put(f.getName(), f.getSInstructions().getSInstruction());
-        }
+        // Delegate registration to FnArgs; keep factory free of function state
+        FnArgs.registerFunctions(functions);
     }
-
-    private static List<String> parseFunctionArgs(String csv) {
-        if (csv == null || csv.isBlank()) return List.of();
-        String[] parts = csv.split(",");
-        List<String> out = new ArrayList<>(parts.length);
-        for (String p : parts) {
-            String t = p.trim();
-            if (!t.isEmpty()) out.add(t);
-        }
-        return out;
-    }
-
 
 
     private static Map<String, String> mapArgs(List<SInstructionArgument> argsList) {
@@ -127,18 +111,24 @@ public class CommandFactory {
                             index,
                             null
                     );
-            case "QUOTE" -> {
-                Program p = getProgramFromArg(argMap);
-                List<String> fnArgs = parseFunctionArgs(argMap.get("functionArguments"));
-                yield new Quotation(variable, p, fnArgs, safeLabel, index, null);
-            }
+            case "QUOTE" -> new Quotation(
+                    variable,
+                    getProgramFromArg(argMap),
+                    FnArgs.parse(argMap.get("functionArguments")),
+                    safeLabel,
+                    index,
+                    null
+                );
 
-            case "JUMP_EQUAL_FUNCTION" -> {
-                Program p = getProgramFromArg(argMap);
-                List<String> fnArgs = parseFunctionArgs(argMap.get("functionArguments"));
-                String targetLabel = argMap.get("JEFunctionLabel");
-                yield new JumpEqualFunction(variable, targetLabel, p, fnArgs, safeLabel, index, null);
-            }
+            case "JUMP_EQUAL_FUNCTION" -> new JumpEqualFunction(
+                    variable,
+                    argMap.get("JEFunctionLabel"),
+                    getProgramFromArg(argMap),
+                    FnArgs.parse(argMap.get("functionArguments")),
+                    safeLabel,
+                    index,
+                    null
+                );
 
             default -> throw new IllegalArgumentException("Unknown command name: " + name);
         };
@@ -147,8 +137,6 @@ public class CommandFactory {
     private static Program getProgramFromArg(Map<String, String> argMap) {
         String functionName = argMap.get("functionName");
         if (functionName == null) throw new IllegalArgumentException("Missing function name");
-        List<SInstruction> functionInstructions = FUNCTIONS.get(functionName);
-        if (functionInstructions == null) throw new IllegalArgumentException("QUOTE function not found: " + functionName);
-        return Program.createProgram(functionName, functionInstructions);
+        return FnArgs.getProgramByName(functionName);
     }
 }

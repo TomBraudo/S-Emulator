@@ -7,27 +7,37 @@ import com.program.ProgramState;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class Quotation extends BaseCommand{
+class Quotation extends BaseCommand{
     Program p;
     String variableName;
-    List<String> input;
+    // Each element is either String (variable name) or ArgExpr.ArgCall (nested function call)
+    List<Object> input;
 
-    protected Quotation(String variableName, Program p, List<String> input, String label, int index, BaseCommand creator) {
+    protected Quotation(String variableName, Program p, List<?> input, String label, int index, BaseCommand creator) {
         super(label, index, creator);
         this.p = p;
         this.variableName = variableName;
-        this.input = input;
+        // Normalize to List<Object> while validating element types
+        List<Object> normalized = new ArrayList<>(input == null ? 0 : input.size());
+        if (input != null) {
+            for (Object o : input) {
+                if (o instanceof String || o instanceof ArgExpr.ArgCall) {
+                    normalized.add(o);
+                } else {
+                    throw new IllegalArgumentException("Unsupported argument element type: " + o);
+                }
+            }
+        }
+        this.input = normalized;
     }
 
     @Override
     public void execute(ProgramState programState) {
-        List<Integer> input = new ArrayList<>();
-        for (String s : this.input){
-            input.add(programState.variables.get(s).getValue());
-        }
-
-        ProgramResult res = p.execute(input);
+        List<Integer> evaluated = FnArgs.evaluateArgs(programState, input);
+        ProgramResult res = p.execute(evaluated);
         programState.variables.get(variableName).setValue(res.getResult());
+        programState.cyclesCount += res.getCycles() + 5;
+        programState.currentCommandIndex++;
     }
 
     @Override
@@ -40,15 +50,17 @@ public class Quotation extends BaseCommand{
 
     @Override
     protected String toStringBase() {
+        List<String> parts = FnArgs.renderArgList(input);
         return String.format("#%d (S) [ %s ] %s <- (%s,", index + 1, displayLabel(), variableName, p.getName()) +
-                String.join(",", input) + ")" + "(5 + depends on input...)";
+                String.join(",", parts) + ")" + "(5 + depends on input...)";
     }
 
     @Override
     public BaseCommand copy(List<String> variables, List<Integer> constants, List<String> labels, int index, BaseCommand creator) {
         String v = variables.get(0);
-        List<String> input = new ArrayList<>(variables.subList(1, variables.size()));
-        return new Quotation(v, p, input, labels.get(0), index, creator);
+        Deque<String> mapped = new ArrayDeque<>(variables.subList(1, variables.size()));
+        List<Object> newInput = FnArgs.replaceVarsInArgs(this.input, mapped);
+        return new Quotation(v, p, newInput, labels.get(0), index, creator);
     }
 
     @Override
@@ -65,7 +77,7 @@ public class Quotation extends BaseCommand{
     public List<String> getPresentVariables() {
         List<String> variables = new ArrayList<>();
         variables.add(variableName);
-        variables.addAll(input);
+        variables.addAll(FnArgs.collectVariables(input));
         return variables;
     }
 
@@ -74,17 +86,46 @@ public class Quotation extends BaseCommand{
         List<BaseCommand> commands = new ArrayList<>();
         HashMap<String, String> oldToNewVariables = getOldToNewVariables(nextAvailableVariable);
         HashMap<String, String> oldToNewLabels = getOldToNewLabels(nextAvailableLabel);
-        String Lend = "L" + nextAvailableLabel.getAndIncrement();
+        String lEnd = "L" + nextAvailableLabel.getAndIncrement();
+        oldToNewLabels.put(BaseCommand.EXIT_LABEL, lEnd);
 
-        for(BaseCommand command : p.getCommands()){
+        // 1) Compute preamble: for each input arg, prepare the corresponding fresh inner input variable
+        List<String> innerInputs = p.getInputVariables();
+        boolean labelApplied = false;
+        for (int i = 0; i < input.size(); i++) {
+            String innerVar = innerInputs.get(i);                    // e.g., x1, x2
+            String mappedInner = oldToNewVariables.get(innerVar);    // fresh zK for inner x_i
+            String l = (!labelApplied ? label : NO_LABEL);
+            Object arg = input.get(i);
+            if (arg instanceof String varName) {
+                commands.add(new Assignment(mappedInner, varName, l, realIndex.getAndIncrement(), this));
+            }
+            else {
+                ArgExpr.ArgCall call = (ArgExpr.ArgCall) arg;
+                Program nested = FnArgs.getProgramByName(call.name());
+                commands.add(new Quotation(mappedInner, nested, call.args(), l, realIndex.getAndIncrement(), this));
+            }
+
+            labelApplied = true;
+        }
+
+        // 2) Inline the quoted program with variable and label remapping
+        boolean firstInner = !labelApplied; // if no preamble, attach our label to the first inner command
+        for (BaseCommand command : p.getCommands()){
             List<String> variables = new ArrayList<>(command.getPresentVariables());
             variables.replaceAll(oldToNewVariables::get);
             List<String> labels = new ArrayList<>(command.getLabelsForCopy());
             labels.replaceAll(oldToNewLabels::get);
+            if (firstInner && !label.equals(NO_LABEL) && !labels.isEmpty()) {
+                labels.set(0, label);
+                firstInner = false;
+            }
             List<Integer> constants = command.getConstantsForCopy();
             commands.add(command.copy(variables, constants, labels, realIndex.getAndIncrement(), this));
         }
-        commands.add(new Neutral(variableName, Lend, realIndex.getAndIncrement(), this));
+
+        // 3) Move inner result to destination variable
+        commands.add(new Assignment(variableName, oldToNewVariables.get("y"), lEnd, realIndex.getAndIncrement(), this));
 
         return commands;
     }

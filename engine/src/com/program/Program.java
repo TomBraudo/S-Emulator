@@ -25,6 +25,10 @@ public class Program implements Serializable {
         unpackCommands();
     }
 
+    public void addCommand(com.commands.BaseCommand command){
+        commands.add(command);
+    }
+
     /*
         The method receives input for the program, runs it, and return the programState.
         Result at programState.variables.get("y")
@@ -170,6 +174,7 @@ public class Program implements Serializable {
     public List<BaseCommand> getCommands() {
         return Collections.unmodifiableList(commands);
     }
+
 
     public static Program createProgram(String name, List<SInstruction> instructions) {
         List<BaseCommand> commands = new ArrayList<>();

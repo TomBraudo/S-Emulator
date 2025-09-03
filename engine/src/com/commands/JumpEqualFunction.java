@@ -4,34 +4,45 @@ import com.api.ProgramResult;
 import com.program.Program;
 import com.program.ProgramState;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class JumpEqualFunction extends BaseCommand{
+class JumpEqualFunction extends BaseCommand{
 
     String variableName;
     String targetLabel;
     Program p;
-    List<String> input;
+    // Each element is either String (variable name) or ArgExpr.ArgCall (nested function call)
+    List<Object> input;
 
-    JumpEqualFunction(String variableName, String targetLabel, Program p, List<String> input, String label, int index, BaseCommand creator) {
+    // Unified constructor: accepts either List<String> or List<ArgExpr.ArgCall> or a mixed List<?>
+    JumpEqualFunction(String variableName, String targetLabel, Program p, List<?> input, String label, int index, BaseCommand creator) {
         super(label, index, creator);
         this.variableName = variableName;
         this.targetLabel = targetLabel;
         this.p = p;
-        this.input = input;
+        // Normalize to List<Object> while validating element types
+        List<Object> normalized = new ArrayList<>(input == null ? 0 : input.size());
+        if (input != null) {
+            for (Object o : input) {
+                if (o instanceof String || o instanceof ArgExpr.ArgCall) {
+                    normalized.add(o);
+                } else {
+                    throw new IllegalArgumentException("Unsupported argument element type: " + o);
+                }
+            }
+        }
+        this.input = normalized;
         cycles = 6;
     }
 
     @Override
     public void execute(ProgramState programState) {
-        List<Integer> input = new ArrayList<>();
-        for (String s : this.input){
-            input.add(programState.variables.get(s).getValue());
-        }
-
-        ProgramResult res = p.execute(input);
+        List<Integer> evaluated = FnArgs.evaluateArgs(programState, input);
+        ProgramResult res = p.execute(evaluated);
 
         if(programState.variables.get(variableName).getValue() == res.getResult()){
             if (targetLabel.equals(EXIT_LABEL)){
@@ -55,13 +66,17 @@ public class JumpEqualFunction extends BaseCommand{
 
     @Override
     protected String toStringBase() {
+        List<String> parts = FnArgs.renderArgList(input);
         return String.format("#%d (S) [ %s ] IF %s = %s(", index + 1, displayLabel(), variableName, p.getName()) +
-                String.join(",", input) + ")" + String.format(" GOTO %s (%d)", targetLabel, cycles);
+                String.join(",", parts) + ")" + String.format(" GOTO %s (%d)", targetLabel, cycles);
     }
 
     @Override
     public List<String> getPresentVariables() {
-        return List.of(variableName);
+        List<String> vars = new ArrayList<>();
+        vars.add(variableName);
+        vars.addAll(FnArgs.collectVariables(input));
+        return vars;
     }
 
     @Override
@@ -83,13 +98,12 @@ public class JumpEqualFunction extends BaseCommand{
         return targetLabel;
     }
 
-
-
     @Override
     public BaseCommand copy(List<String> variables, List<Integer> constants, List<String> labels, int index, BaseCommand creator) {
         String variable = variables.get(0);
-        List<String> input = new ArrayList<>(variables.subList(1, variables.size()));
-        return new JumpEqualFunction(variable, labels.get(0), p, input, labels.get(1), index, creator);
+        Deque<String> mapped = new ArrayDeque<>(variables.subList(1, variables.size()));
+        List<Object> newInput = FnArgs.replaceVarsInArgs(this.input, mapped);
+        return new JumpEqualFunction(variable, labels.get(0), p, newInput, labels.get(1), index, creator);
     }
 
     @Override
