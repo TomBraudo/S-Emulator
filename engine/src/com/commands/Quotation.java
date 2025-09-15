@@ -89,37 +89,31 @@ class Quotation extends BaseCommand{
         String lEnd = "L" + nextAvailableLabel.getAndIncrement();
         oldToNewLabels.put(BaseCommand.EXIT_LABEL, lEnd);
 
+        commands.add(new Neutral("y", label, realIndex.getAndIncrement(), this));
+
         // 1) Compute preamble: for each input arg, prepare the corresponding fresh inner input variable
         List<String> innerInputs = p.getInputVariables();
-        boolean labelApplied = false;
         for (int i = 0; i < input.size(); i++) {
             String innerVar = innerInputs.get(i);                    // e.g., x1, x2
             String mappedInner = oldToNewVariables.get(innerVar);    // fresh zK for inner x_i
-            String l = (!labelApplied ? label : NO_LABEL);
             Object arg = input.get(i);
             if (arg instanceof String varName) {
-                commands.add(new Assignment(mappedInner, varName, l, realIndex.getAndIncrement(), this));
+                commands.add(new Assignment(mappedInner, varName, BaseCommand.NO_LABEL, realIndex.getAndIncrement(), this));
             }
             else {
                 ArgExpr.ArgCall call = (ArgExpr.ArgCall) arg;
                 Program nested = FnArgs.getProgramByName(call.name());
-                commands.add(new Quotation(mappedInner, nested, call.args(), l, realIndex.getAndIncrement(), this));
+                commands.add(new Quotation(mappedInner, nested, call.args(), BaseCommand.NO_LABEL, realIndex.getAndIncrement(), this));
             }
 
-            labelApplied = true;
         }
 
         // 2) Inline the quoted program with variable and label remapping
-        boolean firstInner = !labelApplied; // if no preamble, attach our label to the first inner command
         for (BaseCommand command : p.getCommands()){
             List<String> variables = new ArrayList<>(command.getPresentVariables());
             variables.replaceAll(oldToNewVariables::get);
             List<String> labels = new ArrayList<>(command.getLabelsForCopy());
             labels.replaceAll(oldToNewLabels::get);
-            if (firstInner && !label.equals(NO_LABEL) && !labels.isEmpty()) {
-                labels.set(0, label);
-                firstInner = false;
-            }
             List<Integer> constants = command.getConstantsForCopy();
             commands.add(command.copy(variables, constants, labels, realIndex.getAndIncrement(), this));
         }

@@ -35,14 +35,14 @@ public class Main {
         quotedArgs.add(inner);
 
         List<Object> inputForAddition = new ArrayList<>();
-        inputForAddition.add("y");
         inputForAddition.add("x1");
+        inputForAddition.add("x2");
 
         // Build a program that performs: y <- (q, (q, y))
-        Quotation quotation = new Quotation("y", q, quotedArgs, BaseCommand.NO_LABEL, 0, null);
-        Quotation q2 = new Quotation("y", addition, inputForAddition, BaseCommand.NO_LABEL, 1, null);
-        Program test = new Program("test", List.of(quotation,q2));
-        System.out.println(test.expand(1));
-        // Execute: starting y assumed 0, so (q, (q, y)) => (q, (q, 0)) = (q, 1) = 2
+        JumpEqualFunction jef = new JumpEqualFunction("x3", BaseCommand.EXIT_LABEL, addition, inputForAddition, BaseCommand.NO_LABEL, 0, null);
+        Increase incY1 = new Increase("y", BaseCommand.NO_LABEL, 1,null);
+        Program p = new Program("p", List.of(jef, incY1));
+        System.out.println(p);
+        System.out.println(p.execute(List.of(1, 2, 4)).getResult());
     }
 }
