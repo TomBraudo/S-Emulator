@@ -7,7 +7,6 @@
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.text.Font?>
 
-
 <ScrollPane fitToHeight="true" fitToWidth="true" prefHeight="662.0" prefWidth="395.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.app.ui.inputComponent.InputFormController">
     <content>
         <AnchorPane prefHeight="680.0" prefWidth="389.0">
@@ -29,7 +28,7 @@
 
                 <Button fx:id="finishBtn" layoutX="141.0" layoutY="605.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="123.0" style="-fx-background-color: #38cb82; -fx-border-color: black; -fx-border-width: 2;" text="Finish" />
 
-                <TextField fx:id="inputVariableTextField" layoutX="210.0" layoutY="208.0" prefHeight="42.0" prefWidth="47.0" promptText="xi">
+                <TextField fx:id="inputVariableTextField" layoutX="210.0" layoutY="208.0" prefHeight="44.0" prefWidth="96.0" promptText="xi">
                     <font>
                         <Font size="20.0" />
                     </font>

@@ -89,5 +89,6 @@
         <SOURCES />
       </library>
     </orderEntry>
+    <orderEntry type="library" name="angus-activation" level="project" />
   </component>
 </module>

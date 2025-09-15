@@ -1,5 +1,6 @@
 package com.api;
 import com.XMLHandlerV2.SProgram;
+import com.commands.BaseCommand;
 import com.commands.CommandFactory;
 import com.program.Program;
 import jakarta.xml.bind.JAXBContext;
@@ -65,6 +66,10 @@ public class Api {
 
     public static List<String> getInputVariableNames(){
         return curProgram.getInputVariables();
+    }
+
+    public static List<String> getProgramCommands(){
+        return curProgram.getCommands().stream().map(BaseCommand::toString).toList();
     }
 
     public static List<String> getStateFileNames(String path){

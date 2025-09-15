@@ -1,13 +1,19 @@
 package com.app.ui;
 
+import com.api.Api;
+import com.api.ProgramResult;
+import com.app.ui.errorComponents.ErrorMessageController;
 import com.app.ui.inputComponent.InputFormController;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.ToggleButton;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -17,22 +23,157 @@ import java.util.*;
 
 public class MainController {
     @FXML
+    private Label cyclesLabel;
+    @FXML
+    private VBox variablesContainer;
+    @FXML
+    private Button loadProgramBtn;
+    @FXML
+    private Label filePathLabel;
+    @FXML
     private Button newInputBtn;
     @FXML
     private ScrollPane inputScrollPane;
     @FXML
-    private AnchorPane inputDisplayPane; // Added this line
+    private AnchorPane inputDisplayPane;
     @FXML
     private VBox inputVbox;
+    @FXML
+    private ScrollPane programDisplayScrollPane;
+    @FXML
+    private VBox programDisplayVBox;
+    @FXML
+    private VBox actionsPanel;
+    @FXML
+    private ToggleButton debugBtn, executeBtn;
 
     private List<Integer> curInput;
+    private int curExpansionLevel = 0;
 
     @FXML
     public void initialize() {
-        // The inputDisplayPane is now directly injected by the FXMLLoader
-        // We will add the VBox in FXML instead of here.
-
         newInputBtn.setOnAction(event -> openInputForm());
+        loadProgramBtn.setOnAction(event -> loadSProgram());
+
+        setupToggleActions();
+    }
+
+    private void setupToggleActions() {
+        showExecuteActions();
+
+        executeBtn.setOnAction(event -> {
+            if(executeBtn.isSelected()){
+                showExecuteActions();
+                debugBtn.setSelected(false);
+            }
+        });
+
+        debugBtn.setOnAction(event -> {
+            if(debugBtn.isSelected()){
+                showDebugActions();
+                executeBtn.setSelected(false);
+            }
+        });
+    }
+
+    private void showExecuteActions() {
+        actionsPanel.getChildren().clear();
+
+        Button startExecution = new Button("Start execution");
+        startExecution.setOnAction(event -> executeProgram());
+        styleActionButton(startExecution);
+
+        actionsPanel.getChildren().add(startExecution);
+    }
+
+    private void showDebugActions() {
+        actionsPanel.getChildren().clear();
+
+        VBox debugBox = new VBox(10); // spacing 10
+        debugBox.setAlignment(Pos.CENTER);
+
+        Button startDebug = new Button("Start debugging");
+        Button stepOver = new Button("Step over");
+        Button stepBack = new Button("Step backwards");
+
+        styleActionButton(startDebug);
+        styleActionButton(stepOver);
+        styleActionButton(stepBack);
+
+        debugBox.getChildren().addAll(startDebug, stepOver, stepBack);
+
+        actionsPanel.getChildren().add(debugBox);
+    }
+
+    private void styleActionButton(Button button) {
+        button.setPrefWidth(150);
+        button.setStyle(
+                "-fx-background-color: #38cb82;" +
+                        "-fx-text-fill: white;" +
+                        "-fx-font-size: 14px;" +
+                        "-fx-background-radius: 8;" +
+                        "-fx-border-color: black;" +
+                        "-fx-border-width: 2;" +
+                        "-fx-border-radius: 8;" +
+                        "-fx-cursor: hand;"
+        );
+    }
+
+
+    private void executeProgram() {
+        ProgramResult res = Api.executeProgram(curInput, curExpansionLevel);
+        for(ProgramResult.VariableToValue var : res.getVariableToValue()){
+            Label varLabel = new Label(var.variable() + ": " + var.value());
+            varLabel.setStyle("-fx-font-weight: bold;");
+            variablesContainer.getChildren().add(varLabel);
+        }
+        cyclesLabel.setText("Cycles: " + res.getCycles());
+    }
+
+    private void loadSProgram() {
+        try {
+            openFileChooser();
+        } catch (Exception e) {
+            ErrorMessageController.showError("Failed to load S program:\n" + e.getMessage());
+            return;
+        }
+
+        List<String> commands = Api.getProgramCommands();
+
+        // Clear old items before adding new ones
+        programDisplayVBox.getChildren().clear();
+
+        for (String command : commands) {
+            Label commandLabel = new Label(command);
+            commandLabel.setStyle(
+                    "-fx-border-color: black; -fx-border-width: 1; -fx-padding: 5; "
+                            + "-fx-background-color: white;"
+            );
+            commandLabel.setMaxWidth(Double.MAX_VALUE);
+            commandLabel.setWrapText(true);
+
+            programDisplayVBox.getChildren().add(commandLabel);
+        }
+    }
+
+    private void openFileChooser() throws Exception {
+        javafx.stage.FileChooser fileChooser = new javafx.stage.FileChooser();
+
+        fileChooser.getExtensionFilters().addAll(
+                new javafx.stage.FileChooser.ExtensionFilter("Program Files", "*.xml"),
+                new javafx.stage.FileChooser.ExtensionFilter("All Files", "*.*")
+        );
+
+        Stage stage = (Stage) loadProgramBtn.getScene().getWindow();
+        java.io.File file = fileChooser.showOpenDialog(stage);
+
+        if (file != null) {
+            String filePath = file.getAbsolutePath();
+            Api.loadSProgram(file.getAbsolutePath());
+            filePathLabel.setText(filePath);
+        } else {
+            throw new Exception("No file selected");
+        }
     }
 
     private void openInputForm() {
@@ -42,60 +183,41 @@ public class MainController {
 
             InputFormController inputFormController = loader.getController();
 
-            // **1. Create the list of input variables you want to pass**
-            List<String> inputVariables = new ArrayList<>();
-            // Add your variables here. For example:
-            inputVariables.add("x1");
-            inputVariables.add("x2");
-            inputVariables.add("x3");
-            // Or you could retrieve them from another part of your application.
+            List<String> inputVariables = Api.getInputVariableNames();
 
-            // **2. Pass the list of variables to the form controller**
             inputFormController.initData(inputVariables);
 
-            // 3. Pass a callback to receive the map
             inputFormController.setDataCallback(inputMap -> {
-                // 4. When finish is called, print each entry as a label
                 displayInputData(inputMap);
             });
 
             Stage formStage = new Stage();
             formStage.setTitle("Input Form");
             formStage.setScene(new Scene(root));
-
-            // Make the main window not interactable while the form is open
             formStage.initModality(Modality.APPLICATION_MODAL);
             formStage.showAndWait();
 
         } catch (IOException e) {
-            e.printStackTrace();
+            ErrorMessageController.showError("Failed to load input form:\n" + e.getMessage());
         }
     }
 
-    // Inside com.app.ui.MainController
-
     private void displayInputData(Map<String, Integer> data) {
-        // Clear the VBox's children
         inputVbox.getChildren().clear();
 
-        // Create a custom Comparator to sort the keys numerically
         Comparator<String> numericComparator = (key1, key2) -> {
-            // Extract the integer part of the string keys (e.g., "x12" -> 12)
             int num1 = Integer.parseInt(key1.substring(1));
             int num2 = Integer.parseInt(key2.substring(1));
             return Integer.compare(num1, num2);
         };
 
-        // Create a TreeMap with the custom comparator to sort the map by index
         TreeMap<String, Integer> sortedData = new TreeMap<>(numericComparator);
-        sortedData.putAll(data); // Put all entries from the original map into the new sorted map
+        sortedData.putAll(data);
 
-        // Add a header
         Label header = new Label("Input Data Received:");
         header.setStyle("-fx-font-weight: bold;");
         inputVbox.getChildren().add(header);
 
-        // Add a new label for each entry, iterating through the sorted map
         for (Map.Entry<String, Integer> entry : sortedData.entrySet()) {
             Label dataLabel = new Label(entry.getKey() + ": " + entry.getValue());
             inputVbox.getChildren().add(dataLabel);
@@ -107,13 +229,11 @@ public class MainController {
             maxIndex = Integer.parseInt(lastKey.substring(1));
         }
 
-        // Create the List<Integer> with values for each variable from 1 to maxIndex
         curInput = new ArrayList<>();
         for (int i = 1; i <= maxIndex; i++) {
             String variableKey = "x" + i;
             int value = sortedData.getOrDefault(variableKey, 0);
             curInput.add(value);
         }
-
     }
 }

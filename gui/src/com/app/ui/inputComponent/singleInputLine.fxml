@@ -6,15 +6,15 @@
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane prefHeight="57.0" prefWidth="198.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1">
+<AnchorPane prefHeight="57.0" prefWidth="253.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1">
     <children>
-        <Button fx:id="xiDeleteBtn" layoutX="130.0" layoutY="5.0" mnemonicParsing="false" prefHeight="46.0" prefWidth="54.0" text="Delete" />
-        <TextField fx:id="xiTextField" layoutX="71.0" layoutY="5.0" prefHeight="25.0" prefWidth="45.0">
+        <Button layoutX="181.0" layoutY="5.0" mnemonicParsing="false" prefHeight="46.0" prefWidth="54.0" text="Delete" fx:id="xiDeleteBtn" />
+        <TextField layoutX="71.0" layoutY="5.0" prefHeight="46.0" prefWidth="94.0" fx:id="xiTextField">
             <font>
                 <Font size="22.0" />
             </font>
         </TextField>
-        <Label fx:id="xiLabel" alignment="CENTER" layoutX="14.0" layoutY="5.0" prefHeight="46.0" prefWidth="45.0" style="-fx-border-color: gray;" text="xi">
+        <Label alignment="CENTER" layoutX="14.0" layoutY="5.0" prefHeight="46.0" prefWidth="45.0" style="-fx-border-color: gray;" text="xi" fx:id="xiLabel">
             <font>
                 <Font size="27.0" />
             </font>
