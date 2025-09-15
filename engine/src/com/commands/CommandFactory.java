@@ -111,24 +111,32 @@ public class CommandFactory {
                             index,
                             null
                     );
-            case "QUOTE" -> new Quotation(
-                    variable,
-                    getProgramFromArg(argMap),
-                    FnArgs.parse(argMap.get("functionArguments")),
-                    safeLabel,
-                    index,
-                    null
-                );
+            case "QUOTE" -> {
+                    Program targetProgram = getProgramFromArg(argMap);
+                    int arity = FnArgs.getFunctionArity(argMap.get("functionName"));
+                    yield new Quotation(
+                            variable,
+                            targetProgram,
+                            FnArgs.parseWithArity(argMap.get("functionArguments"), arity),
+                            safeLabel,
+                            index,
+                            null
+                    );
+                }
 
-            case "JUMP_EQUAL_FUNCTION" -> new JumpEqualFunction(
-                    variable,
-                    argMap.get("JEFunctionLabel"),
-                    getProgramFromArg(argMap),
-                    FnArgs.parse(argMap.get("functionArguments")),
-                    safeLabel,
-                    index,
-                    null
-                );
+            case "JUMP_EQUAL_FUNCTION" -> {
+                    Program targetProgram = getProgramFromArg(argMap);
+                    int arity = FnArgs.getFunctionArity(argMap.get("functionName"));
+                    yield new JumpEqualFunction(
+                            variable,
+                            argMap.get("JEFunctionLabel"),
+                            targetProgram,
+                            FnArgs.parseWithArity(argMap.get("functionArguments"), arity),
+                            safeLabel,
+                            index,
+                            null
+                    );
+                }
 
             default -> throw new IllegalArgumentException("Unknown command name: " + name);
         };

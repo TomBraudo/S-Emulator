@@ -34,6 +34,8 @@ public final class FnArgs {
     private static final Map<String, List<SInstruction>> DEFINITIONS = new HashMap<>();
     // Function name -> compiled Program cache
     private static final Map<String, Program> PROGRAM_CACHE = new HashMap<>();
+    // Function name -> arity (number of expected input arguments)
+    private static final Map<String, Integer> FUNCTION_ARITY = new HashMap<>();
     // Guard set to detect recursive/self references during program build
     private static final java.util.Set<String> BUILDING = new java.util.HashSet<>();
 
@@ -43,10 +45,16 @@ public final class FnArgs {
     public static void registerFunctions(SFunctions functions) {
         DEFINITIONS.clear();
         PROGRAM_CACHE.clear();
+        FUNCTION_ARITY.clear();
         BUILDING.clear();
         if (functions == null) return;
         for (SFunction f : functions.getSFunction()) {
-            DEFINITIONS.put(f.getName(), f.getSInstructions().getSInstruction());
+            List<SInstruction> instructions = f.getSInstructions().getSInstruction();
+            DEFINITIONS.put(f.getName(), instructions);
+            
+            // Calculate and store the arity (max x-variable index)
+            int arity = calculateArity(instructions);
+            FUNCTION_ARITY.put(f.getName(), arity);
         }
         // Note: Programs are built lazily on first use via getProgramByName()
         // If you prefer eager build, iterate names and call getProgramByName(name) here.
@@ -82,6 +90,78 @@ public final class FnArgs {
     }
 
     /**
+     * Calculate the arity of a function by finding the highest x-variable index.
+     * For example, if the function uses x1, x5, x11, the arity is 11.
+     */
+    private static int calculateArity(List<SInstruction> instructions) {
+        int maxXIndex = 0;
+        
+        for (SInstruction instruction : instructions) {
+            // Check the main variable
+            String variable = instruction.getSVariable();
+            if (variable != null) {
+                maxXIndex = Math.max(maxXIndex, extractXIndex(variable));
+            }
+            
+            // Check arguments for variable references
+            if (instruction.getSInstructionArguments() != null) {
+                for (com.XMLHandlerV2.SInstructionArgument arg : instruction.getSInstructionArguments().getSInstructionArgument()) {
+                    String value = arg.getValue();
+                    if (value != null) {
+                        maxXIndex = Math.max(maxXIndex, findMaxXIndexInString(value));
+                    }
+                }
+            }
+        }
+        
+        return maxXIndex;
+    }
+
+    /**
+     * Extract the index from an x-variable (e.g., "x1" -> 1, "x11" -> 11)
+     * Returns 0 if not an x-variable.
+     */
+    private static int extractXIndex(String variable) {
+        if (variable != null && variable.startsWith("x") && variable.length() > 1) {
+            try {
+                return Integer.parseInt(variable.substring(1));
+            } catch (NumberFormatException e) {
+                // Not a valid x-variable format
+            }
+        }
+        return 0;
+    }
+
+    /**
+     * Find the maximum x-variable index in a string that might contain function arguments.
+     * For example, "(g, x1, x5)" would return 5.
+     */
+    private static int findMaxXIndexInString(String str) {
+        int maxIndex = 0;
+        // Simple regex to find x-variables in the string
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\bx(\\d+)\\b");
+        java.util.regex.Matcher matcher = pattern.matcher(str);
+        
+        while (matcher.find()) {
+            try {
+                int index = Integer.parseInt(matcher.group(1));
+                maxIndex = Math.max(maxIndex, index);
+            } catch (NumberFormatException e) {
+                // Skip invalid numbers
+            }
+        }
+        
+        return maxIndex;
+    }
+
+    /**
+     * Get the arity (expected number of input arguments) for a function.
+     */
+    public static int getFunctionArity(String functionName) {
+        return FUNCTION_ARITY.getOrDefault(functionName, 0);
+    }
+
+    /**
      * Parse a functionArguments attribute into a list whose elements are either:
      * - String (variable name), or
      * - ArgExpr.ArgCall (nested function invocation)
@@ -101,6 +181,40 @@ public final class FnArgs {
             t.expect(")");
         } else {
             // Unbracketed CSV list: elem,elem,...
+            result = parseArgList(t);
+        }
+        t.expectEnd();
+        return result;
+    }
+
+    /**
+     * Context-aware parsing that considers the expected number of arguments.
+     * This is the main parsing method that should be used for QUOTE and JUMP_EQUAL_FUNCTION.
+     * 
+     * @param raw The raw argument string from XML
+     * @param expectedArgCount The number of arguments the target function expects
+     * @return List of parsed arguments (String variables or ArgExpr.ArgCall function calls)
+     */
+    public static List<Object> parseWithArity(String raw, int expectedArgCount) {
+        if (raw == null) return List.of();
+        String trimmed = raw.trim();
+        if (trimmed.isEmpty()) return List.of();
+
+        TokenStream t = new TokenStream(trimmed);
+        
+        List<Object> result;
+        if (expectedArgCount == 1 && t.peekIs("(")) {
+            // For single argument, try parsing as one element first
+            // This handles "(Successor,x1)" as a single function call
+            result = List.of(parseElem(t));
+        } else if (t.peekIs("(")) {
+            // For multiple arguments, parse as list
+            // This handles "(Const7,(Successor,x1))" as two separate elements
+            t.consume("(");
+            result = parseArgList(t);
+            t.expect(")");
+        } else {
+            // No parentheses, parse as CSV
             result = parseArgList(t);
         }
         t.expectEnd();
@@ -215,11 +329,17 @@ public final class FnArgs {
             // Function call in bracketed form: (Name, arg1, arg2, ...)
             t.consume("(");
             String name = t.readIdent();
+            
+            // Get the arity of this function to parse exactly the right number of arguments
+            int arity = getFunctionArity(name);
             List<Object> inner = new ArrayList<>();
-            if (!t.peekIs(")")) {
-                t.expect(",");
-                inner = parseArgList(t);
+            
+            // Parse exactly 'arity' number of arguments
+            for (int i = 0; i < arity; i++) {
+                t.expect(","); // Expect comma before each argument
+                inner.add(parseElem(t)); // Recursive parsing for each argument
             }
+            
             t.expect(")");
             return new ArgExpr.ArgCall(name, inner);
         } else {
@@ -234,7 +354,7 @@ public final class FnArgs {
     }
 
     private static boolean looksLikeVariable(String ident) {
-        // Heuristic: variables like x1, z2, etc. Adjust as needed for your naming.
+        // Heuristic: variables like x1, z2, etc. Both input (x) and work (z) variables.
         return ident.matches("[xz][A-Za-z0-9_]*\\d+");
     }
 
@@ -296,5 +416,18 @@ public final class FnArgs {
         private IllegalArgumentException error(String msg) {
             return new IllegalArgumentException(msg + " at pos " + i);
         }
+    }
+
+    public static List<String> getFunctionNames() {
+        return new ArrayList<>(DEFINITIONS.keySet());
+    }
+
+    public static List<String> getFunctionCommands(String functionName){
+        List<String> commands = new ArrayList<>();
+        for(BaseCommand c : getProgramByName(functionName).getCommands()){
+            commands.add(c.toString());
+        }
+
+        return commands;
     }
 }

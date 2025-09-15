@@ -7,11 +7,9 @@ import com.app.ui.inputComponent.InputFormController;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.ToggleButton;
+import javafx.scene.control.*;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
@@ -22,6 +20,10 @@ import java.io.IOException;
 import java.util.*;
 
 public class MainController {
+    @FXML
+    private ComboBox<Integer> expansionLevelMenu;
+    @FXML
+    private ComboBox<String> programSelectorMenu;
     @FXML
     private Label cyclesLabel;
     @FXML
@@ -47,7 +49,7 @@ public class MainController {
     @FXML
     private ToggleButton debugBtn, executeBtn;
 
-    private List<Integer> curInput;
+    private List<Integer> curInput = new ArrayList<>();
     private int curExpansionLevel = 0;
 
     @FXML
@@ -56,6 +58,8 @@ public class MainController {
         loadProgramBtn.setOnAction(event -> loadSProgram());
 
         setupToggleActions();
+        initExpansionLevelMenu();
+        initProgramSelectorMenu();
     }
 
     private void setupToggleActions() {
@@ -122,6 +126,9 @@ public class MainController {
 
     private void executeProgram() {
         ProgramResult res = Api.executeProgram(curInput, curExpansionLevel);
+
+        variablesContainer.getChildren().removeIf(node -> !Objects.equals(node.getId(), "variablesContainerHeader"));
+
         for(ProgramResult.VariableToValue var : res.getVariableToValue()){
             Label varLabel = new Label(var.variable() + ": " + var.value());
             varLabel.setStyle("-fx-font-weight: bold;");
@@ -138,11 +145,54 @@ public class MainController {
             return;
         }
 
-        List<String> commands = Api.getProgramCommands();
+        List<String> commands = Api.getProgramCommands(curExpansionLevel);
 
         // Clear old items before adding new ones
-        programDisplayVBox.getChildren().clear();
+        printLoadedProgram(commands);
 
+        populateExpansionLevelMenu();
+        populateProgramChooser();
+    }
+
+    private void populateExpansionLevelMenu() {
+        expansionLevelMenu.getItems().setAll(
+                java.util.stream.IntStream.rangeClosed(0, Api.getMaxLevel())
+                        .boxed()
+                        .toList()
+        );
+        curExpansionLevel = 0;
+        expansionLevelMenu.getSelectionModel().selectFirst();
+    }
+
+    private void populateProgramChooser() {
+        programSelectorMenu.getItems().setAll(Api.getCurProgramName());
+        programSelectorMenu.getItems().addAll(Api.getAvailableFunctions());
+        programSelectorMenu.getSelectionModel().selectFirst();
+    }
+
+    private void initExpansionLevelMenu() {
+        expansionLevelMenu.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal != null) {
+                curExpansionLevel = newVal;
+                List<String> commands = Api.getProgramCommands(curExpansionLevel);
+                printLoadedProgram(commands);
+            }
+        });
+    }
+
+    private void initProgramSelectorMenu() {
+        programSelectorMenu.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal != null) {
+                List<String> commands = Api.getFunctionCommands(newVal, curExpansionLevel);
+                printLoadedProgram(commands);
+                Api.setCurProgram(newVal);
+                populateExpansionLevelMenu(); // safe now, no duplicate listener
+            }
+        });
+    }
+
+    private void printLoadedProgram(List<String> commands) {
+        programDisplayVBox.getChildren().clear();
         for (String command : commands) {
             Label commandLabel = new Label(command);
             commandLabel.setStyle(
@@ -155,6 +205,7 @@ public class MainController {
             programDisplayVBox.getChildren().add(commandLabel);
         }
     }
+
 
     private void openFileChooser() throws Exception {
         javafx.stage.FileChooser fileChooser = new javafx.stage.FileChooser();

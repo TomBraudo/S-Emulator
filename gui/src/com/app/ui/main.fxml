@@ -3,6 +3,7 @@
 <?import com.gluonhq.charm.glisten.control.ToggleButtonGroup?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.ToggleButton?>
@@ -17,11 +18,7 @@
             <children>
                 <Button fx:id="loadProgramBtn" layoutX="18.0" layoutY="27.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="103.0" style="-fx-background-color: #38cb82; -fx-border-color: black; -fx-border-width: 2; -fx-border-style: solid;;" text="Load Program" />
                 <Label fx:id="filePathLabel" alignment="CENTER" contentDisplay="CENTER" layoutX="131.0" layoutY="27.0" prefHeight="40.0" prefWidth="1018.0" style="-fx-border-color: black; -fx-border-width: 2;" text="Currently Loaded File Path" textAlignment="CENTER" />
-                <Button id="programSelectorBtn" layoutX="18.0" layoutY="107.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="164.0" style="-fx-background-color: #38cb82; -fx-border-color: black; -fx-border-width: 2;" text="Program selector" />
-                <Button id="collapseBtn" layoutX="192.0" layoutY="107.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="103.0" style="-fx-background-color: #38cb82; -fx-border-color: black; -fx-border-width: 2;" text="Collapse" />
-                <Button id="expandBtn" layoutX="418.0" layoutY="107.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="103.0" style="-fx-background-color: #38cb82; -fx-border-color: black; -fx-border-width: 2;" text="Expand" />
-                <Label id="degreeLabel" alignment="CENTER" layoutX="304.0" layoutY="107.0" prefHeight="40.0" prefWidth="103.0" style="-fx-border-color: black; -fx-border-width: 2;" text="Current/Maximum degree" textAlignment="CENTER" wrapText="true" />
-                <Label alignment="CENTER" layoutX="531.0" layoutY="107.0" prefHeight="40.0" prefWidth="158.0" style="-fx-border-color: black; -fx-border-width: 2;" text="Highlight selection" textAlignment="CENTER" wrapText="true" />
+                <Label alignment="CENTER" layoutX="310.0" layoutY="107.0" prefHeight="40.0" prefWidth="158.0" style="-fx-border-color: black; -fx-border-width: 2;" text="Highlight selection" textAlignment="CENTER" wrapText="true" />
                 <Pane layoutX="706.0" layoutY="107.0" prefHeight="491.0" prefWidth="442.0" style="-fx-border-color: black; -fx-border-width: 2;">
                     <children>
                   <ScrollPane fx:id="programDisplayScrollPane1" fitToWidth="true" layoutX="23.0" layoutY="208.0" prefHeight="167.0" prefWidth="181.0" style="-fx-background-color: black; -fx-border-width: 2;">
@@ -31,7 +28,7 @@
                               <Insets bottom="10" left="10" right="10" top="10" />
                            </padding>
                            <children>
-                              <Label contentDisplay="CENTER" text="Variables values:">
+                              <Label fx:id="variablesContainerHeader" contentDisplay="CENTER" text="Variables values:">
                                  <font>
                                     <Font size="18.0" />
                                  </font>
@@ -71,6 +68,8 @@
                         </VBox>
                     </content>
                 </ScrollPane>
+            <ComboBox fx:id="programSelectorMenu" layoutX="20.0" layoutY="107.0" prefHeight="39.0" prefWidth="161.0" style="-fx-background-color: #38cb82; -fx-border-color: black; -fx-border-width: 2;" />
+            <ComboBox fx:id="expansionLevelMenu" layoutX="195.0" layoutY="107.0" prefHeight="39.0" prefWidth="100.0" style="-fx-background-color: #38cb82; -fx-border-color: black; -fx-border-width: 2;" />
 
 
             </children>

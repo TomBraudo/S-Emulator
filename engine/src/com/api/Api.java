@@ -2,6 +2,7 @@ package com.api;
 import com.XMLHandlerV2.SProgram;
 import com.commands.BaseCommand;
 import com.commands.CommandFactory;
+import com.commands.FnArgs;
 import com.program.Program;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
@@ -15,6 +16,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class Api {
     private static Program curProgram;
@@ -29,6 +31,7 @@ public class Api {
         SProgram sp = ((SProgram) um.unmarshal(new File(path)));
         CommandFactory.registerFunctions(sp.getSFunctions());
         curProgram = Program.createProgram(sp.getName(), sp.getSInstructions().getSInstruction());
+        FnArgs.registerProgram(curProgram.getName(), curProgram);
         Statistic.clearStatistics();
     }
 
@@ -68,8 +71,19 @@ public class Api {
         return curProgram.getInputVariables();
     }
 
-    public static List<String> getProgramCommands(){
-        return curProgram.getCommands().stream().map(BaseCommand::toString).toList();
+    public static List<String> getProgramCommands(int expansionLevel){
+        return curProgram.expand(expansionLevel).getCommands().stream().map(BaseCommand::toString).toList();
+    }
+
+    public static List<String> getAvailableFunctions(){
+        return FnArgs.getFunctionNames();
+    }
+    public static List<String> getFunctionCommands(String functionName, int expansionLevel){
+        Program p = FnArgs.getProgramByName(functionName).expand(expansionLevel);
+        return p.getCommands().stream().map(BaseCommand::toString).toList();
+    }
+    public static void setCurProgram(String functionName){
+        curProgram = FnArgs.getProgramByName(functionName);
     }
 
     public static List<String> getStateFileNames(String path){

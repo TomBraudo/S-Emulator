@@ -22,7 +22,10 @@ public class ProgramResult{
                 variableToValue.add(new VariableToValue(variableName, variables.get(variableName)));
             }
         }
-        variableToValue.sort(Comparator.comparing(VariableToValue::variable));
+        variableToValue.sort(Comparator
+                .<VariableToValue, Character>comparing(v -> v.variable().charAt(0)) // first by prefix
+                .thenComparingInt(v -> Integer.parseInt(v.variable().substring(1))) // then by number
+        );
         variableToValue.addFirst(new VariableToValue("y", variables.get("y")));
     }
 
