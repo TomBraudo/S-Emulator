@@ -80,4 +80,9 @@ class ConstantAssignment extends BaseCommand {
     protected List<Integer> getConstantsForCopy() {
         return List.of(value);
     }
+
+    @Override
+    public boolean isBaseCommand() {
+        return false;
+    }
 }

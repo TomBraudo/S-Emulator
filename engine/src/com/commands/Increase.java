@@ -52,6 +52,11 @@ class Increase extends BaseCommand {
     }
 
     @Override
+    public boolean isBaseCommand() {
+        return true;
+    }
+
+    @Override
     public List<String> getPresentVariables() {
         List<String> variables = new ArrayList<>();
         variables.add(variableName);

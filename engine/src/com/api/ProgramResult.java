@@ -6,10 +6,13 @@ public class ProgramResult{
     private int result;
     public record VariableToValue(String variable, int value){}
     private List<VariableToValue> variableToValue;
-    public ProgramResult(int cycles, HashMap<String, Integer> variables){
+    private int debugIndex;
+    private boolean isDebug;
+    public ProgramResult(int cycles, HashMap<String, Integer> variables, int debugIndex, boolean isDebug){
         this.cycles = cycles;
+        this.debugIndex = debugIndex;
+        this.isDebug = isDebug;
         UnpackVariables(variables);
-
     }
 
     private void UnpackVariables(HashMap<String, Integer> variables){
@@ -38,4 +41,11 @@ public class ProgramResult{
     public List<VariableToValue> getVariableToValue() {
         return Collections.unmodifiableList(variableToValue);
     }
+    public int getDebugIndex() {
+        return debugIndex;
+    }
+    public boolean isDebug() {
+        return isDebug;
+    }
+
 }

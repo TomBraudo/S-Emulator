@@ -115,4 +115,9 @@ class JumpEqualFunction extends BaseCommand{
     protected List<Integer> getConstantsForCopy() {
         return List.of();
     }
+
+    @Override
+    public boolean isBaseCommand() {
+        return false;
+    }
 }

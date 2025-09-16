@@ -11,6 +11,7 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
@@ -18,8 +19,11 @@ import javafx.stage.Stage;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.function.IntConsumer;
 
 public class MainController {
+    @FXML
+    private ComboBox<String> highlightSelectorMenu;
     @FXML
     private ComboBox<Integer> expansionLevelMenu;
     @FXML
@@ -49,8 +53,13 @@ public class MainController {
     @FXML
     private ToggleButton debugBtn, executeBtn;
 
+    private Button stepOverBtn;
+    private Button continueBtn;
+    private Button stopBtn;
+
     private List<Integer> curInput = new ArrayList<>();
     private int curExpansionLevel = 0;
+    private final Map<String, Integer> lastVariableValues = new HashMap<>();
 
     @FXML
     public void initialize() {
@@ -60,6 +69,7 @@ public class MainController {
         setupToggleActions();
         initExpansionLevelMenu();
         initProgramSelectorMenu();
+        initHighlightSelectorMenu();
     }
 
     private void setupToggleActions() {
@@ -97,14 +107,36 @@ public class MainController {
         debugBox.setAlignment(Pos.CENTER);
 
         Button startDebug = new Button("Start debugging");
-        Button stepOver = new Button("Step over");
-        Button stepBack = new Button("Step backwards");
+        stepOverBtn = new Button("Step over");
+        stopBtn = new Button("Stop");
+        continueBtn = new Button("Continue");
 
         styleActionButton(startDebug);
-        styleActionButton(stepOver);
-        styleActionButton(stepBack);
+        styleActionButton(stepOverBtn);
+        styleActionButton(stopBtn);
+        styleActionButton(continueBtn);
 
-        debugBox.getChildren().addAll(startDebug, stepOver, stepBack);
+        // skeleton handlers
+        startDebug.setOnAction(e -> startDebuggingProgram());
+        stepOverBtn.setOnAction(e -> stepOverInstruction());
+        stopBtn.setOnAction(e -> stopDebugging());
+        continueBtn.setOnAction(e -> continueDebug());
+
+        // Initialize buttons disabled; they will be enabled after start/step/continue via writeVariablesState
+        stepOverBtn.setDisable(true);
+        stopBtn.setDisable(true);
+        continueBtn.setDisable(true);
+
+        // Two rows: [Start debugging, Step over] and [Stop, Continue]
+        HBox row1 = new HBox(10);
+        row1.setAlignment(Pos.CENTER);
+        row1.getChildren().addAll(startDebug, stepOverBtn);
+
+        HBox row2 = new HBox(10);
+        row2.setAlignment(Pos.CENTER);
+        row2.getChildren().addAll(stopBtn, continueBtn);
+
+        debugBox.getChildren().addAll(row1, row2);
 
         actionsPanel.getChildren().add(debugBox);
     }
@@ -123,7 +155,6 @@ public class MainController {
         );
     }
 
-
     private void executeProgram() {
         ProgramResult res = Api.executeProgram(curInput, curExpansionLevel);
 
@@ -135,6 +166,104 @@ public class MainController {
             variablesContainer.getChildren().add(varLabel);
         }
         cyclesLabel.setText("Cycles: " + res.getCycles());
+    }
+
+    private void startDebuggingProgram(){
+        if(!Api.isLoaded()){
+            ErrorMessageController.showError("Program not loaded, can't debug");
+            return;
+        }
+        ProgramResult res = Api.startDebugging(curInput, curExpansionLevel, new ArrayList<>(breakpointIndices));
+
+        // Update variables view each debug step
+        writeVariablesState(res);
+    }
+
+    private void setHighlightedIndex(int highlightedIndex){
+        for (int i = 0; i < programDisplayVBox.getChildren().size(); i++){
+            javafx.scene.Node n = programDisplayVBox.getChildren().get(i);
+            if (n instanceof javafx.scene.layout.HBox row){
+                Object controllerObj = row.getProperties().get("controller");
+                if (controllerObj instanceof com.app.ui.commandRow.CommandRowController crc){
+                    crc.setHighlighted(i == highlightedIndex);
+                }
+            }
+        }
+    }
+
+    private void stepOverInstruction(){
+        if(!Api.isLoaded()){
+            ErrorMessageController.showError("Program not loaded, can't step");
+            return;
+        }
+        ProgramResult res = Api.stepOver();
+
+        writeVariablesState(res);
+    }
+    
+    private void continueDebug(){
+        if(!Api.isLoaded()){
+            ErrorMessageController.showError("Program not loaded, can't continue");
+            return;
+        }
+        ProgramResult res = Api.continueDebug();
+
+        writeVariablesState(res);
+    }
+
+    private void stopDebugging(){
+        if(!Api.isLoaded()){
+            ErrorMessageController.showError("Program not loaded, can't stop");
+            return;
+        }
+        Api.stopDebug();
+        // After stopping, clear highlights and disable buttons
+        setHighlightedIndex(-1);
+        if (stepOverBtn != null) stepOverBtn.setDisable(true);
+        if (stopBtn != null) stopBtn.setDisable(true);
+        if (continueBtn != null) continueBtn.setDisable(true);
+    }
+
+    private void writeVariablesState(ProgramResult res) {
+        variablesContainer.getChildren().removeIf(node -> !Objects.equals(node.getId(), "variablesContainerHeader"));
+
+        // Build a map of current variable values to detect changes
+        Map<String, Integer> currentValues = new HashMap<>();
+        for (ProgramResult.VariableToValue var : res.getVariableToValue()) {
+            currentValues.put(var.variable(), var.value());
+        }
+
+        for(ProgramResult.VariableToValue var : res.getVariableToValue()){
+            String name = var.variable();
+            int value = var.value();
+            Label varLabel = new Label(name + ": " + value);
+            // Highlight if value changed compared to previous step
+            Integer prev = lastVariableValues.get(name);
+            if (prev != null && prev != value) {
+                varLabel.setStyle("-fx-font-weight: bold; -fx-background-color: #b7f7b0;");
+            } else {
+                varLabel.setStyle("-fx-font-weight: bold;");
+            }
+            variablesContainer.getChildren().add(varLabel);
+        }
+
+        // Update last seen values for next comparison
+        lastVariableValues.clear();
+        lastVariableValues.putAll(currentValues);
+        cyclesLabel.setText("Cycles: " + res.getCycles());
+
+        if(res.isDebug()){
+            int idx = res.getDebugIndex();
+            setHighlightedIndex(idx);
+            if (stepOverBtn != null) stepOverBtn.setDisable(false);
+            if (stopBtn != null) stopBtn.setDisable(false);
+            if (continueBtn != null) continueBtn.setDisable(false);
+        } else {
+            setHighlightedIndex(-1);
+            if (stepOverBtn != null) stepOverBtn.setDisable(true);
+            if (stopBtn != null) stopBtn.setDisable(true);
+            if (continueBtn != null) continueBtn.setDisable(true);
+        }
     }
 
     private void loadSProgram() {
@@ -152,6 +281,7 @@ public class MainController {
 
         populateExpansionLevelMenu();
         populateProgramChooser();
+        populateHighlightSelector();
     }
 
     private void populateExpansionLevelMenu() {
@@ -176,6 +306,7 @@ public class MainController {
                 curExpansionLevel = newVal;
                 List<String> commands = Api.getProgramCommands(curExpansionLevel);
                 printLoadedProgram(commands);
+                populateHighlightSelector();
             }
         });
     }
@@ -187,25 +318,135 @@ public class MainController {
                 printLoadedProgram(commands);
                 Api.setCurProgram(newVal);
                 populateExpansionLevelMenu(); // safe now, no duplicate listener
+                populateHighlightSelector();
             }
         });
     }
 
-    private void printLoadedProgram(List<String> commands) {
-        programDisplayVBox.getChildren().clear();
-        for (String command : commands) {
-            Label commandLabel = new Label(command);
-            commandLabel.setStyle(
-                    "-fx-border-color: black; -fx-border-width: 1; -fx-padding: 5; "
-                            + "-fx-background-color: white;"
-            );
-            commandLabel.setMaxWidth(Double.MAX_VALUE);
-            commandLabel.setWrapText(true);
+    private void initHighlightSelectorMenu(){
+        populateHighlightSelector();
+        highlightSelectorMenu.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+            applySearchHighlight(newVal);
+        });
+    }
 
-            programDisplayVBox.getChildren().add(commandLabel);
+    private void populateHighlightSelector(){
+        if (!Api.isLoaded()){
+            highlightSelectorMenu.getItems().setAll("None");
+            highlightSelectorMenu.getSelectionModel().selectFirst();
+            return;
+        }
+        List<String> labels = Api.getLabels(curExpansionLevel);
+        List<String> variables = Api.getVariables(curExpansionLevel);
+        List<String> items = new ArrayList<>();
+        items.add("None");
+        items.addAll(labels);
+        items.addAll(variables);
+        highlightSelectorMenu.getItems().setAll(items);
+        highlightSelectorMenu.getSelectionModel().selectFirst();
+    }
+
+    private void applySearchHighlight(String selection){
+        String token = selection;
+        if (token == null || token.equals("None")){
+            // clear all search highlights
+            for (javafx.scene.Node n : programDisplayVBox.getChildren()){
+                if (n instanceof javafx.scene.layout.HBox row){
+                    Object controllerObj = row.getProperties().get("controller");
+                    if (controllerObj instanceof com.app.ui.commandRow.CommandRowController crc){
+                        crc.setSearchHighlighted(false);
+                    }
+                }
+            }
+            return;
+        }
+
+        List<String> tokensToMatch = new ArrayList<>();
+        if (token.startsWith("L")){
+            tokensToMatch.add(token);
+        } else if (token.startsWith("x") || token.startsWith("z")){
+            String suffix = token.substring(1);
+            tokensToMatch.add("x" + suffix);
+            tokensToMatch.add("z" + suffix);
+        } else {
+            // fallback: match raw token
+            tokensToMatch.add(token);
+        }
+
+        for (javafx.scene.Node n : programDisplayVBox.getChildren()){
+            if (n instanceof javafx.scene.layout.HBox row){
+                Object controllerObj = row.getProperties().get("controller");
+                if (controllerObj instanceof com.app.ui.commandRow.CommandRowController crc){
+                    String text = crc.getCommandText();
+                    boolean match = false;
+                    if (text != null){
+                        for (String t : tokensToMatch){
+                            if (text.contains(t)) { match = true; break; }
+                        }
+                    }
+                    crc.setSearchHighlighted(match);
+                }
+            }
         }
     }
 
+    private final Set<Integer> breakpointIndices = new HashSet<>();
+
+    private void printLoadedProgram(List<String> commands) {
+        programDisplayVBox.getChildren().clear();
+        // Clear breakpoints on reload for now (basic behavior)
+        breakpointIndices.clear();
+
+        for (int i = 0; i < commands.size(); i++) {
+            String command = commands.get(i);
+            try {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("commandRow/commandRow.fxml"));
+                javafx.scene.Node row = loader.load();
+                com.app.ui.commandRow.CommandRowController controller = loader.getController();
+
+                int index = i;
+                IntConsumer toggle = (idx) -> toggleBreakpoint(idx, controller);
+                controller.init(index, command, breakpointIndices.contains(index), toggle);
+
+                // store controller on the row for later highlighting
+                row.getProperties().put("controller", controller);
+
+                programDisplayVBox.getChildren().add(row);
+            } catch (IOException e) {
+                // Fallback to simple label if loading fails
+                Label commandLabel = new Label(command);
+                commandLabel.setStyle(
+                        "-fx-border-color: black; -fx-border-width: 1; -fx-padding: 5; "
+                                + "-fx-background-color: white;"
+                );
+                commandLabel.setMaxWidth(Double.MAX_VALUE);
+                commandLabel.setWrapText(true);
+                programDisplayVBox.getChildren().add(commandLabel);
+            }
+        }
+    }
+
+    private void toggleBreakpoint(int index, com.app.ui.commandRow.CommandRowController controller){
+        if(breakpointIndices.contains(index)){
+            removeBreakpoint(index);
+            controller.setActive(false);
+        } else {
+            setBreakpoint(index);
+            controller.setActive(true);
+        }
+    }
+
+    private void setBreakpoint(int index){
+        if(breakpointIndices.add(index) && Api.isDebugging()){
+            Api.setBreakpoint(index);
+        }
+    }
+
+    private void removeBreakpoint(int index){
+        if(breakpointIndices.remove(index) && Api.isDebugging()){
+            Api.removeBreakpoint(index);
+        }
+    }
 
     private void openFileChooser() throws Exception {
         javafx.stage.FileChooser fileChooser = new javafx.stage.FileChooser();

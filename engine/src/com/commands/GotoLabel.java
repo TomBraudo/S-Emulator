@@ -54,6 +54,11 @@ class GotoLabel extends BaseCommand {
     }
 
     @Override
+    public boolean isBaseCommand() {
+        return false;
+    }
+
+    @Override
     public List<String> getPresentVariables() {
         return new ArrayList<>();
     }

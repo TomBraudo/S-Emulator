@@ -4,6 +4,7 @@ import com.commands.BaseCommand;
 import com.commands.CommandFactory;
 import com.commands.FnArgs;
 import com.program.Program;
+import com.program.ProgramState;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.Unmarshaller;
@@ -15,11 +16,15 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
 public class Api {
     private static Program curProgram;
+    private static Program debugProgram;
+    private static List<Integer> debugInput;
+    private static int debugExpansionLevel;
 
     public static String getCurProgramName() {
         return curProgram.getName();
@@ -78,10 +83,12 @@ public class Api {
     public static List<String> getAvailableFunctions(){
         return FnArgs.getFunctionNames();
     }
+
     public static List<String> getFunctionCommands(String functionName, int expansionLevel){
         Program p = FnArgs.getProgramByName(functionName).expand(expansionLevel);
         return p.getCommands().stream().map(BaseCommand::toString).toList();
     }
+
     public static void setCurProgram(String functionName){
         curProgram = FnArgs.getProgramByName(functionName);
     }
@@ -146,5 +153,109 @@ public class Api {
         catch (IOException | ClassNotFoundException e){
             throw new RuntimeException("Failed to load state from " + path, e);
         }
+    }
+
+    public static ProgramResult startDebugging(List<Integer> input, int expansionLevel, List<Integer> breakpoints){
+        Program p = curProgram;
+        if(expansionLevel > 0){
+            p = curProgram.expand(expansionLevel);
+        }
+
+        ProgramResult res = p.startDebug(input, breakpoints);
+        if(!res.isDebug()){
+            Statistic.saveRunDetails(expansionLevel, input, res.getResult(), res.getCycles());
+        }
+        else{
+            debugProgram = p;
+            debugInput = new ArrayList<>(input);
+            debugExpansionLevel = expansionLevel;
+        }
+
+        return res;
+    }
+
+    public static ProgramResult stepOver(){
+        Program p = debugProgram;
+        ProgramResult res = p.stepOver();
+        if(!res.isDebug()){
+            Statistic.saveRunDetails(debugExpansionLevel, debugInput, res.getResult(), res.getCycles());
+            debugProgram = null;
+            debugInput = null;
+            debugExpansionLevel = 0;
+        }
+
+        return res;
+    }
+
+    public static ProgramResult continueDebug(){
+        Program p = debugProgram;
+        ProgramResult res = p.continueDebug();
+        if(!res.isDebug()){
+            Statistic.saveRunDetails(debugExpansionLevel, debugInput, res.getResult(), res.getCycles());
+            debugProgram = null;
+            debugInput = null;
+            debugExpansionLevel = 0;
+        }
+
+        return res;
+    }
+
+    public static void stopDebug(){
+        debugProgram.stopDebug();
+        debugProgram = null;
+        debugInput = null;
+        debugExpansionLevel = 0;
+    }
+
+    public static void setBreakpoint(int index){
+        debugProgram.setBreakpoint(index);
+    }
+
+    public static void removeBreakpoint(int index){
+        debugProgram.removeBreakpoint(index);
+    }
+
+    public static boolean isDebugging(){
+        return debugProgram != null;
+    }
+
+    public static ProgramSummary getProgramSummary(int expansionLevel){
+        Program p = curProgram;
+        if(expansionLevel > 0){
+            p = curProgram.expand(expansionLevel);
+        }
+
+        return p.getSummary();
+    }
+
+    public static List<String> getLabels(int expansionLevel){
+        Program p = curProgram;
+        if(expansionLevel > 0){
+            p = curProgram.expand(expansionLevel);
+        }
+
+        List<String> labels = new ArrayList<>(p.getLabels());
+        labels.sort((a, b) -> {
+            int na = Integer.parseInt(a.substring(1));
+            int nb = Integer.parseInt(b.substring(1));
+            return Integer.compare(na, nb);
+        });
+        return labels;
+    }
+
+    public static List<String> getVariables(int expansionLevel){
+        Program p = curProgram;
+        if (expansionLevel > 0){
+            p = curProgram.expand(expansionLevel);
+        }
+        List<String> variables = new ArrayList<>(p.getPresentVariables());
+        variables.sort((a, b) -> {
+            int cmpPrefix = Character.compare(a.charAt(0), b.charAt(0));
+            if (cmpPrefix != 0) return cmpPrefix;
+            int na = Integer.parseInt(a.substring(1));
+            int nb = Integer.parseInt(b.substring(1));
+            return Integer.compare(na, nb);
+        });
+        return variables;
     }
 }

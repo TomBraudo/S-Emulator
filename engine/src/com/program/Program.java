@@ -2,6 +2,7 @@ package com.program;
 
 import com.XMLHandlerV2.SInstruction;
 import com.api.ProgramResult;
+import com.api.ProgramSummary;
 import com.commands.BaseCommand;
 import com.commands.CommandFactory;
 import com.commands.Variable;
@@ -18,11 +19,24 @@ public class Program implements Serializable {
     HashMap<String, Integer> labelToIndex;
     List<String> inputVariables;
     List<String> labels;
+    boolean isMidDebug = false;
+    ProgramState debugState = null;
+    ProgramSummary summary = null;
 
     public Program(String name, List<com.commands.BaseCommand> commands){
         this.name = name;
         this.commands = commands;
         unpackCommands();
+        createSummary(commands);
+    }
+
+    private void createSummary(List<com.commands.BaseCommand> commands){
+        int baseCommands = Math.toIntExact(commands.stream().filter(BaseCommand::isBaseCommand).count());
+        summary = new ProgramSummary(baseCommands, commands.size() - baseCommands);
+    }
+
+    public ProgramSummary getSummary(){
+        return summary;
     }
 
     public void addCommand(com.commands.BaseCommand command){
@@ -41,7 +55,56 @@ public class Program implements Serializable {
             com.commands.BaseCommand command = commands.get(programState.currentCommandIndex);
             command.execute(programState);
         }
-        return new ProgramResult(programState.cyclesCount, variableToValue(programState));
+        return new ProgramResult(programState.cyclesCount, variableToValue(programState), programState.currentCommandIndex, false);
+    }
+
+    public ProgramResult startDebug(List<Integer> input, List<Integer> breakpoints){
+        ProgramState programState = new ProgramState(input, presentVariables, commands, labelToIndex);
+        programState.initialBreakpoints(breakpoints);
+        return runToBreakpoint(programState);
+    }
+
+    public ProgramResult stepOver(){
+        ProgramState programState = debugState;
+        com.commands.BaseCommand command = commands.get(programState.currentCommandIndex);
+        command.execute(programState);
+        boolean isDebug;
+        isDebug = !programState.done && programState.currentCommandIndex < commands.size();
+        debugState = programState;
+        return new ProgramResult(programState.cyclesCount, variableToValue(programState), programState.currentCommandIndex, isDebug);
+    }
+
+    public ProgramResult continueDebug(){
+        //Always perform at least 1 step, and then continue debugging
+        ProgramState programState = debugState;
+        com.commands.BaseCommand command = commands.get(programState.currentCommandIndex);
+        command.execute(programState);
+        if(programState.done || programState.currentCommandIndex >= commands.size()){
+            isMidDebug = false;
+            debugState = null;
+            return new ProgramResult(programState.cyclesCount, variableToValue(programState), programState.currentCommandIndex, false);
+        }
+        return runToBreakpoint(programState);
+    }
+
+    private ProgramResult runToBreakpoint(ProgramState programState) {
+        while(!programState.done && programState.currentCommandIndex < commands.size()){
+            if(programState.breakpoints[programState.currentCommandIndex]){
+                isMidDebug = true;
+                debugState = programState;
+                return new ProgramResult(programState.cyclesCount, variableToValue(programState), programState.currentCommandIndex, true);
+            }
+            BaseCommand command = commands.get(programState.currentCommandIndex);
+            command.execute(programState);
+        }
+        isMidDebug = false;
+        debugState = null;
+        return new ProgramResult(programState.cyclesCount, variableToValue(programState), programState.currentCommandIndex, false);
+    }
+
+    public void stopDebug(){
+        isMidDebug = false;
+        debugState = null;
     }
 
     private int getMaxWorkVariable(){
@@ -175,7 +238,6 @@ public class Program implements Serializable {
         return Collections.unmodifiableList(commands);
     }
 
-
     public static Program createProgram(String name, List<SInstruction> instructions) {
         List<BaseCommand> commands = new ArrayList<>();
 
@@ -201,4 +263,15 @@ public class Program implements Serializable {
     }
 
 
+    public void setBreakpoint(int index) {
+        if(debugState != null){
+            debugState.setBreakPoint(index);
+        }
+    }
+
+    public void removeBreakpoint(int index) {
+        if(debugState != null){
+            debugState.removeBreakPoint(index);
+        }
+    }
 }

@@ -59,6 +59,7 @@ public abstract class BaseCommand implements Serializable {
     public abstract BaseCommand copy(List<String> variables, List<Integer> constants, List<String> labels, int index, BaseCommand creator);
     protected abstract List<String> getLabelsForCopy();
     protected abstract List<Integer> getConstantsForCopy();
+    public abstract boolean isBaseCommand();
 }
 
 

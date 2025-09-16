@@ -18,7 +18,6 @@
             <children>
                 <Button fx:id="loadProgramBtn" layoutX="18.0" layoutY="27.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="103.0" style="-fx-background-color: #38cb82; -fx-border-color: black; -fx-border-width: 2; -fx-border-style: solid;;" text="Load Program" />
                 <Label fx:id="filePathLabel" alignment="CENTER" contentDisplay="CENTER" layoutX="131.0" layoutY="27.0" prefHeight="40.0" prefWidth="1018.0" style="-fx-border-color: black; -fx-border-width: 2;" text="Currently Loaded File Path" textAlignment="CENTER" />
-                <Label alignment="CENTER" layoutX="310.0" layoutY="107.0" prefHeight="40.0" prefWidth="158.0" style="-fx-border-color: black; -fx-border-width: 2;" text="Highlight selection" textAlignment="CENTER" wrapText="true" />
                 <Pane layoutX="706.0" layoutY="107.0" prefHeight="491.0" prefWidth="442.0" style="-fx-border-color: black; -fx-border-width: 2;">
                     <children>
                   <ScrollPane fx:id="programDisplayScrollPane1" fitToWidth="true" layoutX="23.0" layoutY="208.0" prefHeight="167.0" prefWidth="181.0" style="-fx-background-color: black; -fx-border-width: 2;">
@@ -70,6 +69,10 @@
                 </ScrollPane>
             <ComboBox fx:id="programSelectorMenu" layoutX="20.0" layoutY="107.0" prefHeight="39.0" prefWidth="161.0" style="-fx-background-color: #38cb82; -fx-border-color: black; -fx-border-width: 2;" />
             <ComboBox fx:id="expansionLevelMenu" layoutX="195.0" layoutY="107.0" prefHeight="39.0" prefWidth="100.0" style="-fx-background-color: #38cb82; -fx-border-color: black; -fx-border-width: 2;" />
+            <Label alignment="CENTER" layoutX="20.0" layoutY="75.0" prefHeight="24.0" prefWidth="160.0" text="Program selector" textAlignment="CENTER" wrapText="true" />
+            <Label alignment="CENTER" layoutX="195.0" layoutY="75.0" prefHeight="24.0" prefWidth="100.0" text="Expansion level" textAlignment="CENTER" wrapText="true" />
+            <Label alignment="CENTER" layoutX="308.0" layoutY="75.0" prefHeight="24.0" prefWidth="122.0" text="Highlight selection" textAlignment="CENTER" wrapText="true" />
+            <ComboBox fx:id="highlightSelectorMenu" layoutX="308.0" layoutY="107.0" prefHeight="39.0" prefWidth="100.0" style="-fx-background-color: #38cb82; -fx-border-color: black; -fx-border-width: 2;" />
 
 
             </children>
