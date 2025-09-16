@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.geometry.Insets?>
+
+<ScrollPane xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fitToWidth="true" style="-fx-border-color: #eee; -fx-border-width: 1; -fx-background-color: transparent;">
+    <content>
+        <VBox fx:id="container" spacing="6.0" style="-fx-padding: 10;">
+            <children>
+                <Label fx:id="header" text="Variables values:" style="-fx-font-weight: bold; -fx-font-size: 13px;" />
+                <!-- Variable rows injected dynamically -->
+            </children>
+            <padding>
+                <Insets top="8" right="8" bottom="8" left="8" />
+            </padding>
+        </VBox>
+    </content>
+</ScrollPane>
