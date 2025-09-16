@@ -48,7 +48,7 @@ public class Api {
         }
 
         ProgramResult res = p.execute(input);
-        Statistic.saveRunDetails(expansionLevel, input, res.getResult(), res.getCycles());
+        Statistic.saveRunDetails(expansionLevel, input, res.getResult(), res.getCycles(), res.getVariableToValue());
         return res;
     }
 
@@ -163,7 +163,7 @@ public class Api {
 
         ProgramResult res = p.startDebug(input, breakpoints);
         if(!res.isDebug()){
-            Statistic.saveRunDetails(expansionLevel, input, res.getResult(), res.getCycles());
+            Statistic.saveRunDetails(expansionLevel, input, res.getResult(), res.getCycles(), res.getVariableToValue());
         }
         else{
             debugProgram = p;
@@ -178,7 +178,7 @@ public class Api {
         Program p = debugProgram;
         ProgramResult res = p.stepOver();
         if(!res.isDebug()){
-            Statistic.saveRunDetails(debugExpansionLevel, debugInput, res.getResult(), res.getCycles());
+            Statistic.saveRunDetails(debugExpansionLevel, debugInput, res.getResult(), res.getCycles(), res.getVariableToValue());
             debugProgram = null;
             debugInput = null;
             debugExpansionLevel = 0;
@@ -191,7 +191,7 @@ public class Api {
         Program p = debugProgram;
         ProgramResult res = p.continueDebug();
         if(!res.isDebug()){
-            Statistic.saveRunDetails(debugExpansionLevel, debugInput, res.getResult(), res.getCycles());
+            Statistic.saveRunDetails(debugExpansionLevel, debugInput, res.getResult(), res.getCycles(), res.getVariableToValue());
             debugProgram = null;
             debugInput = null;
             debugExpansionLevel = 0;

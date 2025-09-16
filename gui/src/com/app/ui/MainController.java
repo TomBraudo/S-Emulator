@@ -51,6 +51,8 @@ public class MainController {
     @FXML
     private VBox actionsPanel;
     @FXML
+    private VBox statisticsTable;
+    @FXML
     private ToggleButton debugBtn, executeBtn;
 
     private Button stepOverBtn;
@@ -166,6 +168,7 @@ public class MainController {
             variablesContainer.getChildren().add(varLabel);
         }
         cyclesLabel.setText("Cycles: " + res.getCycles());
+        refreshStatisticsTable();
     }
 
     private void startDebuggingProgram(){
@@ -263,6 +266,23 @@ public class MainController {
             if (stepOverBtn != null) stepOverBtn.setDisable(true);
             if (stopBtn != null) stopBtn.setDisable(true);
             if (continueBtn != null) continueBtn.setDisable(true);
+            refreshStatisticsTable();
+        }
+    }
+
+    private void refreshStatisticsTable(){
+        if (statisticsTable == null) return;
+        statisticsTable.getChildren().clear();
+        for (com.api.Statistic stat : com.api.Statistic.getStatistics()){
+            try {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("statisticsView/runDetails.fxml"));
+                javafx.scene.Node row = loader.load();
+                com.app.ui.statisticsView.RunDetailsController c = loader.getController();
+                c.setStatistic(stat);
+                statisticsTable.getChildren().add(row);
+            } catch (IOException e){
+                // ignore UI refresh errors
+            }
         }
     }
 
@@ -282,6 +302,7 @@ public class MainController {
         populateExpansionLevelMenu();
         populateProgramChooser();
         populateHighlightSelector();
+        refreshStatisticsTable();
     }
 
     private void populateExpansionLevelMenu() {

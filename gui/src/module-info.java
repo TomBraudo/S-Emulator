@@ -7,6 +7,7 @@ module gui {
     opens com.app.ui to javafx.fxml, javafx.graphics;
     opens com.app.ui.commandRow to javafx.fxml;
     opens com.app.ui.historyView to javafx.fxml;
+    opens com.app.ui.statisticsView to javafx.fxml;
     opens customComponents to javafx.graphics;
     opens com.app.ui.inputComponent to javafx.fxml;
     exports customComponents to javafx.fxml;

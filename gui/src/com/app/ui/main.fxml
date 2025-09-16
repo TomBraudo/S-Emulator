@@ -57,7 +57,11 @@
 
                     </children>
                 </Pane>
-                <ScrollPane layoutX="706.0" layoutY="618.0" prefHeight="229.0" prefWidth="443.0" />
+                <ScrollPane layoutX="706.0" layoutY="618.0" prefHeight="229.0" prefWidth="443.0" fitToWidth="true" style="-fx-border-color: black; -fx-border-width: 2;">
+                    <content>
+                        <VBox fx:id="statisticsTable" spacing="8.0" style="-fx-padding: 8;" />
+                    </content>
+                </ScrollPane>
                 <ScrollPane fx:id="programDisplayScrollPane" fitToWidth="true" layoutX="20.0" layoutY="157.0" prefHeight="445.0" prefWidth="671.0" style="-fx-background-color: black; -fx-border-width: 2;">
                     <content>
                         <VBox fx:id="programDisplayVBox" spacing="5.0">
