@@ -258,4 +258,12 @@ public class Api {
         });
         return variables;
     }
+
+    public static List<String> getCommandHistory(int expansionLevel, int index){
+        Program p = curProgram;
+        if(expansionLevel > 0){
+            p = curProgram.expand(expansionLevel);
+        }
+        return p.getCommands().get(index).getCommandHistory();
+    }
 }

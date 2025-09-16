@@ -19,6 +19,7 @@ public class CommandRowController {
     private int commandIndex;
     private boolean active;
     private IntConsumer onToggle;
+    private IntConsumer onCommandClick;
     private String baseLabelStyle;
     private boolean debugHighlighted;
     private boolean searchHighlighted;
@@ -32,6 +33,11 @@ public class CommandRowController {
                 onToggle.accept(commandIndex);
             }
         });
+        commandLabel.addEventHandler(MouseEvent.MOUSE_CLICKED, e -> {
+            if (onCommandClick != null) {
+                onCommandClick.accept(commandIndex);
+            }
+        });
     }
 
     public void init(int index, String text, boolean isActive, IntConsumer onToggle) {
@@ -39,6 +45,10 @@ public class CommandRowController {
         this.onToggle = onToggle;
         this.commandLabel.setText(text);
         setActive(isActive);
+    }
+
+    public void setOnCommandClicked(IntConsumer onClick){
+        this.onCommandClick = onClick;
     }
 
     public void setActive(boolean active) {

@@ -3,6 +3,7 @@ package com.commands;
 import com.program.ProgramState;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -63,6 +64,19 @@ public abstract class BaseCommand implements Serializable {
     protected abstract List<String> getLabelsForCopy();
     protected abstract List<Integer> getConstantsForCopy();
     public abstract boolean isBaseCommand();
+    public List<String> getCommandHistory(){
+        List<String> history = new ArrayList<>();
+        history.add(toStringBase());
+        return commandHistoryRec(history);
+    }
+    private List<String> commandHistoryRec(List<String> history){
+        if(creator != null){
+            history.add(creator.toStringBase());
+            creator.commandHistoryRec(history);
+        }
+        return history;
+    }
+
 }
 
 

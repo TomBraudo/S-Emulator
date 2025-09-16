@@ -407,6 +407,7 @@ public class MainController {
                 int index = i;
                 IntConsumer toggle = (idx) -> toggleBreakpoint(idx, controller);
                 controller.init(index, command, breakpointIndices.contains(index), toggle);
+                controller.setOnCommandClicked(idx -> openHistoryWindow(idx));
 
                 // store controller on the row for later highlighting
                 row.getProperties().put("controller", controller);
@@ -423,6 +424,24 @@ public class MainController {
                 commandLabel.setWrapText(true);
                 programDisplayVBox.getChildren().add(commandLabel);
             }
+        }
+    }
+
+    private void openHistoryWindow(int commandIndex){
+        try {
+            List<String> history = Api.getCommandHistory(curExpansionLevel, commandIndex);
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("historyView/historyView.fxml"));
+            ScrollPane root = loader.load();
+            com.app.ui.historyView.HistoryViewController controller = loader.getController();
+            controller.setHistory(history);
+
+            Stage stage = new Stage();
+            stage.setTitle("Command history");
+            stage.setScene(new Scene(root, 480, 360));
+            stage.initModality(Modality.NONE);
+            stage.show();
+        } catch (IOException e){
+            ErrorMessageController.showError("Failed to open history view\n" + e.getMessage());
         }
     }
 
