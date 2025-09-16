@@ -27,10 +27,7 @@ class GotoLabel extends BaseCommand {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(toStringBase());
-        appendCreators(sb);
-        return sb.toString();
+        return toStringBase();
     }
 
     @Override

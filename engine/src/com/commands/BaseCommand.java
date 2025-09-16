@@ -10,6 +10,9 @@ public abstract class BaseCommand implements Serializable {
     public abstract void execute(ProgramState programState);
     @Override
     abstract public String toString();
+    public String toDisplayString(){
+        return toStringBase();
+    }
     //abstract List<BaseCommands> extend();
     public static final String NO_LABEL = "-1";
     public static final String EXIT_LABEL = "EXIT";
