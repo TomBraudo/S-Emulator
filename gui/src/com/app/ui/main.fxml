@@ -9,6 +9,7 @@
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.ToggleButton?>
 <?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Pane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
@@ -63,15 +64,24 @@
                         <VBox fx:id="statisticsTable" spacing="8.0" style="-fx-padding: 8;" />
                     </content>
                 </ScrollPane>
-                <ScrollPane fx:id="programDisplayScrollPane" fitToWidth="true" layoutX="20.0" layoutY="157.0" prefHeight="445.0" prefWidth="671.0" style="-fx-background-color: black; -fx-border-width: 2;">
-                    <content>
-                        <VBox fx:id="programDisplayVBox" spacing="5.0">
-                            <padding>
-                                <Insets bottom="10" left="10" right="10" top="10" />
-                            </padding>
-                        </VBox>
-                    </content>
-                </ScrollPane>
+                <VBox layoutX="20.0" layoutY="157.0" prefHeight="445.0" prefWidth="671.0" spacing="6.0">
+                    <children>
+                        <ScrollPane fx:id="programDisplayScrollPane" fitToWidth="true" prefHeight="431.0" prefWidth="692.0" style="-fx-background-color: black; -fx-border-width: 2;">
+                            <content>
+                                <VBox fx:id="programDisplayVBox" spacing="5.0">
+                                    <padding>
+                                        <Insets bottom="10" left="10" right="10" top="10" />
+                                    </padding>
+                                </VBox>
+                            </content>
+                        </ScrollPane>
+                        <HBox fx:id="programSummaryLine" alignment="CENTER_LEFT" spacing="8.0" style="-fx-border-color: black; -fx-border-width: 1; -fx-background-color: white; -fx-padding: 6;">
+                            <children>
+                                <Label fx:id="programSummaryLabel" style="-fx-font-weight: bold;" text="" />
+                            </children>
+                        </HBox>
+                    </children>
+                </VBox>
             <ComboBox fx:id="programSelectorMenu" layoutX="20.0" layoutY="107.0" prefHeight="39.0" prefWidth="161.0" style="-fx-background-color: #38cb82; -fx-border-color: black; -fx-border-width: 2;" />
             <ComboBox fx:id="expansionLevelMenu" layoutX="195.0" layoutY="107.0" prefHeight="39.0" prefWidth="100.0" style="-fx-background-color: #38cb82; -fx-border-color: black; -fx-border-width: 2;" />
             <Label alignment="CENTER" layoutX="20.0" layoutY="75.0" prefHeight="24.0" prefWidth="160.0" text="Program selector" textAlignment="CENTER" wrapText="true" />

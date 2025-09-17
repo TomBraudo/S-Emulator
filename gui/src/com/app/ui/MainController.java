@@ -60,6 +60,10 @@ public class MainController {
     private ScrollPane historyChainScrollPane;
     @FXML
     private VBox historyChainVBox;
+    @FXML
+    private javafx.scene.layout.HBox programSummaryLine;
+    @FXML
+    private Label programSummaryLabel;
 
     private Button stepOverBtn;
     private Button continueBtn;
@@ -178,6 +182,7 @@ public class MainController {
             variablesContainer.getChildren().add(varLabel);
         }
         cyclesLabel.setText("Cycles: " + res.getCycles());
+        updateSummaryLine();
         refreshStatisticsTable();
     }
 
@@ -194,6 +199,7 @@ public class MainController {
 
         // Update variables view each debug step
         writeVariablesState(res);
+        updateSummaryLine();
     }
 
     private void openInputThenStartDebug(){
@@ -331,6 +337,7 @@ public class MainController {
             if (stepBackBtn != null) stepBackBtn.setDisable(true);
             refreshStatisticsTable();
         }
+        updateSummaryLine();
     }
 
     private void refreshStatisticsTable(){
@@ -502,6 +509,7 @@ public class MainController {
                 programDisplayVBox.getChildren().add(commandLabel);
             }
         }
+        updateSummaryLine();
     }
 
     private void openHistoryWindow(int commandIndex){
@@ -570,11 +578,31 @@ public class MainController {
         if(breakpointIndices.add(index) && Api.isDebugging()){
             Api.setBreakpoint(index);
         }
+        updateSummaryLine();
     }
 
     private void removeBreakpoint(int index){
         if(breakpointIndices.remove(index) && Api.isDebugging()){
             Api.removeBreakpoint(index);
+        }
+        updateSummaryLine();
+    }
+
+    private void updateSummaryLine(){
+        try{
+            com.api.ProgramSummary summary = Api.getProgramSummary(curExpansionLevel);
+            int base = summary.getBaseCommands();
+            int synthetic = summary.getSyntheticCommands();
+            int total = base + synthetic;
+            if (programSummaryLabel != null){
+                programSummaryLabel.setText(
+                        "Base: " + base + "    Synthetic: " + synthetic + "    Total: " + total
+                );
+            }
+        } catch (Exception ignored){
+            if (programSummaryLabel != null){
+                programSummaryLabel.setText("");
+            }
         }
     }
 
