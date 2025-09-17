@@ -349,6 +349,7 @@ public class MainController {
                 javafx.scene.Node row = loader.load();
                 com.app.ui.statisticsView.RunDetailsController c = loader.getController();
                 c.setStatistic(stat);
+                c.setOnExecuteVariables(vars -> executeWithHistoricalVariables(vars));
                 statisticsTable.getChildren().add(row);
             } catch (IOException e){
                 // ignore UI refresh errors
@@ -562,6 +563,28 @@ public class MainController {
             );
             historyChainVBox.getChildren().add(commandLabel);
         }
+    }
+
+    private void executeWithHistoricalVariables(java.util.List<com.api.ProgramResult.VariableToValue> variables){
+        // Build map xN -> value
+        java.util.Map<String, Integer> inputMap = new java.util.HashMap<>();
+        int maxIndex = 0;
+        for (com.api.ProgramResult.VariableToValue v : variables){
+            String name = v.variable();
+            if (name != null && name.startsWith("x")){
+                try{
+                    int idx = Integer.parseInt(name.substring(1));
+                    maxIndex = Math.max(maxIndex, idx);
+                    inputMap.put(name, v.value());
+                } catch (NumberFormatException ignored){}
+            }
+        }
+
+        // Update UI to show inputs and rebuild curInput
+        displayInputData(inputMap);
+
+        // Execute immediately without prompting
+        executeProgram();
     }
 
     private void toggleBreakpoint(int index, com.app.ui.commandRow.CommandRowController controller){

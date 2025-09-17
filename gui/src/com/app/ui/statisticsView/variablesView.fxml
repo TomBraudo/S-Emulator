@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.layout.VBox?>
@@ -10,6 +11,7 @@
         <VBox fx:id="container" spacing="6.0" style="-fx-padding: 10;">
             <children>
                 <Label fx:id="header" text="Variables values:" style="-fx-font-weight: bold; -fx-font-size: 13px;" />
+                <Button fx:id="executeBtn" text="Execute" style="-fx-background-color: #38cb82; -fx-text-fill: white; -fx-font-weight: bold; -fx-border-color: black; -fx-border-width: 1; -fx-background-radius: 6; -fx-border-radius: 6; -fx-cursor: hand;" />
                 <!-- Variable rows injected dynamically -->
             </children>
             <padding>

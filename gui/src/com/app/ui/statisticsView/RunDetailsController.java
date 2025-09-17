@@ -29,6 +29,7 @@ public class RunDetailsController {
     private GridPane root;
 
     private Statistic statistic;
+    private java.util.function.Consumer<java.util.List<com.api.ProgramResult.VariableToValue>> onExecuteVariables;
 
     public void setStatistic(Statistic stat){
         this.statistic = stat;
@@ -53,6 +54,11 @@ public class RunDetailsController {
             loader.setController(controller);
             ScrollPane pane = loader.load();
             controller.setStatistic(statistic);
+            controller.setOnExecute(() -> {
+                if (onExecuteVariables != null){
+                    onExecuteVariables.accept(statistic.getVariableToValue());
+                }
+            });
 
             Stage stage = new Stage();
             stage.setTitle("Variables - Run #" + statistic.getIndex());
@@ -62,5 +68,9 @@ public class RunDetailsController {
         } catch (IOException ex){
             ErrorMessageController.showError("Failed to open variables view\n" + ex.getMessage());
         }
+    }
+
+    public void setOnExecuteVariables(java.util.function.Consumer<java.util.List<com.api.ProgramResult.VariableToValue>> handler){
+        this.onExecuteVariables = handler;
     }
 }
