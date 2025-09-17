@@ -1,6 +1,7 @@
 package com.commands;
 
 import com.program.ProgramState;
+import com.program.SingleStepChanges;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -22,19 +23,25 @@ class JumpEqualVariable extends BaseCommand {
 
     @Override
     public void execute(ProgramState programState) {
-        programState.cyclesCount += 2;
         Variable v1 = programState.variables.get(variableName);
         Variable v2 = programState.variables.get(otherVariableName);
+        int targetIndex;
         if (v1.getValue() == v2.getValue()) {
             if (targetLabel.equals(EXIT_LABEL)){
                 programState.done = true;
                 return;
             }
-            programState.currentCommandIndex = programState.labelToIndex.get(targetLabel);
+            targetIndex = programState.labelToIndex.get(targetLabel);
         }
         else{
-            programState.currentCommandIndex++;
+            targetIndex = programState.currentCommandIndex + 1;
         }
+        SingleStepChanges.SingleVariableChange variableChange = new SingleStepChanges.SingleVariableChange("y", programState.variables.get("y").getValue(), programState.variables.get("y").getValue());
+        SingleStepChanges.IndexChange indexChange = new SingleStepChanges.IndexChange(programState.currentCommandIndex, targetIndex);
+        SingleStepChanges.CyclesChange cyclesChange = new SingleStepChanges.CyclesChange(programState.cyclesCount, programState.cyclesCount + cycles);
+        programState.cyclesCount += cycles;
+        programState.currentCommandIndex = targetIndex;
+        programState.singleStepChanges.push(new SingleStepChanges(variableChange, indexChange, cyclesChange));
     }
 
     @Override

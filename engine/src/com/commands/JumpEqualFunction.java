@@ -3,6 +3,7 @@ package com.commands;
 import com.api.ProgramResult;
 import com.program.Program;
 import com.program.ProgramState;
+import com.program.SingleStepChanges;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -43,17 +44,23 @@ class JumpEqualFunction extends BaseCommand{
     public void execute(ProgramState programState) {
         List<Integer> evaluated = FnArgs.evaluateArgs(programState, input);
         ProgramResult res = p.execute(evaluated);
-
+        int targetIndex;
         if(programState.variables.get(variableName).getValue() == res.getResult()){
             if (targetLabel.equals(EXIT_LABEL)){
                 programState.done = true;
                 return;
             }
-            programState.currentCommandIndex = programState.labelToIndex.get(targetLabel);
+            targetIndex = programState.labelToIndex.get(targetLabel);
         }
         else{
-            programState.currentCommandIndex++;
+            targetIndex = programState.currentCommandIndex + 1;
         }
+        SingleStepChanges.SingleVariableChange variableChange = new SingleStepChanges.SingleVariableChange("y", programState.variables.get("y").getValue(), programState.variables.get("y").getValue());
+        SingleStepChanges.IndexChange indexChange = new SingleStepChanges.IndexChange(programState.currentCommandIndex, targetIndex);
+        SingleStepChanges.CyclesChange cyclesChange = new SingleStepChanges.CyclesChange(programState.cyclesCount, programState.cyclesCount + cycles);
+        programState.cyclesCount += cycles;
+        programState.currentCommandIndex = targetIndex;
+        programState.singleStepChanges.push(new SingleStepChanges(variableChange, indexChange, cyclesChange));
     }
 
     @Override

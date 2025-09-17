@@ -1,6 +1,7 @@
 package com.commands;
 
 import com.program.ProgramState;
+import com.program.SingleStepChanges;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -17,12 +18,17 @@ class GotoLabel extends BaseCommand {
     }
     @Override
     public void execute(ProgramState programState) {
-        programState.cyclesCount += cycles;
         if (targetLabel.equals(EXIT_LABEL)){
             programState.done = true;
             return;
         }
-        programState.currentCommandIndex = programState.labelToIndex.get(targetLabel);
+        int targetIndex = programState.labelToIndex.get(targetLabel);
+        SingleStepChanges.SingleVariableChange variableChange = new SingleStepChanges.SingleVariableChange("y", programState.variables.get("y").getValue(), programState.variables.get("y").getValue());
+        SingleStepChanges.IndexChange indexChange = new SingleStepChanges.IndexChange(programState.currentCommandIndex, targetIndex);
+        SingleStepChanges.CyclesChange cyclesChange = new SingleStepChanges.CyclesChange(programState.cyclesCount, programState.cyclesCount + cycles);
+        programState.cyclesCount += cycles;
+        programState.currentCommandIndex = targetIndex;
+        programState.singleStepChanges.push(new SingleStepChanges(variableChange, indexChange, cyclesChange));
     }
 
     @Override

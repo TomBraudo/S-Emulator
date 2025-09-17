@@ -1,6 +1,7 @@
 package com.commands;
 
 import com.program.ProgramState;
+import com.program.SingleStepChanges;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -16,10 +17,14 @@ class ZeroVariable extends BaseCommand {
     }
     @Override
     public void execute(ProgramState programState) {
-        programState.cyclesCount += cycles;
         Variable v = programState.variables.get(variableName);
+        SingleStepChanges.SingleVariableChange variableChange = new SingleStepChanges.SingleVariableChange(v.getName(), v.getValue(), 0);
+        SingleStepChanges.IndexChange indexChange = new SingleStepChanges.IndexChange(programState.currentCommandIndex, programState.currentCommandIndex + 1);
+        SingleStepChanges.CyclesChange cyclesChange = new SingleStepChanges.CyclesChange(programState.cyclesCount, programState.cyclesCount + cycles);
         v.setValue(0);
+        programState.cyclesCount += cycles;
         programState.currentCommandIndex++;
+        programState.singleStepChanges.push(new SingleStepChanges(variableChange, indexChange, cyclesChange));
     }
 
     @Override

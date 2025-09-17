@@ -1,6 +1,7 @@
 package com.commands;
 
 import com.program.ProgramState;
+import com.program.SingleStepChanges;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -17,12 +18,15 @@ class Decrease extends BaseCommand {
 
     @Override
     public void execute(ProgramState programState) {
-        programState.cyclesCount += cycles;
         Variable v = programState.variables.get(variableName);
-        if (v.getValue() > 0) {
-            v.setValue(v.getValue() - 1);
-        }
+        programState.cyclesCount += cycles;
+        int newValue = v.getValue() == 0 ? 0 : v.getValue() - 1;
+        SingleStepChanges.SingleVariableChange variableChange = new SingleStepChanges.SingleVariableChange(v.getName(), v.getValue(), newValue);
+        SingleStepChanges.IndexChange indexChange = new SingleStepChanges.IndexChange(programState.currentCommandIndex, programState.currentCommandIndex + 1);
+        SingleStepChanges.CyclesChange cyclesChange = new SingleStepChanges.CyclesChange(programState.cyclesCount, programState.cyclesCount + cycles);
+        v.setValue(newValue);
         programState.currentCommandIndex++;
+        programState.singleStepChanges.push(new SingleStepChanges(variableChange, indexChange, cyclesChange));
     }
 
     @Override

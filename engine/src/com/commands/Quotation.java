@@ -3,6 +3,7 @@ package com.commands;
 import com.api.ProgramResult;
 import com.program.Program;
 import com.program.ProgramState;
+import com.program.SingleStepChanges;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -35,9 +36,13 @@ class Quotation extends BaseCommand{
     public void execute(ProgramState programState) {
         List<Integer> evaluated = FnArgs.evaluateArgs(programState, input);
         ProgramResult res = p.execute(evaluated);
+        SingleStepChanges.SingleVariableChange variableChange = new SingleStepChanges.SingleVariableChange(variableName, programState.variables.get(variableName).getValue(), res.getResult());
+        SingleStepChanges.IndexChange indexChange = new SingleStepChanges.IndexChange(programState.currentCommandIndex, programState.currentCommandIndex + 1);
+        SingleStepChanges.CyclesChange cyclesChange = new SingleStepChanges.CyclesChange(programState.cyclesCount, programState.cyclesCount + res.getCycles() + 5);
         programState.variables.get(variableName).setValue(res.getResult());
         programState.cyclesCount += res.getCycles() + 5;
         programState.currentCommandIndex++;
+        programState.singleStepChanges.push(new SingleStepChanges(variableChange, indexChange, cyclesChange));
     }
 
     @Override

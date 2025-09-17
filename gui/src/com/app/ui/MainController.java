@@ -37,6 +37,8 @@ public class MainController {
     @FXML
     private Label filePathLabel;
     @FXML
+    private ProgressBar loadingProgressBar;
+    @FXML
     private Button newInputBtn;
     @FXML
     private ScrollPane inputScrollPane;
@@ -58,6 +60,7 @@ public class MainController {
     private Button stepOverBtn;
     private Button continueBtn;
     private Button stopBtn;
+    private Button stepBackBtn;
 
     private List<Integer> curInput = new ArrayList<>();
     private int curExpansionLevel = 0;
@@ -112,31 +115,35 @@ public class MainController {
         stepOverBtn = new Button("Step over");
         stopBtn = new Button("Stop");
         continueBtn = new Button("Continue");
+        stepBackBtn = new Button("Step back");
 
         styleActionButton(startDebug);
         styleActionButton(stepOverBtn);
         styleActionButton(stopBtn);
         styleActionButton(continueBtn);
+        styleActionButton(stepBackBtn);
 
         // skeleton handlers
         startDebug.setOnAction(e -> startDebuggingProgram());
         stepOverBtn.setOnAction(e -> stepOverInstruction());
         stopBtn.setOnAction(e -> stopDebugging());
         continueBtn.setOnAction(e -> continueDebug());
+        stepBackBtn.setOnAction(e -> stepBack());
 
         // Initialize buttons disabled; they will be enabled after start/step/continue via writeVariablesState
         stepOverBtn.setDisable(true);
         stopBtn.setDisable(true);
         continueBtn.setDisable(true);
+        stepBackBtn.setDisable(true);
 
-        // Two rows: [Start debugging, Step over] and [Stop, Continue]
+        // Two rows: [Start debugging, Step over] and [Stop, Continue, Step back]
         HBox row1 = new HBox(10);
         row1.setAlignment(Pos.CENTER);
         row1.getChildren().addAll(startDebug, stepOverBtn);
 
         HBox row2 = new HBox(10);
         row2.setAlignment(Pos.CENTER);
-        row2.getChildren().addAll(stopBtn, continueBtn);
+        row2.getChildren().addAll(stopBtn, continueBtn, stepBackBtn);
 
         debugBox.getChildren().addAll(row1, row2);
 
@@ -225,9 +232,25 @@ public class MainController {
         if (stepOverBtn != null) stepOverBtn.setDisable(true);
         if (stopBtn != null) stopBtn.setDisable(true);
         if (continueBtn != null) continueBtn.setDisable(true);
+        if (stepBackBtn != null) stepBackBtn.setDisable(true);
+    }
+
+    private void stepBack() {
+        if(!Api.isLoaded()){
+            ErrorMessageController.showError("Program not loaded, can't step back");
+            return;
+        }
+        try{
+            ProgramResult res = Api.stepBack();
+            writeVariablesState(res);
+        }
+        catch (Exception e){
+            ErrorMessageController.showError("Failed to step back:\n" + e.getMessage());
+        }
     }
 
     private void writeVariablesState(ProgramResult res) {
+
         variablesContainer.getChildren().removeIf(node -> !Objects.equals(node.getId(), "variablesContainerHeader"));
 
         // Build a map of current variable values to detect changes
@@ -261,11 +284,13 @@ public class MainController {
             if (stepOverBtn != null) stepOverBtn.setDisable(false);
             if (stopBtn != null) stopBtn.setDisable(false);
             if (continueBtn != null) continueBtn.setDisable(false);
+            if (stepBackBtn != null) stepBackBtn.setDisable(false);
         } else {
             setHighlightedIndex(-1);
             if (stepOverBtn != null) stepOverBtn.setDisable(true);
             if (stopBtn != null) stopBtn.setDisable(true);
             if (continueBtn != null) continueBtn.setDisable(true);
+            if (stepBackBtn != null) stepBackBtn.setDisable(true);
             refreshStatisticsTable();
         }
     }
@@ -288,21 +313,14 @@ public class MainController {
 
     private void loadSProgram() {
         try {
+            // The loading happens asynchronously now, so we need to handle that
             openFileChooser();
+
+            // We'll postpone the UI updates until the loading task completes
+            // The actual loading happens in a background thread in openFileChooser
         } catch (Exception e) {
             ErrorMessageController.showError("Failed to load S program:\n" + e.getMessage());
-            return;
         }
-
-        List<String> commands = Api.getProgramCommands(curExpansionLevel);
-
-        // Clear old items before adding new ones
-        printLoadedProgram(commands);
-
-        populateExpansionLevelMenu();
-        populateProgramChooser();
-        populateHighlightSelector();
-        refreshStatisticsTable();
     }
 
     private void populateExpansionLevelMenu() {
@@ -501,8 +519,70 @@ public class MainController {
 
         if (file != null) {
             String filePath = file.getAbsolutePath();
-            Api.loadSProgram(file.getAbsolutePath());
-            filePathLabel.setText(filePath);
+
+            // First, hide file path label and show progress bar
+            filePathLabel.setVisible(false);
+            loadingProgressBar.setVisible(true);
+            loadingProgressBar.setProgress(0);
+
+            // Create task for loading program with animation
+            javafx.concurrent.Task<Void> loadTask = new javafx.concurrent.Task<>() {
+                @Override
+                protected Void call() throws Exception {
+                    // Actually load the program first (this is fast)
+                    Api.loadSProgram(filePath);
+
+                    // Simulate longer loading time (1.5 seconds total)
+                    for (int i = 1; i <= 15; i++) {
+                        updateProgress(i, 15);
+                        Thread.sleep(100); // Sleep for 100ms, 15 times = 1.5 seconds
+                    }
+                    return null;
+                }
+            };
+
+            // Bind progress bar to task progress
+            loadingProgressBar.progressProperty().bind(loadTask.progressProperty());
+
+            // Handle when loading is complete
+            loadTask.setOnSucceeded(event -> {
+                // Update UI on JavaFX thread
+                javafx.application.Platform.runLater(() -> {
+                    // Show file path and hide progress bar
+                    filePathLabel.setText(filePath);
+                    loadingProgressBar.setVisible(false);
+                    filePathLabel.setVisible(true);
+
+                    // Unbind progress bar
+                    loadingProgressBar.progressProperty().unbind();
+
+                    // Update UI with loaded program
+                    try {
+                        List<String> commands = Api.getProgramCommands(curExpansionLevel);
+                        printLoadedProgram(commands);
+                        populateExpansionLevelMenu();
+                        populateProgramChooser();
+                        populateHighlightSelector();
+                        refreshStatisticsTable();
+                    } catch (Exception e) {
+                        ErrorMessageController.showError("Error loading program details: " + e.getMessage());
+                    }
+                });
+            });
+
+            // Handle loading failure
+            loadTask.setOnFailed(event -> {
+                javafx.application.Platform.runLater(() -> {
+                    Throwable exception = loadTask.getException();
+                    loadingProgressBar.setVisible(false);
+                    filePathLabel.setVisible(true);
+                    loadingProgressBar.progressProperty().unbind();
+                    ErrorMessageController.showError("Failed to load program: " + exception.getMessage());
+                });
+            });
+
+            // Start the loading task in a new thread
+            new Thread(loadTask).start();
         } else {
             throw new Exception("No file selected");
         }

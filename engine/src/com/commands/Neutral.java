@@ -1,6 +1,7 @@
 package com.commands;
 
 import com.program.ProgramState;
+import com.program.SingleStepChanges;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -16,8 +17,12 @@ class Neutral extends BaseCommand {
     }
     @Override
     public void execute(ProgramState programState) {
+        SingleStepChanges.SingleVariableChange variableChange = new SingleStepChanges.SingleVariableChange(variableName, programState.variables.get(variableName).getValue(), programState.variables.get(variableName).getValue());
+        SingleStepChanges.IndexChange indexChange = new SingleStepChanges.IndexChange(programState.currentCommandIndex, programState.currentCommandIndex + 1);
+        SingleStepChanges.CyclesChange cyclesChange = new SingleStepChanges.CyclesChange(programState.cyclesCount, programState.cyclesCount + cycles);
         programState.cyclesCount += cycles;
         programState.currentCommandIndex++;
+        programState.singleStepChanges.push(new SingleStepChanges(variableChange, indexChange, cyclesChange));
     }
 
     @Override

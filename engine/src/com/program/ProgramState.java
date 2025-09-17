@@ -3,10 +3,7 @@ package com.program;
 import com.commands.BaseCommand;
 import com.commands.Variable;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 /*
     The class is a helper for running full programs
@@ -23,6 +20,7 @@ public class ProgramState {
     public int cyclesCount;
     public boolean done;
     public boolean[] breakpoints;
+    public Stack<SingleStepChanges> singleStepChanges = new Stack<>();
 
     ProgramState(List<Integer> input, HashSet<String> presentVariables, List<com.commands.BaseCommand> commands, HashMap<String, Integer> labelToIndex) {
         variables = new HashMap<>();

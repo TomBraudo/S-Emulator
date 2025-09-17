@@ -1,6 +1,7 @@
 package com.commands;
 
 import com.program.ProgramState;
+import com.program.SingleStepChanges;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -21,11 +22,15 @@ class Assignment extends BaseCommand {
 
     @Override
     public void execute(ProgramState programState) {
-        programState.cyclesCount += cycles;
         Variable v1 = programState.variables.get(variableName);
         Variable v2 = programState.variables.get(otherVariableName);
+        SingleStepChanges.SingleVariableChange variableChange = new SingleStepChanges.SingleVariableChange(v1.getName(), v1.getValue(), v2.getValue());
+        SingleStepChanges.IndexChange indexChange = new SingleStepChanges.IndexChange(programState.currentCommandIndex, programState.currentCommandIndex+ 1);
+        SingleStepChanges.CyclesChange cyclesChange = new SingleStepChanges.CyclesChange(programState.cyclesCount, programState.cyclesCount + cycles);
+        programState.cyclesCount += cycles;
         v1.setValue(v2.getValue());
         programState.currentCommandIndex++;
+        programState.singleStepChanges.push(new SingleStepChanges(variableChange, indexChange, cyclesChange));
     }
 
     @Override

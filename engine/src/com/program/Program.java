@@ -107,6 +107,18 @@ public class Program implements Serializable {
         debugState = null;
     }
 
+    public ProgramResult stepBack(){
+        ProgramState programState = debugState;
+        if (programState.singleStepChanges.isEmpty()){
+            throw new IllegalStateException("No steps to undo");
+        }
+        SingleStepChanges singleStepChanges = programState.singleStepChanges.pop();
+        programState.cyclesCount = singleStepChanges.getCyclesChange().oldValue();
+        programState.currentCommandIndex = singleStepChanges.getIndexChange().oldValue();
+        programState.variables.get(singleStepChanges.getVariableChanges().variable()).setValue(singleStepChanges.getVariableChanges().oldValue());
+        return new ProgramResult(programState.cyclesCount, variableToValue(programState), programState.currentCommandIndex, true);
+    }
+
     private int getMaxWorkVariable(){
         int max = 0;
         for (String variables : presentVariables) {

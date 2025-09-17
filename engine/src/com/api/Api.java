@@ -187,6 +187,10 @@ public class Api {
         return res;
     }
 
+    public static ProgramResult stepBack(){
+        return debugProgram.stepBack();
+    }
+
     public static ProgramResult continueDebug(){
         Program p = debugProgram;
         ProgramResult res = p.continueDebug();
