@@ -76,12 +76,13 @@ public class CommandRowController {
     }
 
     private void applyCurrentStyle(){
+        // Remove any existing highlight classes
+        commandLabel.getStyleClass().removeAll("row-debug", "row-search");
+        
         if (debugHighlighted){
-            commandLabel.setStyle(baseLabelStyle.replace("-fx-background-color: white;", "-fx-background-color: #ffebeb;"));
+            commandLabel.getStyleClass().add("row-debug");
         } else if (searchHighlighted){
-            commandLabel.setStyle(baseLabelStyle.replace("-fx-background-color: white;", "-fx-background-color: #b7f7b0;"));
-        } else {
-            commandLabel.setStyle(baseLabelStyle);
+            commandLabel.getStyleClass().add("row-search");
         }
     }
 

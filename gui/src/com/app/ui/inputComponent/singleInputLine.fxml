@@ -8,16 +8,12 @@
 
 <AnchorPane prefHeight="57.0" prefWidth="253.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1">
     <children>
-        <Button layoutX="181.0" layoutY="5.0" mnemonicParsing="false" prefHeight="46.0" prefWidth="54.0" text="Delete" fx:id="xiDeleteBtn" />
+        <Button layoutX="181.0" layoutY="5.0" mnemonicParsing="false" prefHeight="46.0" prefWidth="54.0" text="Delete" fx:id="xiDeleteBtn" styleClass="btn btn-danger" />
         <TextField layoutX="71.0" layoutY="5.0" prefHeight="46.0" prefWidth="94.0" fx:id="xiTextField">
             <font>
                 <Font size="22.0" />
             </font>
         </TextField>
-        <Label alignment="CENTER" layoutX="14.0" layoutY="5.0" prefHeight="46.0" prefWidth="45.0" style="-fx-border-color: gray;" text="xi" fx:id="xiLabel">
-            <font>
-                <Font size="27.0" />
-            </font>
-        </Label>
+        <Label alignment="CENTER" layoutX="14.0" layoutY="5.0" prefHeight="46.0" prefWidth="45.0" styleClass="label-strong card-subtle" text="xi" fx:id="xiLabel" />
     </children>
 </AnchorPane>

@@ -18,35 +18,28 @@
     <content>
         <AnchorPane fx:id="commandHistoryChainContainer" prefHeight="908.0" prefWidth="1171.0">
             <children>
-                <Button fx:id="loadProgramBtn" layoutX="18.0" layoutY="27.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="103.0" style="-fx-background-color: #38cb82; -fx-border-color: black; -fx-border-width: 2; -fx-border-style: solid;;" text="Load Program" />
+                <Button fx:id="loadProgramBtn" layoutX="18.0" layoutY="27.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="103.0" styleClass="btn btn-primary" text="Load Program" />
                 <Label fx:id="filePathLabel" alignment="CENTER" contentDisplay="CENTER" layoutX="131.0" layoutY="27.0" prefHeight="40.0" prefWidth="1018.0" style="-fx-border-color: black; -fx-border-width: 2;" text="Currently Loaded File Path" textAlignment="CENTER" />
                 <ProgressBar fx:id="loadingProgressBar" layoutX="131.0" layoutY="27.0" prefHeight="40.0" prefWidth="1018.0" progress="0.0" visible="false" />
-                <Pane layoutX="706.0" layoutY="107.0" prefHeight="491.0" prefWidth="442.0" style="-fx-border-color: black; -fx-border-width: 2;">
+                <Pane layoutX="706.0" layoutY="107.0" prefHeight="491.0" prefWidth="442.0" styleClass="card">
                     <children>
-                  <ScrollPane fx:id="programDisplayScrollPane1" fitToWidth="true" layoutX="23.0" layoutY="208.0" prefHeight="167.0" prefWidth="181.0" style="-fx-background-color: black; -fx-border-width: 2;">
+                  <ScrollPane fx:id="programDisplayScrollPane1" fitToWidth="true" layoutX="23.0" layoutY="208.0" prefHeight="167.0" prefWidth="181.0" styleClass="scroller">
                      <content>
-                        <VBox fx:id="variablesContainer" spacing="5.0">
-                           <padding>
-                              <Insets bottom="10" left="10" right="10" top="10" />
-                           </padding>
+                        <VBox fx:id="variablesContainer" spacing="5.0" styleClass="content-pad">
                            <children>
-                              <Label fx:id="variablesContainerHeader" contentDisplay="CENTER" text="Variables values:">
-                                 <font>
-                                    <Font size="18.0" />
-                                 </font>
-                              </Label>
+                              <Label fx:id="variablesContainerHeader" contentDisplay="CENTER" text="Variables values:" styleClass="label-strong" />
                            </children>
                         </VBox>
                      </content>
                   </ScrollPane>
-                        <ToggleButtonGroup id="toggleButtonGroup" layoutX="23.0" layoutY="14.0" selectionType="SINGLE">
+                        <ToggleButtonGroup id="toggleButtonGroup" layoutX="23.0" layoutY="14.0" selectionType="SINGLE" styleClass="toggle-primary">
                             <toggles>
                                 <ToggleButton fx:id="debugBtn" prefHeight="41.0" prefWidth="188.0" text="Debug" />
                                 <ToggleButton fx:id="executeBtn" prefHeight="41.0" prefWidth="204.0" selected="true" text="Execute" />
                             </toggles>
                         </ToggleButtonGroup>
                         <Label fx:id="cyclesLabel" alignment="CENTER" layoutX="23.0" layoutY="388.0" prefHeight="57.0" prefWidth="182.0" style="-fx-border-color: black; -fx-border-width: 2;" text="Cycles" textAlignment="CENTER" wrapText="true" />
-                        <ScrollPane fx:id="inputScrollPane" fitToHeight="true" fitToWidth="true" layoutX="221.0" layoutY="208.0" prefHeight="239.0" prefWidth="207.0" style="-fx-border-color: black; -fx-border-width: 2;">
+                        <ScrollPane fx:id="inputScrollPane" fitToHeight="true" fitToWidth="true" layoutX="221.0" layoutY="208.0" prefHeight="239.0" prefWidth="207.0" styleClass="scroller">
                             <content>
                                 <AnchorPane fx:id="inputDisplayPane" prefHeight="200.0" prefWidth="190.0">
                                     <children>
@@ -55,45 +48,39 @@
                                 </AnchorPane>
                             </content>
                         </ScrollPane>
-                        <VBox id="actionsPanel" fx:id="actionsPanel" alignment="CENTER" layoutX="24.0" layoutY="64.0" prefHeight="126.0" prefWidth="398.0" spacing="10.0" style="-fx-border-color: black; -fx-border-width: 2;" />
+                        <VBox id="actionsPanel" fx:id="actionsPanel" alignment="CENTER" layoutX="24.0" layoutY="64.0" prefHeight="126.0" prefWidth="398.0" spacing="10.0" styleClass="card" />
 
                     </children>
                 </Pane>
-                <ScrollPane fitToWidth="true" layoutX="706.0" layoutY="618.0" prefHeight="229.0" prefWidth="443.0" style="-fx-border-color: black; -fx-border-width: 2;">
+                <ScrollPane fitToWidth="true" layoutX="706.0" layoutY="618.0" prefHeight="229.0" prefWidth="443.0" styleClass="scroller">
                     <content>
-                        <VBox fx:id="statisticsTable" spacing="8.0" style="-fx-padding: 8;" />
+                        <VBox fx:id="statisticsTable" spacing="8.0" styleClass="content-pad" />
                     </content>
                 </ScrollPane>
                 <VBox layoutX="20.0" layoutY="157.0" prefHeight="445.0" prefWidth="671.0" spacing="6.0">
                     <children>
-                        <ScrollPane fx:id="programDisplayScrollPane" fitToWidth="true" prefHeight="431.0" prefWidth="692.0" style="-fx-background-color: black; -fx-border-width: 2;">
+                        <ScrollPane fx:id="programDisplayScrollPane" fitToWidth="true" prefHeight="431.0" prefWidth="692.0" styleClass="scroller">
                             <content>
-                                <VBox fx:id="programDisplayVBox" spacing="5.0">
-                                    <padding>
-                                        <Insets bottom="10" left="10" right="10" top="10" />
-                                    </padding>
+                                <VBox fx:id="programDisplayVBox" spacing="5.0" styleClass="content-pad">
                                 </VBox>
                             </content>
                         </ScrollPane>
-                        <HBox fx:id="programSummaryLine" alignment="CENTER_LEFT" spacing="8.0" style="-fx-border-color: black; -fx-border-width: 1; -fx-background-color: white; -fx-padding: 6;">
+                        <HBox fx:id="programSummaryLine" alignment="CENTER_LEFT" spacing="8.0" styleClass="card-subtle content-pad-sm">
                             <children>
-                                <Label fx:id="programSummaryLabel" style="-fx-font-weight: bold;" text="" />
+                                <Label fx:id="programSummaryLabel" styleClass="label-strong" text="" />
                             </children>
                         </HBox>
                     </children>
                 </VBox>
-            <ComboBox fx:id="programSelectorMenu" layoutX="20.0" layoutY="107.0" prefHeight="39.0" prefWidth="161.0" style="-fx-background-color: #38cb82; -fx-border-color: black; -fx-border-width: 2;" />
-            <ComboBox fx:id="expansionLevelMenu" layoutX="195.0" layoutY="107.0" prefHeight="39.0" prefWidth="100.0" style="-fx-background-color: #38cb82; -fx-border-color: black; -fx-border-width: 2;" />
+            <ComboBox fx:id="programSelectorMenu" layoutX="20.0" layoutY="107.0" prefHeight="39.0" prefWidth="161.0" styleClass="select-primary" />
+            <ComboBox fx:id="expansionLevelMenu" layoutX="195.0" layoutY="107.0" prefHeight="39.0" prefWidth="100.0" styleClass="select-primary" />
             <Label alignment="CENTER" layoutX="20.0" layoutY="75.0" prefHeight="24.0" prefWidth="160.0" text="Program selector" textAlignment="CENTER" wrapText="true" />
             <Label alignment="CENTER" layoutX="195.0" layoutY="75.0" prefHeight="24.0" prefWidth="100.0" text="Expansion level" textAlignment="CENTER" wrapText="true" />
             <Label alignment="CENTER" layoutX="308.0" layoutY="75.0" prefHeight="24.0" prefWidth="122.0" text="Highlight selection" textAlignment="CENTER" wrapText="true" />
-            <ComboBox fx:id="highlightSelectorMenu" layoutX="308.0" layoutY="107.0" prefHeight="39.0" prefWidth="100.0" style="-fx-background-color: #38cb82; -fx-border-color: black; -fx-border-width: 2;" />
-                <ScrollPane fx:id="historyChainScrollPane" fitToWidth="true" layoutX="21.0" layoutY="618.0" prefHeight="229.0" prefWidth="673.0" style="-fx-background-color: black; -fx-border-color: black; -fx-border-width: 2;">
+            <ComboBox fx:id="highlightSelectorMenu" layoutX="308.0" layoutY="107.0" prefHeight="39.0" prefWidth="100.0" styleClass="select-primary" />
+                <ScrollPane fx:id="historyChainScrollPane" fitToWidth="true" layoutX="21.0" layoutY="618.0" prefHeight="229.0" prefWidth="673.0" styleClass="scroller">
                     <content>
-                        <VBox fx:id="historyChainVBox" spacing="5.0">
-                            <padding>
-                                <Insets bottom="10" left="10" right="10" top="10" />
-                            </padding>
+                        <VBox fx:id="historyChainVBox" spacing="5.0" styleClass="content-pad">
                         </VBox>
                     </content>
                 </ScrollPane>

@@ -159,16 +159,7 @@ public class MainController {
 
     private void styleActionButton(Button button) {
         button.setPrefWidth(150);
-        button.setStyle(
-                "-fx-background-color: #38cb82;" +
-                        "-fx-text-fill: white;" +
-                        "-fx-font-size: 14px;" +
-                        "-fx-background-radius: 8;" +
-                        "-fx-border-color: black;" +
-                        "-fx-border-width: 2;" +
-                        "-fx-border-radius: 8;" +
-                        "-fx-cursor: hand;"
-        );
+        button.getStyleClass().addAll("btn", "btn-primary", "btn-wide");
     }
 
     private void executeProgram() {
@@ -178,7 +169,7 @@ public class MainController {
 
         for(ProgramResult.VariableToValue var : res.getVariableToValue()){
             Label varLabel = new Label(var.variable() + ": " + var.value());
-            varLabel.setStyle("-fx-font-weight: bold;");
+            varLabel.getStyleClass().add("label-strong");
             variablesContainer.getChildren().add(varLabel);
         }
         cyclesLabel.setText("Cycles: " + res.getCycles());
@@ -309,10 +300,9 @@ public class MainController {
             Label varLabel = new Label(name + ": " + value);
             // Highlight if value changed compared to previous step
             Integer prev = lastVariableValues.get(name);
+            varLabel.getStyleClass().add("label-strong");
             if (prev != null && prev != value) {
-                varLabel.setStyle("-fx-font-weight: bold; -fx-background-color: #b7f7b0;");
-            } else {
-                varLabel.setStyle("-fx-font-weight: bold;");
+                varLabel.getStyleClass().add("label-changed");
             }
             variablesContainer.getChildren().add(varLabel);
         }
@@ -501,10 +491,7 @@ public class MainController {
             } catch (IOException e) {
                 // Fallback to simple label if loading fails
                 Label commandLabel = new Label(command);
-                commandLabel.setStyle(
-                        "-fx-border-color: black; -fx-border-width: 1; -fx-padding: 5; "
-                                + "-fx-background-color: white;"
-                );
+                commandLabel.getStyleClass().add("command-label");
                 commandLabel.setMaxWidth(Double.MAX_VALUE);
                 commandLabel.setWrapText(true);
                 programDisplayVBox.getChildren().add(commandLabel);
@@ -546,7 +533,7 @@ public class MainController {
 
         if (history == null || history.isEmpty()){
             Label empty = new Label("No history available");
-            empty.setStyle("-fx-text-fill: #666; -fx-font-style: italic;");
+            empty.getStyleClass().add("label-meta");
             historyChainVBox.getChildren().add(empty);
             return;
         }
@@ -557,10 +544,7 @@ public class MainController {
             Label commandLabel = new Label(command);
             commandLabel.setMaxWidth(Double.MAX_VALUE);
             commandLabel.setWrapText(true);
-            commandLabel.setStyle(
-                    "-fx-border-color: black; -fx-border-width: 1; -fx-padding: 5; " +
-                            "-fx-background-color: white;"
-            );
+            commandLabel.getStyleClass().add("command-label");
             historyChainVBox.getChildren().add(commandLabel);
         }
     }
@@ -750,7 +734,7 @@ public class MainController {
         sortedData.putAll(data);
 
         Label header = new Label("Input Data Received:");
-        header.setStyle("-fx-font-weight: bold;");
+        header.getStyleClass().add("label-strong");
         inputVbox.getChildren().add(header);
 
         for (Map.Entry<String, Integer> entry : sortedData.entrySet()) {

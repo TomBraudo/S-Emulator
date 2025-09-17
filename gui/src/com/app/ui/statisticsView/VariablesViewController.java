@@ -37,14 +37,14 @@ public class VariablesViewController {
 
         if (variables == null || variables.isEmpty()){
             Label empty = new Label("No variables recorded");
-            empty.setStyle("-fx-text-fill: #666; -fx-font-style: italic;");
+            empty.getStyleClass().add("label-meta");
             container.getChildren().add(empty);
             return;
         }
 
         for (ProgramResult.VariableToValue v : variables){
             Label row = new Label(v.variable() + ": " + v.value());
-            row.setStyle("-fx-font-weight: bold;");
+            row.getStyleClass().add("label-strong");
             row.setWrapText(true);
             container.getChildren().add(row);
         }

@@ -6,12 +6,12 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.geometry.Insets?>
 
-<ScrollPane xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fitToWidth="true" style="-fx-border-color: #eee; -fx-border-width: 1; -fx-background-color: transparent;">
+<ScrollPane xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fitToWidth="true" styleClass="scroller">
     <content>
-        <VBox fx:id="container" spacing="6.0" style="-fx-padding: 10;">
+        <VBox fx:id="container" spacing="6.0" styleClass="content-pad">
             <children>
-                <Label fx:id="header" text="Variables values:" style="-fx-font-weight: bold; -fx-font-size: 13px;" />
-                <Button fx:id="executeBtn" text="Execute" style="-fx-background-color: #38cb82; -fx-text-fill: white; -fx-font-weight: bold; -fx-border-color: black; -fx-border-width: 1; -fx-background-radius: 6; -fx-border-radius: 6; -fx-cursor: hand;" />
+                <Label fx:id="header" text="Variables values:" styleClass="label-strong" />
+                <Button fx:id="executeBtn" text="Execute" styleClass="btn btn-primary" />
                 <!-- Variable rows injected dynamically -->
             </children>
             <padding>

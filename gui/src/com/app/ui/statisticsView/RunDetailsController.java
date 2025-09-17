@@ -8,6 +8,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
@@ -26,7 +27,9 @@ public class RunDetailsController {
     @FXML
     private Label cyclesLabel;
     @FXML
-    private GridPane root;
+    private VBox root;
+    @FXML
+    private GridPane gridPane;
 
     private Statistic statistic;
     private java.util.function.Consumer<java.util.List<com.api.ProgramResult.VariableToValue>> onExecuteVariables;

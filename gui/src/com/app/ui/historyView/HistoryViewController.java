@@ -17,7 +17,7 @@ public class HistoryViewController {
         container.getChildren().clear();
         if (history == null || history.isEmpty()){
             Label empty = new Label("No history available");
-            empty.setStyle("-fx-text-fill: #666; -fx-font-style: italic;");
+            empty.getStyleClass().add("label-meta");
             container.getChildren().add(empty);
             return;
         }
@@ -26,21 +26,13 @@ public class HistoryViewController {
             Label lineLabel = new Label(line);
             lineLabel.setMaxWidth(Double.MAX_VALUE);
             lineLabel.setWrapText(true);
-            lineLabel.setStyle(
-                    "-fx-font-family: 'Consolas', 'Monospaced';" +
-                    "-fx-font-weight: bold;" +
-                    "-fx-padding: 6 8;" +
-                    "-fx-background-color: white;" +
-                    "-fx-border-color: #ccc;" +
-                    "-fx-border-radius: 6;" +
-                    "-fx-background-radius: 6;"
-            );
+            lineLabel.getStyleClass().add("command-label");
 
             container.getChildren().add(lineLabel);
 
             if (i < history.size() - 1){
                 Label arrow = new Label("\u2191"); // up arrow
-                arrow.setStyle("-fx-text-fill: #888; -fx-font-size: 14px;");
+                arrow.getStyleClass().add("history-arrow");
                 HBox arrowRow = new HBox(arrow);
                 arrowRow.setAlignment(Pos.CENTER);
                 HBox.setMargin(arrow, new Insets(4, 0, 4, 0));
