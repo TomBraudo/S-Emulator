@@ -39,8 +39,6 @@ public class MainController {
     @FXML
     private ProgressBar loadingProgressBar;
     @FXML
-    private Button newInputBtn;
-    @FXML
     private ScrollPane inputScrollPane;
     @FXML
     private AnchorPane inputDisplayPane;
@@ -74,7 +72,6 @@ public class MainController {
 
     @FXML
     public void initialize() {
-        newInputBtn.setOnAction(event -> openInputForm());
         loadProgramBtn.setOnAction(event -> loadSProgram());
 
         setupToggleActions();
@@ -105,7 +102,7 @@ public class MainController {
         actionsPanel.getChildren().clear();
 
         Button startExecution = new Button("Start execution");
-        startExecution.setOnAction(event -> executeProgram());
+        startExecution.setOnAction(event -> openInputThenExecute());
         styleActionButton(startExecution);
 
         actionsPanel.getChildren().add(startExecution);
@@ -130,7 +127,7 @@ public class MainController {
         styleActionButton(stepBackBtn);
 
         // skeleton handlers
-        startDebug.setOnAction(e -> startDebuggingProgram());
+        startDebug.setOnAction(e -> openInputThenStartDebug());
         stepOverBtn.setOnAction(e -> stepOverInstruction());
         stopBtn.setOnAction(e -> stopDebugging());
         continueBtn.setOnAction(e -> continueDebug());
@@ -184,6 +181,10 @@ public class MainController {
         refreshStatisticsTable();
     }
 
+    private void openInputThenExecute(){
+        openInputFormWithCallback(() -> executeProgram());
+    }
+
     private void startDebuggingProgram(){
         if(!Api.isLoaded()){
             ErrorMessageController.showError("Program not loaded, can't debug");
@@ -193,6 +194,37 @@ public class MainController {
 
         // Update variables view each debug step
         writeVariablesState(res);
+    }
+
+    private void openInputThenStartDebug(){
+        openInputFormWithCallback(() -> startDebuggingProgram());
+    }
+
+    private void openInputFormWithCallback(Runnable afterSubmit){
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("inputComponent/inputForm.fxml"));
+            ScrollPane root = loader.load();
+
+            InputFormController inputFormController = loader.getController();
+
+            List<String> inputVariables = Api.getInputVariableNames();
+
+            inputFormController.initData(inputVariables);
+
+            inputFormController.setDataCallback(inputMap -> {
+                displayInputData(inputMap);
+                if (afterSubmit != null) afterSubmit.run();
+            });
+
+            Stage formStage = new Stage();
+            formStage.setTitle("Input Form");
+            formStage.setScene(new Scene(root));
+            formStage.initModality(Modality.APPLICATION_MODAL);
+            formStage.showAndWait();
+
+        } catch (IOException e) {
+            ErrorMessageController.showError("Failed to load input form:\n" + e.getMessage());
+        }
     }
 
     private void setHighlightedIndex(int highlightedIndex){
