@@ -15,7 +15,7 @@
 
 <ScrollPane fitToHeight="true" fitToWidth="true" prefHeight="874.0" prefWidth="1173.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.app.ui.MainController">
     <content>
-        <AnchorPane prefHeight="908.0" prefWidth="1171.0">
+        <AnchorPane fx:id="commandHistoryChainContainer" prefHeight="908.0" prefWidth="1171.0">
             <children>
                 <Button fx:id="loadProgramBtn" layoutX="18.0" layoutY="27.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="103.0" style="-fx-background-color: #38cb82; -fx-border-color: black; -fx-border-width: 2; -fx-border-style: solid;;" text="Load Program" />
                 <Label fx:id="filePathLabel" alignment="CENTER" contentDisplay="CENTER" layoutX="131.0" layoutY="27.0" prefHeight="40.0" prefWidth="1018.0" style="-fx-border-color: black; -fx-border-width: 2;" text="Currently Loaded File Path" textAlignment="CENTER" />
@@ -59,7 +59,7 @@
 
                     </children>
                 </Pane>
-                <ScrollPane layoutX="706.0" layoutY="618.0" prefHeight="229.0" prefWidth="443.0" fitToWidth="true" style="-fx-border-color: black; -fx-border-width: 2;">
+                <ScrollPane fitToWidth="true" layoutX="706.0" layoutY="618.0" prefHeight="229.0" prefWidth="443.0" style="-fx-border-color: black; -fx-border-width: 2;">
                     <content>
                         <VBox fx:id="statisticsTable" spacing="8.0" style="-fx-padding: 8;" />
                     </content>
@@ -79,6 +79,15 @@
             <Label alignment="CENTER" layoutX="195.0" layoutY="75.0" prefHeight="24.0" prefWidth="100.0" text="Expansion level" textAlignment="CENTER" wrapText="true" />
             <Label alignment="CENTER" layoutX="308.0" layoutY="75.0" prefHeight="24.0" prefWidth="122.0" text="Highlight selection" textAlignment="CENTER" wrapText="true" />
             <ComboBox fx:id="highlightSelectorMenu" layoutX="308.0" layoutY="107.0" prefHeight="39.0" prefWidth="100.0" style="-fx-background-color: #38cb82; -fx-border-color: black; -fx-border-width: 2;" />
+                <ScrollPane fx:id="historyChainScrollPane" fitToWidth="true" layoutX="21.0" layoutY="618.0" prefHeight="229.0" prefWidth="673.0" style="-fx-background-color: black; -fx-border-color: black; -fx-border-width: 2;">
+                    <content>
+                        <VBox fx:id="historyChainVBox" spacing="5.0">
+                            <padding>
+                                <Insets bottom="10" left="10" right="10" top="10" />
+                            </padding>
+                        </VBox>
+                    </content>
+                </ScrollPane>
 
 
             </children>

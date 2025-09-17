@@ -56,6 +56,12 @@ public class MainController {
     private VBox statisticsTable;
     @FXML
     private ToggleButton debugBtn, executeBtn;
+    @FXML
+    private AnchorPane commandHistoryChainContainer;
+    @FXML
+    private ScrollPane historyChainScrollPane;
+    @FXML
+    private VBox historyChainVBox;
 
     private Button stepOverBtn;
     private Button continueBtn;
@@ -446,7 +452,7 @@ public class MainController {
                 int index = i;
                 IntConsumer toggle = (idx) -> toggleBreakpoint(idx, controller);
                 controller.init(index, command, breakpointIndices.contains(index), toggle);
-                controller.setOnCommandClicked(idx -> openHistoryWindow(idx));
+                controller.setOnCommandClicked(this::showHistoryInChain);
 
                 // store controller on the row for later highlighting
                 row.getProperties().put("controller", controller);
@@ -481,6 +487,40 @@ public class MainController {
             stage.show();
         } catch (IOException e){
             ErrorMessageController.showError("Failed to open history view\n" + e.getMessage());
+        }
+    }
+
+    private void showHistoryInChain(int commandIndex){
+        try {
+            List<String> history = Api.getCommandHistory(curExpansionLevel, commandIndex);
+            renderHistoryChain(history);
+        } catch (Exception e){
+            ErrorMessageController.showError("Failed to load history chain\n" + e.getMessage());
+        }
+    }
+
+    private void renderHistoryChain(List<String> history){
+        if (historyChainVBox == null) return;
+        historyChainVBox.getChildren().clear();
+
+        if (history == null || history.isEmpty()){
+            Label empty = new Label("No history available");
+            empty.setStyle("-fx-text-fill: #666; -fx-font-style: italic;");
+            historyChainVBox.getChildren().add(empty);
+            return;
+        }
+
+        // Present newest first: commands[N-1] at the top
+        for (int i = history.size() - 1; i >= 0; i--){
+            String command = history.get(i);
+            Label commandLabel = new Label(command);
+            commandLabel.setMaxWidth(Double.MAX_VALUE);
+            commandLabel.setWrapText(true);
+            commandLabel.setStyle(
+                    "-fx-border-color: black; -fx-border-width: 1; -fx-padding: 5; " +
+                            "-fx-background-color: white;"
+            );
+            historyChainVBox.getChildren().add(commandLabel);
         }
     }
 
