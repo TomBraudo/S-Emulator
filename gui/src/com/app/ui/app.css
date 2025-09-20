@@ -6,7 +6,7 @@
     -color-border:  black;
     -color-border-subtle: #dddddd;
     -color-bg: white;
-    -color-surface: white;
+    -color-surface: #F5E6D3;
     -color-text: #111111;
     -color-muted: #666666;
 }
@@ -68,15 +68,20 @@
 
 /* ScrollPanes and inner content spacing */
 .scroller {
-    -fx-background-color: transparent;
+    -fx-background-color: -color-surface;
     -fx-border-color: -color-border;
     -fx-border-width: 2;
 }
+.scroller .viewport {
+    -fx-background-color: -color-surface;
+}
 .content-pad {
     -fx-padding: 10;
+    -fx-background-color: -color-surface;
 }
 .content-pad-sm {
     -fx-padding: 6;
+    -fx-background-color: -color-surface;
 }
 
 /* Labels / typography */
@@ -106,7 +111,7 @@
     -fx-max-width: 24;
 }
 .command-label {
-    -fx-background-color: -color-bg;
+    -fx-background-color: -color-surface;
     -fx-border-color: -color-border;
     -fx-border-width: 1;
     -fx-padding: 5;
@@ -114,6 +119,7 @@
 
 /* Segmented toggle look for Debug/Execute */
 .toggle-primary .toggle-button {
+    -fx-background-color: -color-surface;
     -fx-background-radius: 6;
     -fx-border-radius: 6;
     -fx-border-color: -color-border;
@@ -153,4 +159,19 @@
 /* Optional fixed width for action buttons if keeping exact visual balance */
 .btn-wide {
     -fx-pref-width: 150;
+}
+
+/* Text fields */
+.text-field {
+    -fx-background-color: -color-surface;
+    -fx-border-color: -color-border;
+    -fx-border-width: 1;
+}
+
+/* Main containers and panes */
+.anchor-pane {
+    -fx-background-color: -color-bg;
+}
+.pane {
+    -fx-background-color: -color-surface;
 }
