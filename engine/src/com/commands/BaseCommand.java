@@ -31,6 +31,15 @@ public abstract class BaseCommand implements Serializable {
     public String getLabel() {
         return label;
     }
+    public int getIndex(){
+        return index;
+    }
+    public void setIndex(int index){
+        this.index = index;
+    }
+    public BaseCommand getCreator(){
+        return creator;
+    }
     protected String displayLabel(){
         if(label.equals(NO_LABEL)){
             return "   ";
@@ -62,8 +71,8 @@ public abstract class BaseCommand implements Serializable {
     public abstract String getTargetLabel();
     protected abstract String toStringBase();
     public abstract BaseCommand copy(List<String> variables, List<Integer> constants, List<String> labels, int index, BaseCommand creator);
-    protected abstract List<String> getLabelsForCopy();
-    protected abstract List<Integer> getConstantsForCopy();
+    public abstract List<String> getLabelsForCopy();
+    public abstract List<Integer> getConstantsForCopy();
     public abstract boolean isBaseCommand();
     public abstract SInstruction toSInstruction();
     public List<String> getCommandHistory(){

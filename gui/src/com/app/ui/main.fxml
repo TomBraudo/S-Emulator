@@ -60,7 +60,14 @@
                         <ScrollPane fx:id="programDisplayScrollPane" fitToWidth="true" prefHeight="431.0" prefWidth="692.0" styleClass="scroller">
                             <content>
                                 <VBox fx:id="programDisplayVBox" spacing="5.0" styleClass="content-pad">
-                                </VBox>
+                           <children>
+                              <ToggleButtonGroup fx:id="programViewToggleGroup" selectionType="SINGLE" styleClass="toggle-primary">
+                                  <toggles>
+                                      <ToggleButton fx:id="tableViewToggle" prefHeight="30.0" prefWidth="344.0" selected="true" text="Table view" />
+                                      <ToggleButton fx:id="treeViewToggle" prefHeight="30.0" prefWidth="323.0" text="Tree view" />
+                                  </toggles>
+                              </ToggleButtonGroup>
+                           </children></VBox>
                             </content>
                         </ScrollPane>
                         <HBox fx:id="programSummaryLine" alignment="CENTER_LEFT" spacing="8.0" styleClass="card-subtle content-pad-sm">
@@ -82,9 +89,9 @@
                         </VBox>
                     </content>
                 </ScrollPane>
-            <Button fx:id="newProgramBtn" layoutX="419.0" layoutY="98.0" mnemonicParsing="false" prefHeight="47.0" prefWidth="78.0" text="New Program" wrapText="true" styleClass="btn btn-primary" />
-            <Button fx:id="addCommandBtn" layoutX="508.0" layoutY="98.0" mnemonicParsing="false" prefHeight="47.0" prefWidth="78.0" text="Add Command" wrapText="true" styleClass="btn btn-primary" />
-            <Button fx:id="exportProgramBtn" layoutX="601.0" layoutY="98.0" mnemonicParsing="false" prefHeight="47.0" prefWidth="78.0" text="Export Program" wrapText="true" styleClass="btn btn-primary" />
+            <Button fx:id="newProgramBtn" layoutX="419.0" layoutY="98.0" mnemonicParsing="false" prefHeight="47.0" prefWidth="78.0" styleClass="btn btn-primary" text="New Program" wrapText="true" />
+            <Button fx:id="addCommandBtn" layoutX="508.0" layoutY="98.0" mnemonicParsing="false" prefHeight="47.0" prefWidth="78.0" styleClass="btn btn-primary" text="Add Command" wrapText="true" />
+            <Button fx:id="exportProgramBtn" layoutX="601.0" layoutY="98.0" mnemonicParsing="false" prefHeight="47.0" prefWidth="78.0" styleClass="btn btn-primary" text="Export Program" wrapText="true" />
 
 
             </children>

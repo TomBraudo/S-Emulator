@@ -112,12 +112,12 @@ class JumpEqualFunction extends BaseCommand{
     }
 
     @Override
-    protected List<String> getLabelsForCopy() {
+    public List<String> getLabelsForCopy() {
         return List.of(targetLabel, label);
     }
 
     @Override
-    protected List<Integer> getConstantsForCopy() {
+    public List<Integer> getConstantsForCopy() {
         return List.of();
     }
 

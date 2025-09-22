@@ -7,7 +7,6 @@ import com.XMLHandlerV2.SInstructionArgument;
 import com.XMLHandlerV2.SInstructionArguments;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -77,12 +76,12 @@ class ConstantAssignment extends BaseCommand {
     }
 
     @Override
-    protected List<String> getLabelsForCopy() {
+    public List<String> getLabelsForCopy() {
         return List.of(label);
     }
 
     @Override
-    protected List<Integer> getConstantsForCopy() {
+    public List<Integer> getConstantsForCopy() {
         return List.of(value);
     }
 

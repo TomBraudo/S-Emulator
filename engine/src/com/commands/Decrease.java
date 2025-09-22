@@ -5,7 +5,6 @@ import com.program.SingleStepChanges;
 import com.XMLHandlerV2.SInstruction;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -46,12 +45,12 @@ class Decrease extends BaseCommand {
     }
 
     @Override
-    protected List<String> getLabelsForCopy() {
+    public List<String> getLabelsForCopy() {
         return List.of(label);
     }
 
     @Override
-    protected List<Integer> getConstantsForCopy() {
+    public List<Integer> getConstantsForCopy() {
         return List.of();
     }
 

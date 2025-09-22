@@ -9,6 +9,8 @@ import com.commands.CommandMetadata;
 import com.commands.ReverseFactory;
 import com.commands.FnArgs;
 import com.dto.CommandSchemaDto;
+import com.dto.ProgramTreeDto;
+import com.program.MixedExpansionSession;
 import com.program.Program;
 import com.program.ProgramState;
 import jakarta.xml.bind.JAXBContext;
@@ -32,6 +34,8 @@ public class Api {
     private static Program debugProgram;
     private static List<Integer> debugInput;
     private static int debugExpansionLevel;
+    // Mixed tree view state (visual-only)
+    private static MixedExpansionSession mixedSession;
 
     public static String getCurProgramName() {
         return curProgram.getName();
@@ -96,6 +100,39 @@ public class Api {
     public static List<String> getAvailableFunctions(){
         return FnArgs.getFunctionNames();
     }
+
+    // ===== Mixed Tree View API (visual-only) =====
+    public static void startMixedTreeView(){
+        if (curProgram == null){
+            throw new IllegalStateException("No program loaded");
+        }
+        mixedSession = MixedExpansionSession.buildFromProgram(new Program(curProgram));
+    }
+
+    public static ProgramTreeDto getMixedTree(){
+        if (mixedSession == null){
+            throw new IllegalStateException("Mixed tree view not initialized");
+        }
+        return mixedSession.toDto();
+    }
+
+    public static ProgramTreeDto expandMixedAt(List<Integer> path){
+        if (mixedSession == null){
+            throw new IllegalStateException("Mixed tree view not initialized");
+        }
+        mixedSession.expandByPath(path);
+        return mixedSession.toDto();
+    }
+
+    public static ProgramTreeDto collapseMixedAt(List<Integer> path){
+        if (mixedSession == null){
+            throw new IllegalStateException("Mixed tree view not initialized");
+        }
+        mixedSession.collapseByPath(path);
+        return mixedSession.toDto();
+    }
+
+    // Program copy uses Program's copy constructor; no binary deep copy needed
 
     // ===== Schema exposure for UI =====
     public static List<String> listCommandNames() {

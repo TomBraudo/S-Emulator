@@ -67,6 +67,10 @@ public class MainController {
     @FXML private Button newProgramBtn;
     @FXML private Button addCommandBtn;
     @FXML private Button exportProgramBtn;
+    @FXML private javafx.scene.control.ToggleButton tableViewToggle;
+    @FXML private javafx.scene.control.ToggleButton treeViewToggle;
+
+    private javafx.scene.control.TreeTableView<com.dto.CommandTreeNodeDto> currentTreeView;
 
     private Button stepOverBtn;
     private Button continueBtn;
@@ -85,6 +89,7 @@ public class MainController {
         if (exportProgramBtn != null) exportProgramBtn.setOnAction(e -> onExportProgram());
 
         setupToggleActions();
+        setupProgramViewToggle();
         initExpansionLevelMenu();
         initProgramSelectorMenu();
         initHighlightSelectorMenu();
@@ -93,9 +98,9 @@ public class MainController {
     }
 
     private void updateProgramDependentButtons(){
-        boolean hasProgram = Api.isLoaded();
-        if (addCommandBtn != null) addCommandBtn.setDisable(!hasProgram);
-        if (exportProgramBtn != null) exportProgramBtn.setDisable(!hasProgram);
+        boolean enable = Api.isLoaded() && curExpansionLevel == 0;
+        if (addCommandBtn != null) addCommandBtn.setDisable(!enable);
+        if (exportProgramBtn != null) exportProgramBtn.setDisable(!enable);
     }
 
     private void setupToggleActions() {
@@ -116,6 +121,64 @@ public class MainController {
         });
     }
 
+    private void setupProgramViewToggle(){
+        // Ensure default selection is Table view
+        if (tableViewToggle != null) tableViewToggle.setSelected(true);
+
+        if (tableViewToggle != null){
+            tableViewToggle.setOnAction(e -> {
+                if (!tableViewToggle.isSelected()){
+                    tableViewToggle.setSelected(true);
+                }
+                if (treeViewToggle != null) treeViewToggle.setSelected(false);
+                removeTreeViewFromDisplay();
+                if (Api.isLoaded()){
+                    List<String> commands = Api.getProgramCommands(curExpansionLevel);
+                    clearProgramRowsPreservingToggle();
+                    printLoadedProgram(commands);
+                }
+            });
+        }
+
+        if (treeViewToggle != null){
+            treeViewToggle.setOnAction(e -> {
+                if (!treeViewToggle.isSelected()){
+                    treeViewToggle.setSelected(true);
+                }
+                if (tableViewToggle != null) tableViewToggle.setSelected(false);
+                try {
+                    Api.startMixedTreeView();
+                    com.dto.ProgramTreeDto tree = Api.getMixedTree();
+                    renderTree(tree);
+                } catch (Exception ex){
+                    ErrorMessageController.showError("Failed to build tree view:\n" + ex.getMessage());
+                }
+            });
+        }
+    }
+
+    private void clearProgramRowsPreservingToggle(){
+        if (programDisplayVBox == null) return;
+        if (programDisplayVBox.getChildren().isEmpty()) return;
+        // Preserve first child (toggle group container) and remove rest
+        javafx.scene.Node first = programDisplayVBox.getChildren().get(0);
+        programDisplayVBox.getChildren().setAll(first);
+    }
+
+    private void removeTreeViewFromDisplay(){
+        if (currentTreeView != null){
+            programDisplayVBox.getChildren().remove(currentTreeView);
+            currentTreeView = null;
+        }
+    }
+
+    private void renderTree(com.dto.ProgramTreeDto dto){
+        clearProgramRowsPreservingToggle();
+        com.app.ui.treeview.ProgramTreeViewHelper helper = new com.app.ui.treeview.ProgramTreeViewHelper();
+        currentTreeView = helper.buildTree(dto);
+        programDisplayVBox.getChildren().add(currentTreeView);
+    }
+
     private void onNewProgram() {
         TextInputDialog dialog = new TextInputDialog("NewProgram");
         dialog.setTitle("Create New Program");
@@ -125,7 +188,7 @@ public class MainController {
         dialog.showAndWait().ifPresent(name -> {
             try {
                 Api.createEmptyProgram(name);
-                // Refresh like after load
+                // Refresh like after load; preserve toggle state
                 List<String> commands = Api.getProgramCommands(curExpansionLevel);
                 printLoadedProgram(commands);
                 populateExpansionLevelMenu();
@@ -455,6 +518,7 @@ public class MainController {
                 List<String> commands = Api.getProgramCommands(curExpansionLevel);
                 printLoadedProgram(commands);
                 populateHighlightSelector();
+                updateProgramDependentButtons();
             }
         });
     }
@@ -467,6 +531,7 @@ public class MainController {
                 Api.setCurProgram(newVal);
                 populateExpansionLevelMenu(); // safe now, no duplicate listener
                 populateHighlightSelector();
+                updateProgramDependentButtons();
             }
         });
     }
@@ -541,7 +606,9 @@ public class MainController {
     private final Set<Integer> breakpointIndices = new HashSet<>();
 
     private void printLoadedProgram(List<String> commands) {
-        programDisplayVBox.getChildren().clear();
+        // Preserve the toggle group; remove any existing rows/tree
+        clearProgramRowsPreservingToggle();
+        removeTreeViewFromDisplay();
         // Clear breakpoints on reload for now (basic behavior)
         breakpointIndices.clear();
 
@@ -736,7 +803,7 @@ public class MainController {
                     // Unbind progress bar
                     loadingProgressBar.progressProperty().unbind();
 
-                    // Update UI with loaded program
+                    // Update UI with loaded program; preserve toggle and clear rows only
                     try {
                         List<String> commands = Api.getProgramCommands(curExpansionLevel);
                         printLoadedProgram(commands);
