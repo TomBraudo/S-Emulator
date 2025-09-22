@@ -63,8 +63,8 @@
                            <children>
                               <ToggleButtonGroup fx:id="programViewToggleGroup" selectionType="SINGLE" styleClass="toggle-primary">
                                   <toggles>
-                                      <ToggleButton fx:id="tableViewToggle" prefHeight="30.0" prefWidth="344.0" selected="true" text="Table view" />
-                                      <ToggleButton fx:id="treeViewToggle" prefHeight="30.0" prefWidth="323.0" text="Tree view" />
+                                      <ToggleButton fx:id="tableViewToggle" prefHeight="28.0" prefWidth="317.0" selected="true" text="Table view" />
+                                      <ToggleButton fx:id="treeViewToggle" prefHeight="28.0" prefWidth="317.0" text="Tree view" />
                                   </toggles>
                               </ToggleButtonGroup>
                            </children></VBox>
