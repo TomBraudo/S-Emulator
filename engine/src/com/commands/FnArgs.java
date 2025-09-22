@@ -117,6 +117,13 @@ public final class FnArgs {
         return maxXIndex;
     }
 
+    public static void clearFunctions(){
+        DEFINITIONS.clear();
+        PROGRAM_CACHE.clear();
+        FUNCTION_ARITY.clear();
+        BUILDING.clear();
+    }
+
     /**
      * Extract the index from an x-variable (e.g., "x1" -> 1, "x11" -> 11)
      * Returns 0 if not an x-variable.

@@ -41,6 +41,9 @@ public class Program implements Serializable {
 
     public void addCommand(com.commands.BaseCommand command){
         commands.add(command);
+        // Keep derived structures and summary up to date after mutations
+        unpackCommands();
+        createSummary(commands);
     }
 
     /*

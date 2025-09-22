@@ -3,6 +3,7 @@ module com.engine{
     requires java.xml;
 
     exports com.api;
+    exports com.dto;
 
     opens com.XMLHandlerV2 to jakarta.xml.bind;
 }

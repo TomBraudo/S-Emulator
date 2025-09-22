@@ -2,6 +2,7 @@ package com.commands;
 
 import com.program.ProgramState;
 import com.program.SingleStepChanges;
+import com.XMLHandlerV2.SInstruction;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -79,6 +80,16 @@ class Decrease extends BaseCommand {
     @Override
     public String getTargetLabel() {
         return NO_LABEL;
+    }
+
+    @Override
+    public SInstruction toSInstruction() {
+        SInstruction ins = new SInstruction();
+        ins.setName("DECREASE");
+        ins.setType("basic");
+        ins.setSVariable(variableName);
+        if (!label.equals(NO_LABEL)) ins.setSLabel(label);
+        return ins;
     }
 
 

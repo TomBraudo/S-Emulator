@@ -1,5 +1,8 @@
 package com.commands;
 
+import com.XMLHandlerV2.SInstruction;
+import com.XMLHandlerV2.SInstructionArgument;
+import com.XMLHandlerV2.SInstructionArguments;
 import com.program.ProgramState;
 import com.program.SingleStepChanges;
 
@@ -103,4 +106,21 @@ class Assignment extends BaseCommand {
     public boolean isBaseCommand() {
         return false;
     }
+    
+    @Override
+    public SInstruction toSInstruction() {
+        SInstruction ins = new SInstruction();
+        ins.setName("ASSIGNMENT");
+        ins.setType("synthetic");
+        ins.setSVariable(variableName);
+        if (!label.equals(NO_LABEL)) ins.setSLabel(label);
+        SInstructionArguments args = new SInstructionArguments();
+        SInstructionArgument arg = new SInstructionArgument();
+        arg.setName("assignedVariable");
+        arg.setValue(otherVariableName);
+        args.getSInstructionArgument().add(arg);
+        ins.setSInstructionArguments(args);
+        return ins;
+    }
+    
 }

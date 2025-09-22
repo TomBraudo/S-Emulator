@@ -12,4 +12,5 @@ module gui {
     opens com.app.ui.inputComponent to javafx.fxml;
     exports customComponents to javafx.fxml;
     opens com.app.ui.errorComponents to javafx.fxml, javafx.graphics;
+    opens com.app.ui.newCommandForm to javafx.fxml;
 }

@@ -1,6 +1,7 @@
 package com.commands;
 
 import com.program.ProgramState;
+import com.XMLHandlerV2.SInstruction;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -64,6 +65,7 @@ public abstract class BaseCommand implements Serializable {
     protected abstract List<String> getLabelsForCopy();
     protected abstract List<Integer> getConstantsForCopy();
     public abstract boolean isBaseCommand();
+    public abstract SInstruction toSInstruction();
     public List<String> getCommandHistory(){
         List<String> history = new ArrayList<>();
         history.add(toStringBase());
@@ -76,6 +78,7 @@ public abstract class BaseCommand implements Serializable {
         }
         return history;
     }
+
 
 }
 

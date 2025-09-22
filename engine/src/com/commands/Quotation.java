@@ -1,5 +1,6 @@
 package com.commands;
 
+import com.XMLHandlerV2.SInstruction;
 import com.api.ProgramResult;
 import com.program.Program;
 import com.program.ProgramState;
@@ -78,6 +79,12 @@ class Quotation extends BaseCommand{
     @Override
     public boolean isBaseCommand() {
         return false;
+    }
+
+    //Not supported
+    @Override
+    public SInstruction toSInstruction() {
+        return null;
     }
 
     @Override

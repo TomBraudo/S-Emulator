@@ -64,6 +64,9 @@ public class MainController {
     private javafx.scene.layout.HBox programSummaryLine;
     @FXML
     private Label programSummaryLabel;
+    @FXML private Button newProgramBtn;
+    @FXML private Button addCommandBtn;
+    @FXML private Button exportProgramBtn;
 
     private Button stepOverBtn;
     private Button continueBtn;
@@ -77,6 +80,9 @@ public class MainController {
     @FXML
     public void initialize() {
         loadProgramBtn.setOnAction(event -> loadSProgram());
+        if (newProgramBtn != null) newProgramBtn.setOnAction(e -> onNewProgram());
+        if (addCommandBtn != null) addCommandBtn.setOnAction(e -> onAddCommand());
+        if (exportProgramBtn != null) exportProgramBtn.setOnAction(e -> onExportProgram());
 
         setupToggleActions();
         initExpansionLevelMenu();
@@ -100,6 +106,64 @@ public class MainController {
                 executeBtn.setSelected(false);
             }
         });
+    }
+
+    private void onNewProgram() {
+        TextInputDialog dialog = new TextInputDialog("NewProgram");
+        dialog.setTitle("Create New Program");
+        dialog.setHeaderText(null);
+        dialog.setContentText("Program name:");
+        dialog.getDialogPane().getScene().getStylesheets().add(getClass().getResource("app.css").toExternalForm());
+        dialog.showAndWait().ifPresent(name -> {
+            try {
+                Api.createEmptyProgram(name);
+                // Refresh like after load
+                List<String> commands = Api.getProgramCommands(curExpansionLevel);
+                printLoadedProgram(commands);
+                populateExpansionLevelMenu();
+                populateProgramChooser();
+                populateHighlightSelector();
+                refreshStatisticsTable();
+            } catch (Exception ex) {
+                ErrorMessageController.showError("Failed to create program:\n" + ex.getMessage());
+            }
+        });
+    }
+
+    private void onAddCommand() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("newCommandForm/newCommandForm.fxml"));
+            VBox root = loader.load();
+            Stage stage = new Stage();
+            stage.setTitle("Add Command");
+            stage.setScene(new Scene(root));
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.showAndWait();
+            // After close, refresh display
+            List<String> commands = Api.getProgramCommands(curExpansionLevel);
+            printLoadedProgram(commands);
+            populateExpansionLevelMenu();
+            populateHighlightSelector();
+            refreshStatisticsTable();
+        } catch (IOException e) {
+            ErrorMessageController.showError("Failed to open Add Command form:\n" + e.getMessage());
+        }
+    }
+
+    private void onExportProgram() {
+        javafx.stage.DirectoryChooser chooser = new javafx.stage.DirectoryChooser();
+        chooser.setTitle("Select Export Folder");
+        Stage stage = (Stage) exportProgramBtn.getScene().getWindow();
+        java.io.File dir = chooser.showDialog(stage);
+        if (dir != null) {
+            try {
+                String saved = Api.saveCurrentProgramAsXml(dir.getAbsolutePath());
+                Alert ok = new Alert(Alert.AlertType.INFORMATION, "Saved to:\n" + saved, ButtonType.OK);
+                ok.showAndWait();
+            } catch (Exception e) {
+                ErrorMessageController.showError("Failed to export program:\n" + e.getMessage());
+            }
+        }
     }
 
     private void showExecuteActions() {

@@ -2,6 +2,9 @@ package com.commands;
 
 import com.program.ProgramState;
 import com.program.SingleStepChanges;
+import com.XMLHandlerV2.SInstruction;
+import com.XMLHandlerV2.SInstructionArgument;
+import com.XMLHandlerV2.SInstructionArguments;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -106,5 +109,25 @@ class JumpEqualConstant extends BaseCommand {
     @Override
     public String getTargetLabel() {
         return targetLabel;
+    }
+
+    @Override
+    public SInstruction toSInstruction() {
+        SInstruction ins = new SInstruction();
+        ins.setName("JUMP_EQUAL_CONSTANT");
+        ins.setType("synthetic");
+        ins.setSVariable(variableName);
+        if (!label.equals(NO_LABEL)) ins.setSLabel(label);
+        SInstructionArguments args = new SInstructionArguments();
+        SInstructionArgument a1 = new SInstructionArgument();
+        a1.setName("constantValue");
+        a1.setValue(Integer.toString(value));
+        args.getSInstructionArgument().add(a1);
+        SInstructionArgument a2 = new SInstructionArgument();
+        a2.setName("JEConstantLabel");
+        a2.setValue(targetLabel);
+        args.getSInstructionArgument().add(a2);
+        ins.setSInstructionArguments(args);
+        return ins;
     }
 }

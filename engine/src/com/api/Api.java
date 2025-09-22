@@ -1,8 +1,14 @@
 package com.api;
 import com.XMLHandlerV2.SProgram;
+import com.XMLHandlerV2.SInstruction;
+import com.XMLHandlerV2.SInstructionArgument;
+import com.XMLHandlerV2.SInstructionArguments;
 import com.commands.BaseCommand;
 import com.commands.CommandFactory;
+import com.commands.CommandMetadata;
+import com.commands.ReverseFactory;
 import com.commands.FnArgs;
+import com.dto.CommandSchemaDto;
 import com.program.Program;
 import com.program.ProgramState;
 import jakarta.xml.bind.JAXBContext;
@@ -19,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Map;
 
 public class Api {
     private static Program curProgram;
@@ -36,6 +43,12 @@ public class Api {
         SProgram sp = ((SProgram) um.unmarshal(new File(path)));
         CommandFactory.registerFunctions(sp.getSFunctions());
         curProgram = Program.createProgram(sp.getName(), sp.getSInstructions().getSInstruction());
+        FnArgs.registerProgram(curProgram.getName(), curProgram);
+        Statistic.clearStatistics();
+    }
+    public static void createEmptyProgram(String name){
+        curProgram = Program.createProgram(name, Collections.emptyList());
+        FnArgs.clearFunctions();
         FnArgs.registerProgram(curProgram.getName(), curProgram);
         Statistic.clearStatistics();
     }
@@ -84,9 +97,69 @@ public class Api {
         return FnArgs.getFunctionNames();
     }
 
+    // ===== Schema exposure for UI =====
+    public static List<String> listCommandNames() {
+        return new ArrayList<>(CommandMetadata.getSupportedCommandNames());
+    }
+
+    public static CommandSchemaDto getCommandSchema(String commandName) {
+        return CommandMetadata.getSchema(commandName).toDto();
+    }
+
+    // ===== Create and append command from UI inputs =====
+    public static void createAndAddCommand(
+            String commandName,
+            String variable,
+            String label,
+            Map<String, String> args
+    ) {
+        if (curProgram == null) {
+            throw new IllegalStateException("No program loaded");
+        }
+        int index = curProgram.getCommands().size();
+
+        // Build SInstruction compatible with XML handler and factory
+        SInstruction ins = new SInstruction();
+        ins.setName(commandName);
+        // instruction type is not used by factory; schema enforces correctness when saving to XML
+        ins.setSVariable(variable);
+        if (label != null && !label.isBlank()) {
+            ins.setSLabel(label);
+        }
+        if (args != null && !args.isEmpty()) {
+            SInstructionArguments sArgs = new SInstructionArguments();
+            for (Map.Entry<String, String> e : args.entrySet()) {
+                SInstructionArgument a = new SInstructionArgument();
+                a.setName(e.getKey());
+                a.setValue(e.getValue());
+                sArgs.getSInstructionArgument().add(a);
+            }
+            ins.setSInstructionArguments(sArgs);
+        }
+
+        BaseCommand cmd = CommandFactory.createCommand(
+                ins.getName(),
+                ins.getSVariable(),
+                ins.getSLabel(),
+                ins.getSInstructionArguments() == null ? null : ins.getSInstructionArguments().getSInstructionArgument(),
+                index
+        );
+        curProgram.addCommand(cmd);
+    }
+
     public static List<String> getFunctionCommands(String functionName, int expansionLevel){
         Program p = FnArgs.getProgramByName(functionName).expand(expansionLevel);
         return p.getCommands().stream().map(BaseCommand::toString).toList();
+    }
+
+    // Save current program to XML under the given folder path; returns absolute file path
+    public static String saveCurrentProgramAsXml(String folderPath){
+        if(curProgram == null){
+            throw new IllegalStateException("No program is loaded.");
+        }
+        Path folder = Paths.get(folderPath);
+        Path file = ReverseFactory.saveProgramToXml(folder, curProgram);
+        return file.toAbsolutePath().toString();
     }
 
     public static void setCurProgram(String functionName){
