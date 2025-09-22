@@ -88,6 +88,14 @@ public class MainController {
         initExpansionLevelMenu();
         initProgramSelectorMenu();
         initHighlightSelectorMenu();
+        // Ensure actions that require a loaded program are disabled until one is loaded/created
+        updateProgramDependentButtons();
+    }
+
+    private void updateProgramDependentButtons(){
+        boolean hasProgram = Api.isLoaded();
+        if (addCommandBtn != null) addCommandBtn.setDisable(!hasProgram);
+        if (exportProgramBtn != null) exportProgramBtn.setDisable(!hasProgram);
     }
 
     private void setupToggleActions() {
@@ -124,6 +132,7 @@ public class MainController {
                 populateProgramChooser();
                 populateHighlightSelector();
                 refreshStatisticsTable();
+                updateProgramDependentButtons();
             } catch (Exception ex) {
                 ErrorMessageController.showError("Failed to create program:\n" + ex.getMessage());
             }
@@ -735,6 +744,7 @@ public class MainController {
                         populateProgramChooser();
                         populateHighlightSelector();
                         refreshStatisticsTable();
+                        updateProgramDependentButtons();
                     } catch (Exception e) {
                         ErrorMessageController.showError("Error loading program details: " + e.getMessage());
                     }
