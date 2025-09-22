@@ -55,7 +55,7 @@ class Quotation extends BaseCommand{
     protected String toStringBase() {
         List<String> parts = FnArgs.renderArgList(input);
         return String.format("#%d (S) [ %s ] %s <- (%s,", index + 1, displayLabel(), variableName, p.getName()) +
-                String.join(",", parts) + ")" + "(5 + depends on input...)";
+                String.join(",", parts) + ")" + "(X + 5)";
     }
 
     @Override
@@ -167,13 +167,18 @@ class Quotation extends BaseCommand{
 
     @Override
     public int getExpansionLevel() {
-        return p.getMaxExpansionLevel() + 1;
+        // A quotation expands in one step into a sequence that includes:
+        // - preamble for each argument (which may itself add nested quotations),
+        // - the inlined quoted program,
+        // - and a final assignment.
+        // The correct level is therefore 1 + max( depth(quoted program), depth(nested arg calls) ).
+        int programDepth = p.getMaxExpansionLevel();
+        int argsDepth = ArgExpr.computeArgsDepth(input);
+        return 1 + Math.max(programDepth, argsDepth);
     }
 
     @Override
     public String getTargetLabel() {
         return NO_LABEL;
     }
-
-
 }

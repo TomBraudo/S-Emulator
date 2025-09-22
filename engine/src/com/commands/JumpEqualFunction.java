@@ -73,7 +73,7 @@ class JumpEqualFunction extends BaseCommand{
     protected String toStringBase() {
         List<String> parts = FnArgs.renderArgList(input);
         return String.format("#%d (S) [ %s ] IF %s = %s(", index + 1, displayLabel(), variableName, p.getName()) +
-                String.join(",", parts) + ")" + String.format(" GOTO %s (%d)", targetLabel, cycles);
+                String.join(",", parts) + ")" + String.format(" GOTO %s (X + %d)", targetLabel, cycles);
     }
 
     @Override
@@ -95,7 +95,13 @@ class JumpEqualFunction extends BaseCommand{
 
     @Override
     public int getExpansionLevel() {
-        return p.getMaxExpansionLevel() + 2;
+        // This command expands in one step into:
+        //   Quotation(z1, p, input, ...), JumpEqualVariable(variableName, z1, ...)
+        // The JumpEqualVariable has fixed expansion depth 3.
+        // The Quotation depth depends on the quoted program and nested argument calls.
+        // Therefore overall depth = 1 + max( quotationDepth(input, p), 3 ).
+        int quotationDepth = 1 + Math.max(p.getMaxExpansionLevel(), ArgExpr.computeArgsDepth(input));
+        return 1 + Math.max(quotationDepth, 3);
     }
 
     @Override
@@ -131,4 +137,6 @@ class JumpEqualFunction extends BaseCommand{
     public SInstruction toSInstruction() {
         return null;
     }
+
+    // Depth logic moved to ArgExpr; no helper needed here.
 }
