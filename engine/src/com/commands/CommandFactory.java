@@ -114,10 +114,11 @@ public class CommandFactory {
             case "QUOTE" -> {
                     Program targetProgram = getProgramFromArg(argMap);
                     int arity = FnArgs.getFunctionArity(argMap.get("functionName"));
+                    java.util.List<Object> parsed = FnArgs.parseWithArity(argMap.get("functionArguments"), arity);
                     yield new Quotation(
                             variable,
                             targetProgram,
-                            FnArgs.parseWithArity(argMap.get("functionArguments"), arity),
+                            parsed,
                             safeLabel,
                             index,
                             null
@@ -127,11 +128,12 @@ public class CommandFactory {
             case "JUMP_EQUAL_FUNCTION" -> {
                     Program targetProgram = getProgramFromArg(argMap);
                     int arity = FnArgs.getFunctionArity(argMap.get("functionName"));
+                    java.util.List<Object> parsed = FnArgs.parseWithArity(argMap.get("functionArguments"), arity);
                     yield new JumpEqualFunction(
                             variable,
                             argMap.get("JEFunctionLabel"),
                             targetProgram,
-                            FnArgs.parseWithArity(argMap.get("functionArguments"), arity),
+                            parsed,
                             safeLabel,
                             index,
                             null
@@ -147,4 +149,6 @@ public class CommandFactory {
         if (functionName == null) throw new IllegalArgumentException("Missing function name");
         return FnArgs.getProgramByName(functionName);
     }
+
+    
 }

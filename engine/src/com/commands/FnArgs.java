@@ -165,7 +165,11 @@ public final class FnArgs {
      * Get the arity (expected number of input arguments) for a function.
      */
     public static int getFunctionArity(String functionName) {
-        return FUNCTION_ARITY.getOrDefault(functionName, 0);
+        Integer arity = FUNCTION_ARITY.get(functionName);
+        if (arity == null) {
+            throw new IllegalArgumentException("Function not found: " + functionName);
+        }
+        return arity;
     }
 
     /**
