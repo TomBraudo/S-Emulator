@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns="http://javafx.com/javafx/17.0.2" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.app.ui.newCommandForm.NewCommandFormController" spacing="8" stylesheets="/com/app/ui/app.css" styleClass="content-pad form-content card">
+    <padding>
+        <Insets top="10" right="10" bottom="10" left="10" />
+    </padding>
+
+    <HBox spacing="8">
+        <Label text="Command" styleClass="label-strong" />
+        <ComboBox fx:id="commandNameCombo" prefWidth="220" styleClass="select-primary" />
+    </HBox>
+
+    <TitledPane text="Fields" expanded="true" styleClass="card-subtle">
+        <content>
+            <ScrollPane fitToWidth="true" prefHeight="300.0" styleClass="scroller">
+                <content>
+                    <VBox fx:id="fieldsContainer" spacing="6" styleClass="content-pad" />
+                </content>
+            </ScrollPane>
+        </content>
+    </TitledPane>
+
+    <HBox spacing="8">
+        <Region HBox.hgrow="ALWAYS" />
+        <Button fx:id="finishButton" text="Finish" onAction="#onFinish" styleClass="btn btn-primary btn-wide" />
+    </HBox>
+</VBox>
+
+

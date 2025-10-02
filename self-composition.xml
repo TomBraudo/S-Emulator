@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<S-Program name="f(x)=x+2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="S-Emulator-v2.xsd">
+	<S-Instructions>
+		<S-Instruction type="synthetic" name="QUOTE">
+			<S-Variable>y</S-Variable>
+			<S-Instruction-Arguments>
+				<S-Instruction-Argument name="functionName" value="Successor"/>
+				<S-Instruction-Argument name="functionArguments" value="(Successor,x1)"/>
+			</S-Instruction-Arguments>
+		</S-Instruction>		
+	</S-Instructions>
+	<S-Functions>
+		<S-Function name="Successor" user-string="S">
+			<S-Instructions>
+				<S-Instruction type="synthetic" name="ASSIGNMENT">
+					<S-Variable>y</S-Variable>
+					<S-Instruction-Arguments>
+						<S-Instruction-Argument name="assignedVariable" value="x1"/>
+					</S-Instruction-Arguments>
+				</S-Instruction>
+				<S-Instruction type="basic" name="INCREASE">
+					<S-Variable>y</S-Variable>
+				</S-Instruction>
+			</S-Instructions>
+		</S-Function>
+	</S-Functions>
+</S-Program>

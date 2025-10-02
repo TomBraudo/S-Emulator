@@ -3,9 +3,7 @@ package com.program;
 import com.commands.BaseCommand;
 import com.commands.Variable;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 /*
     The class is a helper for running full programs
@@ -21,6 +19,8 @@ public class ProgramState {
     public HashMap<String, Integer> labelToIndex;
     public int cyclesCount;
     public boolean done;
+    public boolean[] breakpoints;
+    public Stack<SingleStepChanges> singleStepChanges = new Stack<>();
 
     ProgramState(List<Integer> input, HashSet<String> presentVariables, List<com.commands.BaseCommand> commands, HashMap<String, Integer> labelToIndex) {
         variables = new HashMap<>();
@@ -39,6 +39,20 @@ public class ProgramState {
         this.labelToIndex = labelToIndex;
         this.cyclesCount = 0;
         this.done = false;
+        this.breakpoints = new boolean[commands.size()];
+    }
+
+    public void initialBreakpoints(List<Integer> indices){
+        for(int i :  indices) {
+            breakpoints[i] = true;
+        }
+    }
+    public void setBreakPoint(int index){
+        this.breakpoints[index] = true;
+    }
+
+    public void removeBreakPoint(int index){
+        this.breakpoints[index] = false;
     }
 }
 

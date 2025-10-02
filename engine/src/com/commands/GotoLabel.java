@@ -1,9 +1,12 @@
 package com.commands;
 
 import com.program.ProgramState;
+import com.program.SingleStepChanges;
+import com.XMLHandlerV2.SInstruction;
+import com.XMLHandlerV2.SInstructionArgument;
+import com.XMLHandlerV2.SInstructionArguments;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -17,20 +20,22 @@ class GotoLabel extends BaseCommand {
     }
     @Override
     public void execute(ProgramState programState) {
-        programState.cyclesCount += cycles;
         if (targetLabel.equals(EXIT_LABEL)){
             programState.done = true;
             return;
         }
-        programState.currentCommandIndex = programState.labelToIndex.get(targetLabel);
+        int targetIndex = programState.labelToIndex.get(targetLabel);
+        SingleStepChanges.SingleVariableChange variableChange = new SingleStepChanges.SingleVariableChange("y", programState.variables.get("y").getValue(), programState.variables.get("y").getValue());
+        SingleStepChanges.IndexChange indexChange = new SingleStepChanges.IndexChange(programState.currentCommandIndex, targetIndex);
+        SingleStepChanges.CyclesChange cyclesChange = new SingleStepChanges.CyclesChange(programState.cyclesCount, programState.cyclesCount + cycles);
+        programState.cyclesCount += cycles;
+        programState.currentCommandIndex = targetIndex;
+        programState.singleStepChanges.push(new SingleStepChanges(variableChange, indexChange, cyclesChange));
     }
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(toStringBase());
-        appendCreators(sb);
-        return sb.toString();
+        return toStringBase();
     }
 
     @Override
@@ -39,8 +44,28 @@ class GotoLabel extends BaseCommand {
     }
 
     @Override
-    public HashSet<String> getPresentVariables() {
-        return new HashSet<>();
+    public BaseCommand copy(List<String> variables, List<Integer> constants, List<String> labels, int index, BaseCommand creator) {
+        return new GotoLabel(labels.get(0), labels.get(1), index, creator);
+    }
+
+    @Override
+    public List<String> getLabelsForCopy() {
+        return List.of(targetLabel, label);
+    }
+
+    @Override
+    public List<Integer> getConstantsForCopy() {
+        return List.of();
+    }
+
+    @Override
+    public boolean isBaseCommand() {
+        return false;
+    }
+
+    @Override
+    public List<String> getPresentVariables() {
+        return new ArrayList<>();
     }
 
     @Override
@@ -61,4 +86,23 @@ class GotoLabel extends BaseCommand {
     public String getTargetLabel() {
         return targetLabel;
     }
+
+    @Override
+    public SInstruction toSInstruction() {
+        SInstruction ins = new SInstruction();
+        ins.setName("GOTO_LABEL");
+        ins.setType("synthetic");
+        // UI will supply z1 for variable per agreed rule
+        ins.setSVariable("z1");
+        if (!label.equals(NO_LABEL)) ins.setSLabel(label);
+        SInstructionArguments args = new SInstructionArguments();
+        SInstructionArgument arg = new SInstructionArgument();
+        arg.setName("gotoLabel");
+        arg.setValue(targetLabel);
+        args.getSInstructionArgument().add(arg);
+        ins.setSInstructionArguments(args);
+        return ins;
+    }
+
+
 }

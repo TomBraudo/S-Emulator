@@ -1,17 +1,20 @@
 package com.commands;
 
 import com.program.ProgramState;
+import com.XMLHandlerV2.SInstruction;
 
 import java.io.Serializable;
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class BaseCommand implements Serializable {
     public abstract void execute(ProgramState programState);
     @Override
     abstract public String toString();
+    public String toDisplayString(){
+        return toStringBase();
+    }
     //abstract List<BaseCommands> extend();
     public static final String NO_LABEL = "-1";
     public static final String EXIT_LABEL = "EXIT";
@@ -27,6 +30,15 @@ public abstract class BaseCommand implements Serializable {
     }
     public String getLabel() {
         return label;
+    }
+    public int getIndex(){
+        return index;
+    }
+    public void setIndex(int index){
+        this.index = index;
+    }
+    public BaseCommand getCreator(){
+        return creator;
     }
     protected String displayLabel(){
         if(label.equals(NO_LABEL)){
@@ -53,11 +65,30 @@ public abstract class BaseCommand implements Serializable {
     }
 
 
-    public abstract HashSet<String>  getPresentVariables();
+    public abstract List<String> getPresentVariables();
     public abstract List<BaseCommand> expand(AtomicInteger nextAvailableVariable, AtomicInteger nextAvailableLabel, AtomicInteger realIndex);
     public abstract int getExpansionLevel();
     public abstract String getTargetLabel();
     protected abstract String toStringBase();
+    public abstract BaseCommand copy(List<String> variables, List<Integer> constants, List<String> labels, int index, BaseCommand creator);
+    public abstract List<String> getLabelsForCopy();
+    public abstract List<Integer> getConstantsForCopy();
+    public abstract boolean isBaseCommand();
+    public abstract SInstruction toSInstruction();
+    public List<String> getCommandHistory(){
+        List<String> history = new ArrayList<>();
+        history.add(toStringBase());
+        return commandHistoryRec(history);
+    }
+    private List<String> commandHistoryRec(List<String> history){
+        if(creator != null){
+            history.add(creator.toStringBase());
+            creator.commandHistoryRec(history);
+        }
+        return history;
+    }
+
+
 }
 
 

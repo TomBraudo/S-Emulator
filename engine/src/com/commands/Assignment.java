@@ -1,9 +1,12 @@
 package com.commands;
 
+import com.XMLHandlerV2.SInstruction;
+import com.XMLHandlerV2.SInstructionArgument;
+import com.XMLHandlerV2.SInstructionArguments;
 import com.program.ProgramState;
+import com.program.SingleStepChanges;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -20,26 +23,27 @@ class Assignment extends BaseCommand {
 
     @Override
     public void execute(ProgramState programState) {
-        programState.cyclesCount += cycles;
         Variable v1 = programState.variables.get(variableName);
         Variable v2 = programState.variables.get(otherVariableName);
+        SingleStepChanges.SingleVariableChange variableChange = new SingleStepChanges.SingleVariableChange(v1.getName(), v1.getValue(), v2.getValue());
+        SingleStepChanges.IndexChange indexChange = new SingleStepChanges.IndexChange(programState.currentCommandIndex, programState.currentCommandIndex+ 1);
+        SingleStepChanges.CyclesChange cyclesChange = new SingleStepChanges.CyclesChange(programState.cyclesCount, programState.cyclesCount + cycles);
+        programState.cyclesCount += cycles;
         v1.setValue(v2.getValue());
         programState.currentCommandIndex++;
+        programState.singleStepChanges.push(new SingleStepChanges(variableChange, indexChange, cyclesChange));
     }
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(toStringBase());
-        appendCreators(sb);
-        return sb.toString();
+        return toStringBase();
     }
 
 
 
     @Override
-    public HashSet<String> getPresentVariables() {
-        HashSet<String> variables = new HashSet<>();
+    public List<String> getPresentVariables() {
+        List<String> variables = new ArrayList<>();
         variables.add(variableName);
         variables.add(otherVariableName);
         return variables;
@@ -80,4 +84,41 @@ class Assignment extends BaseCommand {
     protected String toStringBase() {
         return String.format("#%d (S) [ %s ] %s <- %s (%d)", index + 1, displayLabel(), variableName, otherVariableName, cycles);
     }
+
+    @Override
+    public BaseCommand copy(List<String> variables, List<Integer> constants, List<String> labels, int index, BaseCommand creator) {
+        return new Assignment(variables.get(0), variables.get(1), labels.get(0), index, creator);
+    }
+
+    @Override
+    public List<String> getLabelsForCopy() {
+        return List.of(label);
+    }
+
+    @Override
+    public List<Integer> getConstantsForCopy() {
+        return List.of();
+    }
+
+    @Override
+    public boolean isBaseCommand() {
+        return false;
+    }
+    
+    @Override
+    public SInstruction toSInstruction() {
+        SInstruction ins = new SInstruction();
+        ins.setName("ASSIGNMENT");
+        ins.setType("synthetic");
+        ins.setSVariable(variableName);
+        if (!label.equals(NO_LABEL)) ins.setSLabel(label);
+        SInstructionArguments args = new SInstructionArguments();
+        SInstructionArgument arg = new SInstructionArgument();
+        arg.setName("assignedVariable");
+        arg.setValue(otherVariableName);
+        args.getSInstructionArgument().add(arg);
+        ins.setSInstructionArguments(args);
+        return ins;
+    }
+    
 }

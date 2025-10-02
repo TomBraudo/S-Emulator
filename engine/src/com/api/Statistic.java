@@ -13,19 +13,24 @@ public class Statistic implements Serializable {
     private List<Integer> input;
     private int result;
     private int cyclesCount;
+    private List<ProgramResult.VariableToValue> variableToValue;
 
-    public static void saveRunDetails(int expansionLevel, List<Integer> input, int result, int cyclesCount) {
+    public static void saveRunDetails(int expansionLevel, List<Integer> input, int result, int cyclesCount, List<ProgramResult.VariableToValue> variableToValue) {
         Statistic statistic = new Statistic();
         statistic.index = globalIndex++;
         statistic.expansionLevel = expansionLevel;
         statistic.input = List.copyOf(input);
         statistic.cyclesCount = cyclesCount;
         statistic.result = result;
+        statistic.variableToValue = List.copyOf(variableToValue);
         statistics.add(statistic);
     }
 
     public static List<Statistic> getStatistics() {
         return Collections.unmodifiableList(statistics);
+    }
+    public static Statistic getStatistic(int index) {
+        return statistics.get(index);
     }
 
     static void clearStatistics(){
@@ -51,4 +56,7 @@ public class Statistic implements Serializable {
     public static int getGlobalIndex() {return globalIndex;}
     static void setGlobalIndex(int globalIndex) {Statistic.globalIndex = globalIndex;}
     static void setStatistics(List<Statistic> statistics) {Statistic.statistics = statistics;}
+    public List<ProgramResult.VariableToValue> getVariableToValue() {
+        return Collections.unmodifiableList(variableToValue);
+    }
 }

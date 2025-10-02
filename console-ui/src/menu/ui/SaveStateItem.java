@@ -12,6 +12,7 @@ public class SaveStateItem implements MenuItem {
 
     @Override
     public void onSelect() {
+        if(!MenuUtils.ensureProgramLoaded()) return;
         System.out.print("Please enter the folder path you wish to save the state to: ");
         String path = MenuUtils.SCANNER.nextLine();
         try {

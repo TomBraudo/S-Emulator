@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import com.gluonhq.charm.glisten.control.ToggleButtonGroup?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressBar?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.ToggleButton?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.layout.VBox?>
+
+<ScrollPane fitToHeight="true" fitToWidth="true" prefHeight="874.0" prefWidth="1173.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.app.ui.MainController">
+    <content>
+        <AnchorPane fx:id="commandHistoryChainContainer" prefHeight="908.0" prefWidth="1171.0">
+            <children>
+                <Button fx:id="loadProgramBtn" layoutX="18.0" layoutY="27.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="103.0" styleClass="btn btn-primary" text="Load Program" />
+                <Label fx:id="filePathLabel" alignment="CENTER" contentDisplay="CENTER" layoutX="131.0" layoutY="27.0" prefHeight="40.0" prefWidth="1018.0" style="-fx-border-color: black; -fx-border-width: 2;" text="Currently Loaded File Path" textAlignment="CENTER" />
+                <ProgressBar fx:id="loadingProgressBar" layoutX="131.0" layoutY="27.0" prefHeight="40.0" prefWidth="1018.0" progress="0.0" visible="false" />
+                <Pane layoutX="706.0" layoutY="107.0" prefHeight="491.0" prefWidth="442.0" styleClass="card">
+                    <children>
+                  <ScrollPane fx:id="programDisplayScrollPane1" fitToWidth="true" layoutX="23.0" layoutY="208.0" prefHeight="167.0" prefWidth="181.0" styleClass="scroller">
+                     <content>
+                        <VBox fx:id="variablesContainer" spacing="5.0" styleClass="content-pad">
+                           <children>
+                              <Label fx:id="variablesContainerHeader" contentDisplay="CENTER" styleClass="label-strong" text="Variables values:" />
+                           </children>
+                        </VBox>
+                     </content>
+                  </ScrollPane>
+                        <ToggleButtonGroup id="toggleButtonGroup" layoutX="23.0" layoutY="14.0" selectionType="SINGLE" styleClass="toggle-primary">
+                            <toggles>
+                                <ToggleButton fx:id="debugBtn" prefHeight="41.0" prefWidth="188.0" text="Debug" />
+                                <ToggleButton fx:id="executeBtn" prefHeight="41.0" prefWidth="204.0" selected="true" text="Execute" />
+                            </toggles>
+                        </ToggleButtonGroup>
+                        <Label fx:id="cyclesLabel" alignment="CENTER" layoutX="23.0" layoutY="388.0" prefHeight="57.0" prefWidth="182.0" style="-fx-border-color: black; -fx-border-width: 2;" text="Cycles" textAlignment="CENTER" wrapText="true" />
+                        <ScrollPane fx:id="inputScrollPane" fitToHeight="true" fitToWidth="true" layoutX="221.0" layoutY="208.0" prefHeight="239.0" prefWidth="207.0" styleClass="scroller">
+                            <content>
+                                <AnchorPane fx:id="inputDisplayPane" prefHeight="200.0" prefWidth="190.0">
+                                    <children>
+                                        <VBox fx:id="inputVbox" layoutX="1.0" layoutY="14.0" prefHeight="211.0" prefWidth="199.0" spacing="5.0" />
+                                    </children>
+                                </AnchorPane>
+                            </content>
+                        </ScrollPane>
+                        <VBox id="actionsPanel" fx:id="actionsPanel" alignment="CENTER" layoutX="24.0" layoutY="64.0" prefHeight="126.0" prefWidth="398.0" spacing="10.0" styleClass="card" />
+
+                    </children>
+                </Pane>
+                <ScrollPane fitToWidth="true" layoutX="706.0" layoutY="618.0" prefHeight="229.0" prefWidth="443.0" styleClass="scroller">
+                    <content>
+                        <VBox fx:id="statisticsTable" spacing="8.0" styleClass="content-pad" />
+                    </content>
+                </ScrollPane>
+                <VBox layoutX="20.0" layoutY="157.0" prefHeight="445.0" prefWidth="671.0" spacing="6.0">
+                    <children>
+                        <ScrollPane fx:id="programDisplayScrollPane" fitToWidth="true" prefHeight="431.0" prefWidth="692.0" styleClass="scroller">
+                            <content>
+                                <VBox fx:id="programDisplayVBox" spacing="5.0" styleClass="content-pad">
+                           <children>
+                              <ToggleButtonGroup fx:id="programViewToggleGroup" selectionType="SINGLE" styleClass="toggle-primary">
+                                  <toggles>
+                                      <ToggleButton fx:id="tableViewToggle" prefHeight="28.0" prefWidth="317.0" selected="true" text="Table view" />
+                                      <ToggleButton fx:id="treeViewToggle" prefHeight="28.0" prefWidth="317.0" text="Tree view" />
+                                  </toggles>
+                              </ToggleButtonGroup>
+                           </children></VBox>
+                            </content>
+                        </ScrollPane>
+                        <HBox fx:id="programSummaryLine" alignment="CENTER_LEFT" spacing="8.0" styleClass="card-subtle content-pad-sm">
+                            <children>
+                                <Label fx:id="programSummaryLabel" styleClass="label-strong" text="" />
+                            </children>
+                        </HBox>
+                    </children>
+                </VBox>
+            <ComboBox fx:id="programSelectorMenu" layoutX="20.0" layoutY="107.0" prefHeight="39.0" prefWidth="161.0" styleClass="select-primary" />
+            <ComboBox fx:id="expansionLevelMenu" layoutX="195.0" layoutY="107.0" prefHeight="39.0" prefWidth="100.0" styleClass="select-primary" />
+            <Label alignment="CENTER" layoutX="20.0" layoutY="75.0" prefHeight="24.0" prefWidth="160.0" text="Program selector" textAlignment="CENTER" wrapText="true" />
+            <Label alignment="CENTER" layoutX="195.0" layoutY="75.0" prefHeight="24.0" prefWidth="100.0" text="Expansion level" textAlignment="CENTER" wrapText="true" />
+            <Label alignment="CENTER" layoutX="308.0" layoutY="75.0" prefHeight="24.0" prefWidth="122.0" text="Highlight selection" textAlignment="CENTER" wrapText="true" />
+            <ComboBox fx:id="highlightSelectorMenu" layoutX="308.0" layoutY="107.0" prefHeight="39.0" prefWidth="100.0" styleClass="select-primary" />
+                <ScrollPane fx:id="historyChainScrollPane" fitToWidth="true" layoutX="21.0" layoutY="618.0" prefHeight="229.0" prefWidth="673.0" styleClass="scroller">
+                    <content>
+                        <VBox fx:id="historyChainVBox" spacing="5.0" styleClass="content-pad">
+                        </VBox>
+                    </content>
+                </ScrollPane>
+            <Button fx:id="newProgramBtn" layoutX="419.0" layoutY="98.0" mnemonicParsing="false" prefHeight="47.0" prefWidth="78.0" styleClass="btn btn-primary" text="New Program" wrapText="true" />
+            <Button fx:id="addCommandBtn" layoutX="508.0" layoutY="98.0" mnemonicParsing="false" prefHeight="47.0" prefWidth="78.0" styleClass="btn btn-primary" text="Add Command" wrapText="true" />
+            <Button fx:id="exportProgramBtn" layoutX="601.0" layoutY="98.0" mnemonicParsing="false" prefHeight="47.0" prefWidth="78.0" styleClass="btn btn-primary" text="Export Program" wrapText="true" />
+
+
+            </children>
+        </AnchorPane>
+    </content>
+</ScrollPane>

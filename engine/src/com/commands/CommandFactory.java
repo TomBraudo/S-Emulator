@@ -1,10 +1,21 @@
 package com.commands;
-import com.XMLHandler.SInstructionArgument;
+import com.XMLHandlerV2.SInstruction;
+import com.XMLHandlerV2.SInstructionArgument;
+import com.program.Program;
+
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class CommandFactory {
+    
+
+    public static void registerFunctions(com.XMLHandlerV2.SFunctions functions) {
+        // Delegate registration to FnArgs; keep factory free of function state
+        FnArgs.registerFunctions(functions);
+    }
+
 
     private static Map<String, String> mapArgs(List<SInstructionArgument> argsList) {
         Map<String, String> argsMap = new HashMap<>();
@@ -100,8 +111,44 @@ public class CommandFactory {
                             index,
                             null
                     );
+            case "QUOTE" -> {
+                    Program targetProgram = getProgramFromArg(argMap);
+                    int arity = FnArgs.getFunctionArity(argMap.get("functionName"));
+                    java.util.List<Object> parsed = FnArgs.parseWithArity(argMap.get("functionArguments"), arity);
+                    yield new Quotation(
+                            variable,
+                            targetProgram,
+                            parsed,
+                            safeLabel,
+                            index,
+                            null
+                    );
+                }
+
+            case "JUMP_EQUAL_FUNCTION" -> {
+                    Program targetProgram = getProgramFromArg(argMap);
+                    int arity = FnArgs.getFunctionArity(argMap.get("functionName"));
+                    java.util.List<Object> parsed = FnArgs.parseWithArity(argMap.get("functionArguments"), arity);
+                    yield new JumpEqualFunction(
+                            variable,
+                            argMap.get("JEFunctionLabel"),
+                            targetProgram,
+                            parsed,
+                            safeLabel,
+                            index,
+                            null
+                    );
+                }
 
             default -> throw new IllegalArgumentException("Unknown command name: " + name);
         };
     }
+
+    private static Program getProgramFromArg(Map<String, String> argMap) {
+        String functionName = argMap.get("functionName");
+        if (functionName == null) throw new IllegalArgumentException("Missing function name");
+        return FnArgs.getProgramByName(functionName);
+    }
+
+    
 }

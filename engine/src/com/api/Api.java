@@ -1,9 +1,18 @@
 package com.api;
-import com.XMLHandler.SInstruction;
-import com.XMLHandler.SProgram;
+import com.XMLHandlerV2.SProgram;
+import com.XMLHandlerV2.SInstruction;
+import com.XMLHandlerV2.SInstructionArgument;
+import com.XMLHandlerV2.SInstructionArguments;
 import com.commands.BaseCommand;
 import com.commands.CommandFactory;
+import com.commands.CommandMetadata;
+import com.commands.ReverseFactory;
+import com.commands.FnArgs;
+import com.dto.CommandSchemaDto;
+import com.dto.ProgramTreeDto;
+import com.program.MixedExpansionSession;
 import com.program.Program;
+import com.program.ProgramState;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.Unmarshaller;
@@ -15,10 +24,18 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+import java.util.Map;
 
 public class Api {
     private static Program curProgram;
+    private static Program debugProgram;
+    private static List<Integer> debugInput;
+    private static int debugExpansionLevel;
+    // Mixed tree view state (visual-only)
+    private static MixedExpansionSession mixedSession;
 
     public static String getCurProgramName() {
         return curProgram.getName();
@@ -27,29 +44,19 @@ public class Api {
     public static void loadSProgram(String path) throws JAXBException {
         JAXBContext ctx = JAXBContext.newInstance(SProgram.class);
         Unmarshaller um = ctx.createUnmarshaller();
-        createProgramFromSProgram((SProgram) um.unmarshal(new File(path)));
+        SProgram sp = ((SProgram) um.unmarshal(new File(path)));
+        CommandFactory.registerFunctions(sp.getSFunctions());
+        curProgram = Program.createProgram(sp.getName(), sp.getSInstructions().getSInstruction());
+        FnArgs.registerProgram(curProgram.getName(), curProgram);
+        Statistic.clearStatistics();
+    }
+    public static void createEmptyProgram(String name){
+        curProgram = Program.createProgram(name, Collections.emptyList());
+        FnArgs.clearFunctions();
+        FnArgs.registerProgram(curProgram.getName(), curProgram);
         Statistic.clearStatistics();
     }
 
-    private static void createProgramFromSProgram(SProgram sp){
-        String name = sp.getName();
-        List<BaseCommand> commands = new ArrayList<BaseCommand>();
-        List<SInstruction> instructions = sp.getSInstructions().getSInstruction();
-        for(int i = 0; i < instructions.size(); i++){
-            SInstruction instruction = instructions.get(i);
-            commands.add(CommandFactory.createCommand(
-                    instruction.getName(),
-                    instruction.getSVariable(),
-                    instruction.getSLabel(),
-                    instruction.getSInstructionArguments() == null
-                            ? null :
-                            instruction.getSInstructionArguments().getSInstructionArgument(),
-                    i));
-        }
-        Program p = new Program(name, commands);
-        p.verifyLegal();
-        curProgram = p;
-    }
 
     public static ProgramResult executeProgram(List<Integer> input, int expansionLevel){
         Program p = curProgram;
@@ -58,7 +65,7 @@ public class Api {
         }
 
         ProgramResult res = p.execute(input);
-        Statistic.saveRunDetails(expansionLevel, input, res.getResult(), res.getCycles());
+        Statistic.saveRunDetails(expansionLevel, input, res.getResult(), res.getCycles(), res.getVariableToValue());
         return res;
     }
 
@@ -84,6 +91,116 @@ public class Api {
 
     public static List<String> getInputVariableNames(){
         return curProgram.getInputVariables();
+    }
+
+    public static List<String> getProgramCommands(int expansionLevel){
+        return curProgram.expand(expansionLevel).getCommands().stream().map(BaseCommand::toString).toList();
+    }
+
+    public static List<String> getAvailableFunctions(){
+        return FnArgs.getFunctionNames();
+    }
+
+    // ===== Mixed Tree View API (visual-only) =====
+    public static void startMixedTreeView(){
+        if (curProgram == null){
+            throw new IllegalStateException("No program loaded");
+        }
+        mixedSession = MixedExpansionSession.buildFromProgram(new Program(curProgram));
+    }
+
+    public static ProgramTreeDto getMixedTree(){
+        if (mixedSession == null){
+            throw new IllegalStateException("Mixed tree view not initialized");
+        }
+        return mixedSession.toDto();
+    }
+
+    public static ProgramTreeDto expandMixedAt(List<Integer> path){
+        if (mixedSession == null){
+            throw new IllegalStateException("Mixed tree view not initialized");
+        }
+        mixedSession.expandByPath(path);
+        return mixedSession.toDto();
+    }
+
+    public static ProgramTreeDto collapseMixedAt(List<Integer> path){
+        if (mixedSession == null){
+            throw new IllegalStateException("Mixed tree view not initialized");
+        }
+        mixedSession.collapseByPath(path);
+        return mixedSession.toDto();
+    }
+
+    // Program copy uses Program's copy constructor; no binary deep copy needed
+
+    // ===== Schema exposure for UI =====
+    public static List<String> listCommandNames() {
+        return new ArrayList<>(CommandMetadata.getSupportedCommandNames());
+    }
+
+    public static CommandSchemaDto getCommandSchema(String commandName) {
+        return CommandMetadata.getSchema(commandName).toDto();
+    }
+
+    // ===== Create and append command from UI inputs =====
+    public static void createAndAddCommand(
+            String commandName,
+            String variable,
+            String label,
+            Map<String, String> args
+    ) {
+        if (curProgram == null) {
+            throw new IllegalStateException("No program loaded");
+        }
+        int index = curProgram.getCommands().size();
+
+        // Build SInstruction compatible with XML handler and factory
+        SInstruction ins = new SInstruction();
+        ins.setName(commandName);
+        // instruction type is not used by factory; schema enforces correctness when saving to XML
+        ins.setSVariable(variable);
+        if (label != null && !label.isBlank()) {
+            ins.setSLabel(label);
+        }
+        if (args != null && !args.isEmpty()) {
+            SInstructionArguments sArgs = new SInstructionArguments();
+            for (Map.Entry<String, String> e : args.entrySet()) {
+                SInstructionArgument a = new SInstructionArgument();
+                a.setName(e.getKey());
+                a.setValue(e.getValue());
+                sArgs.getSInstructionArgument().add(a);
+            }
+            ins.setSInstructionArguments(sArgs);
+        }
+
+        BaseCommand cmd = CommandFactory.createCommand(
+                ins.getName(),
+                ins.getSVariable(),
+                ins.getSLabel(),
+                ins.getSInstructionArguments() == null ? null : ins.getSInstructionArguments().getSInstructionArgument(),
+                index
+        );
+        curProgram.addCommand(cmd);
+    }
+
+    public static List<String> getFunctionCommands(String functionName, int expansionLevel){
+        Program p = FnArgs.getProgramByName(functionName).expand(expansionLevel);
+        return p.getCommands().stream().map(BaseCommand::toString).toList();
+    }
+
+    // Save current program to XML under the given folder path; returns absolute file path
+    public static String saveCurrentProgramAsXml(String folderPath){
+        if(curProgram == null){
+            throw new IllegalStateException("No program is loaded.");
+        }
+        Path folder = Paths.get(folderPath);
+        Path file = ReverseFactory.saveProgramToXml(folder, curProgram);
+        return file.toAbsolutePath().toString();
+    }
+
+    public static void setCurProgram(String functionName){
+        curProgram = FnArgs.getProgramByName(functionName);
     }
 
     public static List<String> getStateFileNames(String path){
@@ -146,5 +263,130 @@ public class Api {
         catch (IOException | ClassNotFoundException e){
             throw new RuntimeException("Failed to load state from " + path, e);
         }
+    }
+
+    public static ProgramResult startDebugging(List<Integer> input, int expansionLevel, List<Integer> breakpoints){
+        Program p = curProgram;
+        if(expansionLevel > 0){
+            p = curProgram.expand(expansionLevel);
+        }
+
+        ProgramResult res = p.startDebug(input, breakpoints);
+        if(!res.isDebug()){
+            Statistic.saveRunDetails(expansionLevel, input, res.getResult(), res.getCycles(), res.getVariableToValue());
+        }
+        else{
+            debugProgram = p;
+            debugInput = new ArrayList<>(input);
+            debugExpansionLevel = expansionLevel;
+        }
+
+        return res;
+    }
+
+    public static ProgramResult stepOver(){
+        Program p = debugProgram;
+        ProgramResult res = p.stepOver();
+        if(!res.isDebug()){
+            Statistic.saveRunDetails(debugExpansionLevel, debugInput, res.getResult(), res.getCycles(), res.getVariableToValue());
+            debugProgram = null;
+            debugInput = null;
+            debugExpansionLevel = 0;
+        }
+
+        return res;
+    }
+
+    public static ProgramResult stepBack(){
+        return debugProgram.stepBack();
+    }
+
+    public static ProgramResult continueDebug(){
+        Program p = debugProgram;
+        ProgramResult res = p.continueDebug();
+        if(!res.isDebug()){
+            Statistic.saveRunDetails(debugExpansionLevel, debugInput, res.getResult(), res.getCycles(), res.getVariableToValue());
+            debugProgram = null;
+            debugInput = null;
+            debugExpansionLevel = 0;
+        }
+
+        return res;
+    }
+
+    public static void stopDebug(){
+        // If there is an ongoing debug session, snapshot its current state as a completed run
+        if (debugProgram != null){
+            try {
+                ProgramResult snapshot = debugProgram.snapshotDebugAsFinished();
+                Statistic.saveRunDetails(debugExpansionLevel, debugInput, snapshot.getResult(), snapshot.getCycles(), snapshot.getVariableToValue());
+            } catch (Exception ignored) {
+                // If snapshot fails, still proceed to stop debugging
+            }
+            debugProgram.stopDebug();
+        }
+        debugProgram = null;
+        debugInput = null;
+        debugExpansionLevel = 0;
+    }
+
+    public static void setBreakpoint(int index){
+        debugProgram.setBreakpoint(index);
+    }
+
+    public static void removeBreakpoint(int index){
+        debugProgram.removeBreakpoint(index);
+    }
+
+    public static boolean isDebugging(){
+        return debugProgram != null;
+    }
+
+    public static ProgramSummary getProgramSummary(int expansionLevel){
+        Program p = curProgram;
+        if(expansionLevel > 0){
+            p = curProgram.expand(expansionLevel);
+        }
+
+        return p.getSummary();
+    }
+
+    public static List<String> getLabels(int expansionLevel){
+        Program p = curProgram;
+        if(expansionLevel > 0){
+            p = curProgram.expand(expansionLevel);
+        }
+
+        List<String> labels = new ArrayList<>(p.getLabels());
+        labels.sort((a, b) -> {
+            int na = Integer.parseInt(a.substring(1));
+            int nb = Integer.parseInt(b.substring(1));
+            return Integer.compare(na, nb);
+        });
+        return labels;
+    }
+
+    public static List<String> getVariables(int expansionLevel){
+        Program p = curProgram;
+        if (expansionLevel > 0){
+            p = curProgram.expand(expansionLevel);
+        }
+        List<String> variables = new ArrayList<>(p.getPresentVariables());
+        variables.sort((a, b) -> {
+            int cmpPrefix = Character.compare(a.charAt(0), b.charAt(0));
+            if (cmpPrefix != 0) return cmpPrefix;
+            int na = Integer.parseInt(a.substring(1));
+            int nb = Integer.parseInt(b.substring(1));
+            return Integer.compare(na, nb);
+        });
+        return variables;
+    }
+
+    public static List<String> getCommandHistory(int expansionLevel, int index){
+        Program p = curProgram;
+        if(expansionLevel > 0){
+            p = curProgram.expand(expansionLevel);
+        }
+        return p.getCommands().get(index).getCommandHistory();
     }
 }
