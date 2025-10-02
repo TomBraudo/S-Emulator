@@ -136,7 +136,9 @@
     -fx-background-color: #b7f7b0;
 }
 .row-debug {
-    -fx-background-color: #ffebeb;
+    -fx-background-color: #ffd6d6; /* stronger red tint */
+    -fx-border-color: #ff4d4f;     /* vivid red border */
+    -fx-border-width: 2;           /* thicker border for emphasis */
 }
 .row-search {
     -fx-background-color: #b7f7b0;
