@@ -23,7 +23,6 @@ public class TestShrinkWrapPane extends Application {
             @Override
             protected double computePrefWidth(double height) {
                 double prefWidth = super.computePrefWidth(height);
-                System.out.println("Master computePrefWidth: " + prefWidth);
                 return prefWidth;
             }
 

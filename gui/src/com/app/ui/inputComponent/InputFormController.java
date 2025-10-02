@@ -14,6 +14,8 @@ import java.io.IOException;
 import java.util.*;
 import java.util.function.Consumer;
 
+import com.app.ui.errorComponents.ErrorMessageController;
+
 public class InputFormController {
     @FXML
     private ScrollPane inputPane;
@@ -81,11 +83,11 @@ public class InputFormController {
             usedIndexes.add(index);
 
         } catch (IOException e) {
-            e.printStackTrace();
+            ErrorMessageController.showError("Failed to load input line UI.\n" + e.getMessage());
         } catch (NumberFormatException e){
-            System.err.println("Invalid input for index. Please enter a valid number after 'x'.");
+            ErrorMessageController.showError("Invalid input for index. Please enter a valid number after 'x'.");
         } catch (IllegalArgumentException e) {
-            System.err.println(e.getMessage());
+            ErrorMessageController.showError(e.getMessage());
         }
     }
 
@@ -105,7 +107,7 @@ public class InputFormController {
             Stage stage = (Stage) finishBtn.getScene().getWindow();
             stage.close();
         } catch (NumberFormatException e){
-            System.err.println("Invalid input for input variable. Please ensure all values are valid numbers.");
+            ErrorMessageController.showError("Invalid input for input variable. Please ensure all values are valid numbers.");
         }
     }
 }

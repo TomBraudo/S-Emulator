@@ -86,7 +86,8 @@ public class ProgramTreeViewHelper {
                     tree.setRoot(newRoot);
                     tree.setShowRoot(false);
                     attachExpandCollapseHandlers(tree);
-                } catch (Exception ignored){
+                } catch (Exception e){
+                    com.app.ui.errorComponents.ErrorMessageController.showError("Failed to update tree view: " + e.getMessage());
                 }
             });
         }

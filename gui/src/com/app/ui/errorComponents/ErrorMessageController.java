@@ -46,7 +46,14 @@ public class ErrorMessageController {
 
             stage.showAndWait();
         } catch (IOException e) {
-            e.printStackTrace(); // Fallback if FXML fails
+            // Fallback: show a minimal window with the error text to avoid silent failures
+            try {
+                Stage stage = new Stage();
+                stage.setTitle("Error");
+                stage.initModality(Modality.APPLICATION_MODAL);
+                stage.setScene(new Scene(new javafx.scene.control.Label("Error: " + message + "\n(" + e.getMessage() + ")"), 400, 120));
+                stage.showAndWait();
+            } catch (Exception ignored) {}
         }
     }
 }

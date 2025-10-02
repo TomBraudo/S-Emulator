@@ -366,7 +366,7 @@ public class MainController {
             if (n instanceof javafx.scene.layout.HBox row){
                 Object controllerObj = row.getProperties().get("controller");
                 if (controllerObj instanceof com.app.ui.commandRow.CommandRowController crc){
-                    crc.setHighlighted(i == highlightedIndex);
+                    crc.setHighlighted(crc.getCommandIndex() == highlightedIndex);
                 }
             }
         }
@@ -700,7 +700,9 @@ public class MainController {
                     int idx = Integer.parseInt(name.substring(1));
                     maxIndex = Math.max(maxIndex, idx);
                     inputMap.put(name, v.value());
-                } catch (NumberFormatException ignored){}
+                } catch (NumberFormatException e){
+                    ErrorMessageController.showError("Invalid historical variable index for '" + name + "'.");
+                }
             }
         }
 
