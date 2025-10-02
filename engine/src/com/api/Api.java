@@ -315,7 +315,16 @@ public class Api {
     }
 
     public static void stopDebug(){
-        debugProgram.stopDebug();
+        // If there is an ongoing debug session, snapshot its current state as a completed run
+        if (debugProgram != null){
+            try {
+                ProgramResult snapshot = debugProgram.snapshotDebugAsFinished();
+                Statistic.saveRunDetails(debugExpansionLevel, debugInput, snapshot.getResult(), snapshot.getCycles(), snapshot.getVariableToValue());
+            } catch (Exception ignored) {
+                // If snapshot fails, still proceed to stop debugging
+            }
+            debugProgram.stopDebug();
+        }
         debugProgram = null;
         debugInput = null;
         debugExpansionLevel = 0;

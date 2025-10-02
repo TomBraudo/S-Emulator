@@ -124,6 +124,14 @@ public class Program implements Serializable {
         debugState = null;
     }
 
+    // Package current debug state into a finished ProgramResult for statistics
+    public ProgramResult snapshotDebugAsFinished(){
+        if (debugState == null){
+            throw new IllegalStateException("No debug state to snapshot");
+        }
+        return new ProgramResult(debugState.cyclesCount, variableToValue(debugState), debugState.currentCommandIndex, false);
+    }
+
     public ProgramResult stepBack(){
         ProgramState programState = debugState;
         if (programState.singleStepChanges.isEmpty()){

@@ -404,6 +404,8 @@ public class MainController {
         if (stopBtn != null) stopBtn.setDisable(true);
         if (continueBtn != null) continueBtn.setDisable(true);
         if (stepBackBtn != null) stepBackBtn.setDisable(true);
+        // Refresh statistics to include the snapshot saved on stop
+        refreshStatisticsTable();
     }
 
     private void stepBack() {
