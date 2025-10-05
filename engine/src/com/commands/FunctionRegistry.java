@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalDouble;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
@@ -35,6 +36,10 @@ public final class FunctionRegistry {
     // ---- Program registry (by user) ----
     private static final Map<String, Map<String, Program>> PROGRAMS_BY_USER = new HashMap<>(); // userId -> (programName -> Program)
     private static final Map<String, String> PROGRAM_OWNER_BY_NAME = new HashMap<>(); // programName -> owner userId
+
+    // ---- Global per-program average cost registry ----
+    // Key: program name; Value: (averageCostRoundedTo1Decimal, runCount)
+    private static final Map<String, java.util.Map.Entry<Double, Long>> AVERAGE_COST_BY_PROGRAM = new HashMap<>();
 
     // ---- Public registration APIs ----
     public static void registerFunctions(String userId, SFunctions functions) {
@@ -121,7 +126,7 @@ public final class FunctionRegistry {
             if (owner == null) throw new IllegalArgumentException("Function not found: " + functionName);
             Map<String, Program> cache = FUNCTION_PROGRAM_CACHE_BY_USER.getOrDefault(owner, Map.of());
             Program cached = cache.get(functionName);
-            if (cached != null) return cached;
+            if (cached != null) return new Program(cached);
         } finally {
             read.unlock();
         }
@@ -142,7 +147,7 @@ public final class FunctionRegistry {
             try {
                 Program program = Program.createProgram(functionName, instructions);
                 FUNCTION_PROGRAM_CACHE_BY_USER.computeIfAbsent(owner, k -> new HashMap<>()).put(functionName, program);
-                return program;
+                return new Program(program);
             } finally {
                 BUILDING.remove(functionName);
             }
@@ -249,6 +254,44 @@ public final class FunctionRegistry {
         } finally {
             read.unlock();
         }
+    }
+
+    // ---- Average cost APIs ----
+    public static void recordRunCost(String programName, long cyclesPlusOverhead) {
+        var write = REGISTRY_LOCK.writeLock();
+        write.lock();
+        try {
+            java.util.Map.Entry<Double, Long> cur = AVERAGE_COST_BY_PROGRAM.get(programName);
+            if (cur == null) {
+                double avg = roundTo1Decimal((double) cyclesPlusOverhead);
+                AVERAGE_COST_BY_PROGRAM.put(programName, new java.util.AbstractMap.SimpleEntry<>(avg, 1L));
+                return;
+            }
+            double prevAvg = cur.getKey();
+            long prevCount = cur.getValue();
+            long newCount = prevCount + 1L;
+            double newAvg = (prevAvg * prevCount + cyclesPlusOverhead) / (double) newCount;
+            newAvg = roundTo1Decimal(newAvg);
+            AVERAGE_COST_BY_PROGRAM.put(programName, new java.util.AbstractMap.SimpleEntry<>(newAvg, newCount));
+        } finally {
+            write.unlock();
+        }
+    }
+
+    public static OptionalDouble getAverageCost(String programName) {
+        var read = REGISTRY_LOCK.readLock();
+        read.lock();
+        try {
+            java.util.Map.Entry<Double, Long> cur = AVERAGE_COST_BY_PROGRAM.get(programName);
+            if (cur == null) return OptionalDouble.empty();
+            return OptionalDouble.of(cur.getKey());
+        } finally {
+            read.unlock();
+        }
+    }
+
+    private static double roundTo1Decimal(double value) {
+        return Math.round(value * 10.0d) / 10.0d;
     }
 
     // ---- Utilities ----

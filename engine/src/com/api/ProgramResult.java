@@ -8,10 +8,21 @@ public class ProgramResult{
     private List<VariableToValue> variableToValue;
     private int debugIndex;
     private boolean isDebug;
+    public enum HaltReason { FINISHED, STOPPED_MANUALLY, INSUFFICIENT_CREDITS }
+    private final HaltReason haltReason;
     public ProgramResult(int cycles, HashMap<String, Integer> variables, int debugIndex, boolean isDebug){
         this.cycles = cycles;
         this.debugIndex = debugIndex;
         this.isDebug = isDebug;
+        this.haltReason = isDebug ? HaltReason.STOPPED_MANUALLY : HaltReason.FINISHED;
+        UnpackVariables(variables);
+    }
+
+    public ProgramResult(int cycles, HashMap<String, Integer> variables, int debugIndex, boolean isDebug, HaltReason haltReason){
+        this.cycles = cycles;
+        this.debugIndex = debugIndex;
+        this.isDebug = isDebug;
+        this.haltReason = haltReason;
         UnpackVariables(variables);
     }
 
@@ -46,6 +57,10 @@ public class ProgramResult{
     }
     public boolean isDebug() {
         return isDebug;
+    }
+
+    public HaltReason getHaltReason(){
+        return haltReason;
     }
 
 }
