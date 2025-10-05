@@ -30,8 +30,8 @@ public final class FnArgs {
     // Registry state moved to FunctionRegistry; this class focuses on parsing/evaluation and delegates lookups/registrations.
 
     // ---- Registration APIs (additive; no clearing) ----
-    public static void registerFunctions(String userId, SFunctions functions) {
-        FunctionRegistry.registerFunctions(userId, functions);
+    public static void registerFunctions(String userId, SFunctions functions, String programName) {
+        FunctionRegistry.registerFunctions(userId, functions, programName);
     }
 
     /**

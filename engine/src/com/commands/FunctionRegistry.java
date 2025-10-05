@@ -32,6 +32,7 @@ public final class FunctionRegistry {
     private static final Map<String, String> FUNCTION_OWNER_BY_NAME = new HashMap<>(); // functionName -> owner userId
     private static final Map<String, Integer> FUNCTION_ARITY = new HashMap<>(); // functionName -> arity
     private static final java.util.Set<String> BUILDING = new java.util.HashSet<>(); // guards recursive references (by function name)
+    private static final Map<String, String> FUNCTION_SOURCE_PROGRAM_BY_NAME = new HashMap<>(); // functionName -> SProgram name
 
     // ---- Program registry (by user) ----
     private static final Map<String, Map<String, Program>> PROGRAMS_BY_USER = new HashMap<>(); // userId -> (programName -> Program)
@@ -42,7 +43,7 @@ public final class FunctionRegistry {
     private static final Map<String, java.util.Map.Entry<Double, Long>> AVERAGE_COST_BY_PROGRAM = new HashMap<>();
 
     // ---- Public registration APIs ----
-    public static void registerFunctions(String userId, SFunctions functions) {
+    public static void registerFunctions(String userId, SFunctions functions, String programName) {
         if (functions == null) return;
         var write = REGISTRY_LOCK.writeLock();
         write.lock();
@@ -66,10 +67,16 @@ public final class FunctionRegistry {
                 FUNCTION_OWNER_BY_NAME.put(name, userId);
                 int arity = calculateArity(instructions);
                 FUNCTION_ARITY.put(name, arity);
+                FUNCTION_SOURCE_PROGRAM_BY_NAME.put(name, programName);
             }
         } finally {
             write.unlock();
         }
+    }
+
+    // Backward-compatible overload (no program name)
+    public static void registerFunctions(String userId, SFunctions functions) {
+        registerFunctions(userId, functions, "UNKNOWN");
     }
 
     public static void registerProgramAsFunction(String userId, String functionName, Program p) {
@@ -242,6 +249,33 @@ public final class FunctionRegistry {
         }
     }
 
+    public static int getProgramUploadedCount(String userId) {
+        var read = REGISTRY_LOCK.readLock();
+        read.lock();
+        try {
+            int count = 0;
+            for (Map.Entry<String, String> e : PROGRAM_OWNER_BY_NAME.entrySet()){
+                if (userId.equals(e.getValue())) count++;
+            }
+            return count;
+        } finally {
+            read.unlock();
+        }
+    }
+    public static int getFunctionUploadedCount(String userId) {
+        var read = REGISTRY_LOCK.readLock();
+        read.lock();
+        try {
+            int count = 0;
+            for (Map.Entry<String, String> e : FUNCTION_OWNER_BY_NAME.entrySet()){
+                if (userId.equals(e.getValue())) count++;
+            }
+            return count;
+        } finally {
+            read.unlock();
+        }
+    }
+
     public static List<Map.Entry<String, String>> getProgramEntries() {
         var read = REGISTRY_LOCK.readLock();
         read.lock();
@@ -251,6 +285,16 @@ public final class FunctionRegistry {
                 out.add(new java.util.AbstractMap.SimpleEntry<>(e.getValue(), e.getKey()));
             }
             return out;
+        } finally {
+            read.unlock();
+        }
+    }
+
+    public static String getFunctionSourceProgram(String functionName){
+        var read = REGISTRY_LOCK.readLock();
+        read.lock();
+        try {
+            return FUNCTION_SOURCE_PROGRAM_BY_NAME.get(functionName);
         } finally {
             read.unlock();
         }

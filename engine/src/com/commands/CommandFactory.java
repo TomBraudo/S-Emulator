@@ -11,9 +11,9 @@ import java.util.Map;
 public class CommandFactory {
     
 
-    public static void registerFunctions(String userId, com.XMLHandlerV2.SFunctions functions) {
+    public static void registerFunctions(String userId, com.XMLHandlerV2.SFunctions functions, String programName) {
         // Delegate registration to FnArgs; keep factory free of function state
-        FnArgs.registerFunctions(userId, functions);
+        FnArgs.registerFunctions(userId, functions, programName);
     }
 
     /**
@@ -21,7 +21,7 @@ public class CommandFactory {
      */
     @Deprecated
     public static void registerFunctions(com.XMLHandlerV2.SFunctions functions) {
-        registerFunctions("GLOBAL", functions);
+        registerFunctions("GLOBAL", functions, "UNKNOWN");
     }
 
 

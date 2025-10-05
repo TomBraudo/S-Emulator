@@ -40,11 +40,16 @@ public class Api {
     private MixedExpansionSession mixedSession;
     private String userId;
     private int credits;
+    private int usedCredits;
     private int chargedDebugCycles;
     private int currentRunOverhead;
+    private String currentRunArchitecture;
+    private int programsRanCount;
     
     public Api(String userId){
         this.userId = userId;
+        this.usedCredits = 0;
+        this.programsRanCount = 0;
     }
 
     public String getCurProgramName() {
@@ -53,6 +58,14 @@ public class Api {
 
     public int getCredits(){
         return credits;
+    }
+
+    public int getUsedCredits(){
+        return usedCredits;
+    }
+
+    public int getProgramsRanCount(){
+        return programsRanCount;
     }
 
     public void addCredits(int amount){
@@ -66,7 +79,7 @@ public class Api {
         // Pre-validate program name uniqueness prior to any registration
         FnArgs.assertProgramNameAvailable(this.userId, sp.getName());
         // Phase 1: register function names/arity atomically; will throw without partial writes
-        CommandFactory.registerFunctions(this.userId, sp.getSFunctions());
+        CommandFactory.registerFunctions(this.userId, sp.getSFunctions(), sp.getName());
         // Build and register program only after successful validation/registration
         Program p = Program.createProgram(sp.getName(), sp.getSInstructions().getSInstruction());
         FnArgs.registerProgram(this.userId, p);
@@ -97,12 +110,15 @@ public class Api {
         }
         // Charge overhead and execute with remaining credits as budget
         credits -= overhead;
+        usedCredits += overhead;
         ProgramResult res = p.executeWithBudget(input, credits);
         // Charge cycles consumed
         credits -= res.getCycles();
+        usedCredits += res.getCycles();
         // Save statistics and global averages (overhead + cycles)
-        Statistic.saveRunDetails(expansionLevel, input, res.getResult(), res.getCycles(), res.getVariableToValue());
+        Statistic.saveRunDetails(userId, expansionLevel, architecture, input, res.getResult(), res.getCycles(), res.getVariableToValue());
         FunctionRegistry.recordRunCost(p.getName(), overhead + res.getCycles());
+        programsRanCount += 1;
         return res;
     }
 
@@ -319,21 +335,25 @@ public class Api {
         }
         // Charge overhead and start debug with budget
         credits -= overhead;
+        usedCredits += overhead;
         currentRunOverhead = overhead;
         ProgramResult res = p.startDebugWithBudget(input, breakpoints, credits);
         // Debit cycles executed up to initial breakpoint/end
         if (res.getCycles() > 0){
             credits -= res.getCycles();
+            usedCredits += res.getCycles();
         }
         if(!res.isDebug()){
             // finished immediately
-            Statistic.saveRunDetails(expansionLevel, input, res.getResult(), res.getCycles(), res.getVariableToValue());
+            Statistic.saveRunDetails(userId, expansionLevel, architecture, input, res.getResult(), res.getCycles(), res.getVariableToValue());
             FunctionRegistry.recordRunCost(p.getName(), overhead + res.getCycles());
+            programsRanCount += 1;
         } else {
             debugProgram = p;
             debugInput = new ArrayList<>(input);
             debugExpansionLevel = expansionLevel;
             chargedDebugCycles = res.getCycles();
+            currentRunArchitecture = architecture;
         }
 
         return res;
@@ -347,16 +367,18 @@ public class Api {
         ProgramResult res = p.stepOverWithBudget(credits);
         // Debit only the newly executed cycles; if step exceeded budget, Program rolled back and cycles won't increase
         int delta = res.getCycles() - chargedDebugCycles;
-        if (delta > 0) credits -= delta;
+        if (delta > 0) { credits -= delta; usedCredits += delta; }
         chargedDebugCycles = res.getCycles();
         if(!res.isDebug()){
-            Statistic.saveRunDetails(debugExpansionLevel, debugInput, res.getResult(), res.getCycles(), res.getVariableToValue());
+            Statistic.saveRunDetails(userId, debugExpansionLevel, currentRunArchitecture, debugInput, res.getResult(), res.getCycles(), res.getVariableToValue());
             FunctionRegistry.recordRunCost(p.getName(), currentRunOverhead + res.getCycles());
+            programsRanCount += 1;
             debugProgram = null;
             debugInput = null;
             debugExpansionLevel = 0;
             currentRunOverhead = 0;
             chargedDebugCycles = 0;
+            currentRunArchitecture = null;
         }
 
         return res;
@@ -373,16 +395,18 @@ public class Api {
         }
         ProgramResult res = p.continueDebugWithBudget(credits);
         int delta = res.getCycles() - chargedDebugCycles;
-        if (delta > 0) credits -= delta;
+        if (delta > 0) { credits -= delta; usedCredits += delta; }
         chargedDebugCycles = res.getCycles();
         if(!res.isDebug()){
-            Statistic.saveRunDetails(debugExpansionLevel, debugInput, res.getResult(), res.getCycles(), res.getVariableToValue());
+            Statistic.saveRunDetails(userId, debugExpansionLevel, currentRunArchitecture, debugInput, res.getResult(), res.getCycles(), res.getVariableToValue());
             FunctionRegistry.recordRunCost(p.getName(), currentRunOverhead + res.getCycles());
+            programsRanCount += 1;
             debugProgram = null;
             debugInput = null;
             debugExpansionLevel = 0;
             currentRunOverhead = 0;
             chargedDebugCycles = 0;
+            currentRunArchitecture = null;
         }
 
         return res;
@@ -393,17 +417,19 @@ public class Api {
         if (debugProgram != null){
             try {
                 ProgramResult snapshot = debugProgram.snapshotDebugAsFinished();
-                Statistic.saveRunDetails(debugExpansionLevel, debugInput, snapshot.getResult(), snapshot.getCycles(), snapshot.getVariableToValue());
+                Statistic.saveRunDetails(userId, debugExpansionLevel, currentRunArchitecture, debugInput, snapshot.getResult(), snapshot.getCycles(), snapshot.getVariableToValue());
             } catch (Exception ignored) {
                 // If snapshot fails, still proceed to stop debugging
             }
             debugProgram.stopDebug();
+            programsRanCount += 1;
         }
         debugProgram = null;
         debugInput = null;
         debugExpansionLevel = 0;
         chargedDebugCycles = 0;
         currentRunOverhead = 0;
+        currentRunArchitecture = null;
     }
 
     public void setBreakpoint(int index){
