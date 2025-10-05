@@ -83,11 +83,7 @@ public final class FnArgs {
      * Get the arity (expected number of input arguments) for a function.
      */
     public static int getFunctionArity(String functionName) {
-        Integer arity = FUNCTION_ARITY.get(functionName);
-        if (arity == null) {
-            throw new IllegalArgumentException("Function not found: " + functionName);
-        }
-        return arity;
+        return FunctionRegistry.getFunctionArity(functionName);
     }
 
     /**
@@ -174,7 +170,7 @@ public final class FnArgs {
             inner.add(evalArg(state, sub));
         }
         Program nested = getProgramByName(call.name());
-        ProgramResult r = nested.execute(inner);
+        ProgramResult r = nested.executeWithBudget(inner, Integer.MAX_VALUE);
         return r.getResult();
     }
 
@@ -348,37 +344,15 @@ public final class FnArgs {
     }
 
     public static List<String> getFunctionNames() {
-        var read = REGISTRY_LOCK.readLock();
-        read.lock();
-        try {
-            return new ArrayList<>(FUNCTION_OWNER_BY_NAME.keySet());
-        } finally {
-            read.unlock();
-        }
+        return FunctionRegistry.getFunctionNames();
     }
 
     public static List<String> getFunctionNames(String userId) {
-        var read = REGISTRY_LOCK.readLock();
-        read.lock();
-        try {
-            Map<String, List<SInstruction>> defs = DEFINITIONS_BY_USER.get(userId);
-            if (defs == null) return List.of();
-            return new ArrayList<>(defs.keySet());
-        } finally {
-            read.unlock();
-        }
+        return FunctionRegistry.getFunctionNames(userId);
     }
 
     public static List<String> getProgramNames(String userId) {
-        var read = REGISTRY_LOCK.readLock();
-        read.lock();
-        try {
-            Map<String, Program> progs = PROGRAMS_BY_USER.get(userId);
-            if (progs == null) return List.of();
-            return new ArrayList<>(progs.keySet());
-        } finally {
-            read.unlock();
-        }
+        return FunctionRegistry.getProgramNames(userId);
     }
 
     // -------- Tuple-returning listings (userId, name) --------

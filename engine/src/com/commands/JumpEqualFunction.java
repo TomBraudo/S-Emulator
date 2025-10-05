@@ -44,7 +44,7 @@ class JumpEqualFunction extends BaseCommand{
     @Override
     public void execute(ProgramState programState) {
         List<Integer> evaluated = FnArgs.evaluateArgs(programState, input);
-        ProgramResult res = p.execute(evaluated);
+        ProgramResult res = p.executeWithBudget(evaluated, Integer.MAX_VALUE);
         int targetIndex;
         if(programState.variables.get(variableName).getValue() == res.getResult()){
             if (targetLabel.equals(EXIT_LABEL)){

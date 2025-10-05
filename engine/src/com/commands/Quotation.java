@@ -36,7 +36,7 @@ class Quotation extends BaseCommand{
     @Override
     public void execute(ProgramState programState) {
         List<Integer> evaluated = FnArgs.evaluateArgs(programState, input);
-        ProgramResult res = p.execute(evaluated);
+        ProgramResult res = p.executeWithBudget(evaluated, Integer.MAX_VALUE);
         SingleStepChanges.SingleVariableChange variableChange = new SingleStepChanges.SingleVariableChange(variableName, programState.variables.get(variableName).getValue(), res.getResult());
         SingleStepChanges.IndexChange indexChange = new SingleStepChanges.IndexChange(programState.currentCommandIndex, programState.currentCommandIndex + 1);
         SingleStepChanges.CyclesChange cyclesChange = new SingleStepChanges.CyclesChange(programState.cyclesCount, programState.cyclesCount + res.getCycles() + 5);

@@ -277,46 +277,9 @@ public class Api {
         return stateFileNames;
     }
 
-    public void saveState(String path){
-        if(curProgram == null){
-            throw new IllegalArgumentException("No program is loaded.");
-        }
+    // Full system save/load removed
 
-        Path folder = Paths.get(path);
-        if(!Files.exists(folder) ||  !Files.isDirectory(folder)){
-            throw new IllegalArgumentException("The path provided is not a directory.\n" + path);
-        }
-
-        String programName = curProgram.getName().replaceAll("[^a-zA-Z0-9_-]", "_");
-        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-        String fileName = programName + "_" + timestamp + ".dat";
-
-        Path saveFile = folder.resolve(fileName);
-        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(saveFile.toFile()))) {
-            out.writeObject(new FullSystemState(curProgram));
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to save state to folder: " + path, e);
-        }
-
-    }
-
-    public static void loadState(String path){
-        if(!path.endsWith(".dat")){
-            throw new IllegalArgumentException("The path provided is not a valid state file.\n" + path);
-        }
-
-        Path file = Paths.get(path);
-        if(!Files.exists(file) ||  !Files.isRegularFile(file)){
-            throw new IllegalArgumentException("The path provided is not a file.\n" + path);
-        }
-
-        try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(path))){
-            ((FullSystemState) in.readObject()).apply();
-        }
-        catch (IOException | ClassNotFoundException e){
-            throw new RuntimeException("Failed to load state from " + path, e);
-        }
-    }
+    public static void loadState(String path){ throw new UnsupportedOperationException("Full system save/load removed"); }
 
     public ProgramResult startDebugging(List<Integer> input, int expansionLevel, List<Integer> breakpoints, String architecture){
         Program p = curProgram;
@@ -456,7 +419,7 @@ public class Api {
     }
 
     private void ensureArchitectureAllowed(Program p, String chosen){
-        String required = p.getMinArchitecture();
+        String required = p.getMaxArchitecture();
         if (architectureRank(chosen) < architectureRank(required)){
             throw new IllegalArgumentException("Chosen architecture is lower than program's minimum: required=" + required + ", chosen=" + chosen);
         }
