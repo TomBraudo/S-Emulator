@@ -138,5 +138,8 @@ class JumpEqualFunction extends BaseCommand{
         return null;
     }
 
-    // Depth logic moved to ArgExpr; no helper needed here.
+    @Override
+    public String getMinArchitecture() {
+        return "IV";
+    }
 }

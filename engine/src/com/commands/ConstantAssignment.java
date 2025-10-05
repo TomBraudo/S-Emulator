@@ -105,4 +105,9 @@ class ConstantAssignment extends BaseCommand {
         ins.setSInstructionArguments(args);
         return ins;
     }
+
+    @Override
+    public String getMinArchitecture() {
+        return "II";
+    }
 }

@@ -56,8 +56,8 @@ public class Api {
         // Phase 1: register function names/arity atomically; will throw without partial writes
         CommandFactory.registerFunctions(this.userId, sp.getSFunctions());
         // Build and register program only after successful validation/registration
-        curProgram = Program.createProgram(sp.getName(), sp.getSInstructions().getSInstruction());
-        FnArgs.registerProgram(this.userId, curProgram);
+        Program p = Program.createProgram(sp.getName(), sp.getSInstructions().getSInstruction());
+        FnArgs.registerProgram(this.userId, p);
         Statistic.clearStatistics();
     }
     public void createEmptyProgram(String name){

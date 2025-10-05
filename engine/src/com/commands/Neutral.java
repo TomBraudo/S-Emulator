@@ -86,4 +86,9 @@ class Neutral extends BaseCommand {
         if (!label.equals(NO_LABEL)) ins.setSLabel(label);
         return ins;
     }
+
+    @Override
+    public String getMinArchitecture() {
+        return "I";
+    }
 }

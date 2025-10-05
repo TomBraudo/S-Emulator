@@ -104,5 +104,9 @@ class GotoLabel extends BaseCommand {
         return ins;
     }
 
+    @Override
+    public String getMinArchitecture() {
+        return "II";
+    }
 
 }

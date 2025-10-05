@@ -565,4 +565,18 @@ public class Program implements Serializable {
         }
         return idx;
     }
+
+    public String getMinArchitecture(){
+        return commands.stream()
+                .map(com.commands.BaseCommand::getMinArchitecture)
+                .max(Comparator.comparingInt(a -> switch (a) {
+                    case "I" -> 1;
+                    case "II" -> 2;
+                    case "III" -> 3;
+                    case "IV" -> 4;
+                    default -> 0;
+                }))
+                .orElse("unknown");
+
+    }
 }

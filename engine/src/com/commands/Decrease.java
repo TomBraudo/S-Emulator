@@ -91,5 +91,8 @@ class Decrease extends BaseCommand {
         return ins;
     }
 
-
+    @Override
+    public String getMinArchitecture() {
+        return "I";
+    }
 }

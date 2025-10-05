@@ -181,4 +181,9 @@ class Quotation extends BaseCommand{
     public String getTargetLabel() {
         return NO_LABEL;
     }
+
+    @Override
+    public String getMinArchitecture() {
+        return "IV";
+    }
 }
