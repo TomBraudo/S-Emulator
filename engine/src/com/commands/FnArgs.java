@@ -59,14 +59,20 @@ public final class FnArgs {
         var write = REGISTRY_LOCK.writeLock();
         write.lock();
         try {
-            Map<String, List<SInstruction>> defs = DEFINITIONS_BY_USER.computeIfAbsent(userId, k -> new HashMap<>());
-            Map<String, Program> cache = FUNCTION_PROGRAM_CACHE_BY_USER.computeIfAbsent(userId, k -> new HashMap<>());
+            // Phase A: pre-validate all names atomically; no mutation on failure
             for (SFunction f : functions.getSFunction()) {
                 String name = f.getName();
                 String owner = FUNCTION_OWNER_BY_NAME.get(name);
                 if (owner != null && !owner.equals(userId)) {
                     throw new IllegalStateException("Function name already registered by another user: " + name);
                 }
+            }
+
+            // Phase B: perform registrations only after successful validation
+            Map<String, List<SInstruction>> defs = DEFINITIONS_BY_USER.computeIfAbsent(userId, k -> new HashMap<>());
+            Map<String, Program> cache = FUNCTION_PROGRAM_CACHE_BY_USER.computeIfAbsent(userId, k -> new HashMap<>());
+            for (SFunction f : functions.getSFunction()) {
+                String name = f.getName();
                 List<SInstruction> instructions = f.getSInstructions().getSInstruction();
                 defs.put(name, instructions);                  // upsert for this user
                 cache.remove(name);                            // invalidate cache for this user
@@ -78,6 +84,23 @@ public final class FnArgs {
             }
         } finally {
             write.unlock();
+        }
+    }
+
+    /**
+     * Pre-validate a program name for uniqueness without mutating state.
+     * Throws if the program name is owned by another user.
+     */
+    public static void assertProgramNameAvailable(String userId, String programName) {
+        var read = REGISTRY_LOCK.readLock();
+        read.lock();
+        try {
+            String owner = PROGRAM_OWNER_BY_NAME.get(programName);
+            if (owner != null && !owner.equals(userId)) {
+                throw new IllegalStateException("Program name already registered by another user: " + programName);
+            }
+        } finally {
+            read.unlock();
         }
     }
 
