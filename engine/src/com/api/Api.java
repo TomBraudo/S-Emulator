@@ -30,35 +30,40 @@ import java.util.Objects;
 import java.util.Map;
 
 public class Api {
-    private static Program curProgram;
-    private static Program debugProgram;
-    private static List<Integer> debugInput;
-    private static int debugExpansionLevel;
+    private Program curProgram;
+    private Program debugProgram;
+    private List<Integer> debugInput;
+    private int debugExpansionLevel;
     // Mixed tree view state (visual-only)
-    private static MixedExpansionSession mixedSession;
+    private MixedExpansionSession mixedSession;
+    private String userId;
+    private int credits;
+    
+    public Api(String userId){
+        this.userId = userId;
+    }
 
-    public static String getCurProgramName() {
+    public String getCurProgramName() {
         return curProgram.getName();
     }
 
-    public static void loadSProgram(String path) throws JAXBException {
+    public void loadSProgram(InputStream xmlStream) throws JAXBException {
         JAXBContext ctx = JAXBContext.newInstance(SProgram.class);
         Unmarshaller um = ctx.createUnmarshaller();
-        SProgram sp = ((SProgram) um.unmarshal(new File(path)));
-        CommandFactory.registerFunctions(sp.getSFunctions());
+        SProgram sp = ((SProgram) um.unmarshal(xmlStream));
+        CommandFactory.registerFunctions(this.userId, sp.getSFunctions());
         curProgram = Program.createProgram(sp.getName(), sp.getSInstructions().getSInstruction());
-        FnArgs.registerProgram(curProgram.getName(), curProgram);
+        FnArgs.registerProgram(this.userId, curProgram);
         Statistic.clearStatistics();
     }
-    public static void createEmptyProgram(String name){
+    public void createEmptyProgram(String name){
         curProgram = Program.createProgram(name, Collections.emptyList());
-        FnArgs.clearFunctions();
-        FnArgs.registerProgram(curProgram.getName(), curProgram);
+        FnArgs.registerProgram(this.userId, curProgram);
         Statistic.clearStatistics();
     }
 
 
-    public static ProgramResult executeProgram(List<Integer> input, int expansionLevel){
+    public ProgramResult executeProgram(List<Integer> input, int expansionLevel){
         Program p = curProgram;
         if(expansionLevel > 0){
             p = curProgram.expand(expansionLevel);
@@ -69,7 +74,7 @@ public class Api {
         return res;
     }
 
-    public static String getProgram(int expansionLevel){
+    public String getProgram(int expansionLevel){
         Program p = curProgram;
         if(expansionLevel > 0){
             p = curProgram.expand(expansionLevel);
@@ -77,23 +82,23 @@ public class Api {
         return p.toString();
     }
 
-    public static boolean isLoaded(){
+    public boolean isLoaded(){
         return curProgram != null;
     }
 
-    public static int getMaxLevel(){
+    public int getMaxLevel(){
         return curProgram.getMaxExpansionLevel();
     }
 
-    static void setCurProgram(Program curProgram){
-        Api.curProgram = curProgram;
+    void setCurProgram(Program curProgram){
+        this.curProgram = curProgram;
     }
 
-    public static List<String> getInputVariableNames(){
+    public List<String> getInputVariableNames(){
         return curProgram.getInputVariables();
     }
 
-    public static List<String> getProgramCommands(int expansionLevel){
+    public List<String> getProgramCommands(int expansionLevel){
         return curProgram.expand(expansionLevel).getCommands().stream().map(BaseCommand::toString).toList();
     }
 
@@ -102,21 +107,21 @@ public class Api {
     }
 
     // ===== Mixed Tree View API (visual-only) =====
-    public static void startMixedTreeView(){
+    public void startMixedTreeView(){
         if (curProgram == null){
             throw new IllegalStateException("No program loaded");
         }
         mixedSession = MixedExpansionSession.buildFromProgram(new Program(curProgram));
     }
 
-    public static ProgramTreeDto getMixedTree(){
+    public ProgramTreeDto getMixedTree(){
         if (mixedSession == null){
             throw new IllegalStateException("Mixed tree view not initialized");
         }
         return mixedSession.toDto();
     }
 
-    public static ProgramTreeDto expandMixedAt(List<Integer> path){
+    public ProgramTreeDto expandMixedAt(List<Integer> path){
         if (mixedSession == null){
             throw new IllegalStateException("Mixed tree view not initialized");
         }
@@ -124,7 +129,7 @@ public class Api {
         return mixedSession.toDto();
     }
 
-    public static ProgramTreeDto collapseMixedAt(List<Integer> path){
+    public ProgramTreeDto collapseMixedAt(List<Integer> path){
         if (mixedSession == null){
             throw new IllegalStateException("Mixed tree view not initialized");
         }
@@ -144,7 +149,7 @@ public class Api {
     }
 
     // ===== Create and append command from UI inputs =====
-    public static void createAndAddCommand(
+    public void createAndAddCommand(
             String commandName,
             String variable,
             String label,
@@ -190,7 +195,7 @@ public class Api {
     }
 
     // Save current program to XML under the given folder path; returns absolute file path
-    public static String saveCurrentProgramAsXml(String folderPath){
+    public String saveCurrentProgramAsXml(String folderPath){
         if(curProgram == null){
             throw new IllegalStateException("No program is loaded.");
         }
@@ -199,7 +204,7 @@ public class Api {
         return file.toAbsolutePath().toString();
     }
 
-    public static void setCurProgram(String functionName){
+    public void setCurProgram(String functionName){
         curProgram = FnArgs.getProgramByName(functionName);
     }
 
@@ -224,7 +229,7 @@ public class Api {
         return stateFileNames;
     }
 
-    public static void saveState(String path){
+    public void saveState(String path){
         if(curProgram == null){
             throw new IllegalArgumentException("No program is loaded.");
         }
@@ -265,7 +270,7 @@ public class Api {
         }
     }
 
-    public static ProgramResult startDebugging(List<Integer> input, int expansionLevel, List<Integer> breakpoints){
+    public ProgramResult startDebugging(List<Integer> input, int expansionLevel, List<Integer> breakpoints){
         Program p = curProgram;
         if(expansionLevel > 0){
             p = curProgram.expand(expansionLevel);
@@ -284,7 +289,7 @@ public class Api {
         return res;
     }
 
-    public static ProgramResult stepOver(){
+    public ProgramResult stepOver(){
         Program p = debugProgram;
         ProgramResult res = p.stepOver();
         if(!res.isDebug()){
@@ -297,11 +302,11 @@ public class Api {
         return res;
     }
 
-    public static ProgramResult stepBack(){
+    public ProgramResult stepBack(){
         return debugProgram.stepBack();
     }
 
-    public static ProgramResult continueDebug(){
+    public ProgramResult continueDebug(){
         Program p = debugProgram;
         ProgramResult res = p.continueDebug();
         if(!res.isDebug()){
@@ -314,7 +319,7 @@ public class Api {
         return res;
     }
 
-    public static void stopDebug(){
+    public void stopDebug(){
         // If there is an ongoing debug session, snapshot its current state as a completed run
         if (debugProgram != null){
             try {
@@ -330,19 +335,19 @@ public class Api {
         debugExpansionLevel = 0;
     }
 
-    public static void setBreakpoint(int index){
+    public void setBreakpoint(int index){
         debugProgram.setBreakpoint(index);
     }
 
-    public static void removeBreakpoint(int index){
+    public void removeBreakpoint(int index){
         debugProgram.removeBreakpoint(index);
     }
 
-    public static boolean isDebugging(){
+    public boolean isDebugging(){
         return debugProgram != null;
     }
 
-    public static ProgramSummary getProgramSummary(int expansionLevel){
+    public ProgramSummary getProgramSummary(int expansionLevel){
         Program p = curProgram;
         if(expansionLevel > 0){
             p = curProgram.expand(expansionLevel);
@@ -351,7 +356,7 @@ public class Api {
         return p.getSummary();
     }
 
-    public static List<String> getLabels(int expansionLevel){
+    public List<String> getLabels(int expansionLevel){
         Program p = curProgram;
         if(expansionLevel > 0){
             p = curProgram.expand(expansionLevel);
@@ -366,7 +371,7 @@ public class Api {
         return labels;
     }
 
-    public static List<String> getVariables(int expansionLevel){
+    public List<String> getVariables(int expansionLevel){
         Program p = curProgram;
         if (expansionLevel > 0){
             p = curProgram.expand(expansionLevel);
@@ -382,7 +387,7 @@ public class Api {
         return variables;
     }
 
-    public static List<String> getCommandHistory(int expansionLevel, int index){
+    public List<String> getCommandHistory(int expansionLevel, int index){
         Program p = curProgram;
         if(expansionLevel > 0){
             p = curProgram.expand(expansionLevel);

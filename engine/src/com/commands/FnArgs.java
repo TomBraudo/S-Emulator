@@ -11,6 +11,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.AbstractMap;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * Handles function arguments:
@@ -30,63 +32,146 @@ public final class FnArgs {
 
     private FnArgs() {}
 
-    // Function name -> raw instructions (definitions)
-    private static final Map<String, List<SInstruction>> DEFINITIONS = new HashMap<>();
-    // Function name -> compiled Program cache
-    private static final Map<String, Program> PROGRAM_CACHE = new HashMap<>();
-    // Function name -> arity (number of expected input arguments)
+    // ---- Concurrency guard over entire registry ----
+    private static final ReentrantReadWriteLock REGISTRY_LOCK = new ReentrantReadWriteLock();
+
+    // ---- Function registry (by user) ----
+    // userId -> (functionName -> raw SInstruction list)
+    private static final Map<String, Map<String, List<SInstruction>>> DEFINITIONS_BY_USER = new HashMap<>();
+    // userId -> (functionName -> compiled Program cache)
+    private static final Map<String, Map<String, Program>> FUNCTION_PROGRAM_CACHE_BY_USER = new HashMap<>();
+    // functionName -> owner userId (enforces global uniqueness across users)
+    private static final Map<String, String> FUNCTION_OWNER_BY_NAME = new HashMap<>();
+    // Function name -> arity (global, since names are unique globally)
     private static final Map<String, Integer> FUNCTION_ARITY = new HashMap<>();
-    // Guard set to detect recursive/self references during program build
+    // Guard set to detect recursive/self references during program build (global by name)
     private static final java.util.Set<String> BUILDING = new java.util.HashSet<>();
 
-    /**
-     * Register functions into the internal registry. Existing entries are cleared.
-     */
-    public static void registerFunctions(SFunctions functions) {
-        DEFINITIONS.clear();
-        PROGRAM_CACHE.clear();
-        FUNCTION_ARITY.clear();
-        BUILDING.clear();
+    // ---- Program registry (non-function programs, by user) ----
+    // userId -> (programName -> Program)
+    private static final Map<String, Map<String, Program>> PROGRAMS_BY_USER = new HashMap<>();
+    // programName -> owner userId (global uniqueness)
+    private static final Map<String, String> PROGRAM_OWNER_BY_NAME = new HashMap<>();
+
+    // ---- Registration APIs (additive; no clearing) ----
+    public static void registerFunctions(String userId, SFunctions functions) {
         if (functions == null) return;
-        for (SFunction f : functions.getSFunction()) {
-            List<SInstruction> instructions = f.getSInstructions().getSInstruction();
-            DEFINITIONS.put(f.getName(), instructions);
-            
-            // Calculate and store the arity (max x-variable index)
-            int arity = calculateArity(instructions);
-            FUNCTION_ARITY.put(f.getName(), arity);
+        var write = REGISTRY_LOCK.writeLock();
+        write.lock();
+        try {
+            Map<String, List<SInstruction>> defs = DEFINITIONS_BY_USER.computeIfAbsent(userId, k -> new HashMap<>());
+            Map<String, Program> cache = FUNCTION_PROGRAM_CACHE_BY_USER.computeIfAbsent(userId, k -> new HashMap<>());
+            for (SFunction f : functions.getSFunction()) {
+                String name = f.getName();
+                String owner = FUNCTION_OWNER_BY_NAME.get(name);
+                if (owner != null && !owner.equals(userId)) {
+                    throw new IllegalStateException("Function name already registered by another user: " + name);
+                }
+                List<SInstruction> instructions = f.getSInstructions().getSInstruction();
+                defs.put(name, instructions);                  // upsert for this user
+                cache.remove(name);                            // invalidate cache for this user
+                FUNCTION_OWNER_BY_NAME.put(name, userId);      // claim ownership (idempotent for same user)
+
+                // Calculate and store the arity (max x-variable index)
+                int arity = calculateArity(instructions);
+                FUNCTION_ARITY.put(name, arity);
+            }
+        } finally {
+            write.unlock();
         }
-        // Note: Programs are built lazily on first use via getProgramByName()
-        // If you prefer eager build, iterate names and call getProgramByName(name) here.
     }
 
     /**
      * Retrieve a Program instance by function name using the registered function body.
      */
     public static Program getProgramByName(String functionName) {
-        Program cached = PROGRAM_CACHE.get(functionName);
-        if (cached != null) return cached;
-
-        List<SInstruction> functionInstructions = DEFINITIONS.get(functionName);
-        if (functionInstructions == null) {
-            throw new IllegalArgumentException("Function not found: " + functionName);
-        }
-
-        // Guard against recursive/self references
-        if (!BUILDING.add(functionName)) {
-            throw new IllegalStateException("Recursive function reference detected: " + functionName);
-        }
+        var read = REGISTRY_LOCK.readLock();
+        read.lock();
         try {
-            Program program = Program.createProgram(functionName, functionInstructions);
-            PROGRAM_CACHE.put(functionName, program);
-            return program;
+            String owner = FUNCTION_OWNER_BY_NAME.get(functionName);
+            if (owner == null) {
+                throw new IllegalArgumentException("Function not found: " + functionName);
+            }
+            Map<String, Program> cache = FUNCTION_PROGRAM_CACHE_BY_USER.getOrDefault(owner, Map.of());
+            Program cached = cache.get(functionName);
+            if (cached != null) return cached;
         } finally {
-            BUILDING.remove(functionName);
+            read.unlock();
+        }
+
+        // Build lazily outside of read lock, then install under write lock
+        List<SInstruction> functionInstructions;
+        String owner;
+        var write = REGISTRY_LOCK.writeLock();
+        write.lock();
+        try {
+            owner = FUNCTION_OWNER_BY_NAME.get(functionName);
+            if (owner == null) throw new IllegalArgumentException("Function not found: " + functionName);
+            Map<String, List<SInstruction>> defs = DEFINITIONS_BY_USER.get(owner);
+            if (defs == null || (functionInstructions = defs.get(functionName)) == null) {
+                throw new IllegalArgumentException("Function not found: " + functionName);
+            }
+
+            if (!BUILDING.add(functionName)) {
+                throw new IllegalStateException("Recursive function reference detected: " + functionName);
+            }
+            try {
+                Program program = Program.createProgram(functionName, functionInstructions);
+                FUNCTION_PROGRAM_CACHE_BY_USER.computeIfAbsent(owner, k -> new HashMap<>()).put(functionName, program);
+                return program;
+            } finally {
+                BUILDING.remove(functionName);
+            }
+        } finally {
+            write.unlock();
         }
     }
 
+    /**
+     * Register a compiled Program as a function implementation for the given user.
+     * If the function name is owned by another user, throws.
+     */
+    public static void registerProgramAsFunction(String userId, String functionName, Program p) {
+        var write = REGISTRY_LOCK.writeLock();
+        write.lock();
+        try {
+            String owner = FUNCTION_OWNER_BY_NAME.get(functionName);
+            if (owner != null && !owner.equals(userId)) {
+                throw new IllegalStateException("Function name already registered by another user: " + functionName);
+            }
+            FUNCTION_OWNER_BY_NAME.put(functionName, userId);
+            FUNCTION_PROGRAM_CACHE_BY_USER.computeIfAbsent(userId, k -> new HashMap<>()).put(functionName, p);
+        } finally {
+            write.unlock();
+        }
+    }
+
+    /**
+     * Backwards-compat shim: if called without user, treat as GLOBAL owner.
+     * Prefer registerProgramAsFunction(userId, name, program).
+     */
+    @Deprecated
     public static void registerProgram(String functionName, Program p) {
-        PROGRAM_CACHE.put(functionName, p);
+        registerProgramAsFunction("GLOBAL", functionName, p);
+    }
+
+    /**
+     * Register a compiled Program as a user program (not a function), enforcing global name uniqueness.
+     */
+    public static void registerProgram(String userId, Program p) {
+        String name = p.getName();
+        var write = REGISTRY_LOCK.writeLock();
+        write.lock();
+        try {
+            String owner = PROGRAM_OWNER_BY_NAME.get(name);
+            if (owner != null && !owner.equals(userId)) {
+                throw new IllegalStateException("Program name already registered by another user: " + name);
+            }
+            PROGRAM_OWNER_BY_NAME.put(name, userId);
+            PROGRAMS_BY_USER.computeIfAbsent(userId, k -> new HashMap<>()).put(name, p);
+        } finally {
+            write.unlock();
+        }
     }
 
     /**
@@ -118,10 +203,17 @@ public final class FnArgs {
     }
 
     public static void clearFunctions(){
-        DEFINITIONS.clear();
-        PROGRAM_CACHE.clear();
-        FUNCTION_ARITY.clear();
-        BUILDING.clear();
+        var write = REGISTRY_LOCK.writeLock();
+        write.lock();
+        try {
+            DEFINITIONS_BY_USER.clear();
+            FUNCTION_PROGRAM_CACHE_BY_USER.clear();
+            FUNCTION_OWNER_BY_NAME.clear();
+            FUNCTION_ARITY.clear();
+            BUILDING.clear();
+        } finally {
+            write.unlock();
+        }
     }
 
     /**
@@ -430,7 +522,100 @@ public final class FnArgs {
     }
 
     public static List<String> getFunctionNames() {
-        return new ArrayList<>(DEFINITIONS.keySet());
+        var read = REGISTRY_LOCK.readLock();
+        read.lock();
+        try {
+            return new ArrayList<>(FUNCTION_OWNER_BY_NAME.keySet());
+        } finally {
+            read.unlock();
+        }
+    }
+
+    public static List<String> getFunctionNames(String userId) {
+        var read = REGISTRY_LOCK.readLock();
+        read.lock();
+        try {
+            Map<String, List<SInstruction>> defs = DEFINITIONS_BY_USER.get(userId);
+            if (defs == null) return List.of();
+            return new ArrayList<>(defs.keySet());
+        } finally {
+            read.unlock();
+        }
+    }
+
+    public static List<String> getProgramNames(String userId) {
+        var read = REGISTRY_LOCK.readLock();
+        read.lock();
+        try {
+            Map<String, Program> progs = PROGRAMS_BY_USER.get(userId);
+            if (progs == null) return List.of();
+            return new ArrayList<>(progs.keySet());
+        } finally {
+            read.unlock();
+        }
+    }
+
+    // -------- Tuple-returning listings (userId, name) --------
+    public static List<Map.Entry<String, String>> getFunctionEntries() {
+        var read = REGISTRY_LOCK.readLock();
+        read.lock();
+        try {
+            List<Map.Entry<String, String>> out = new ArrayList<>(FUNCTION_OWNER_BY_NAME.size());
+            for (Map.Entry<String, String> e : FUNCTION_OWNER_BY_NAME.entrySet()) {
+                // e: functionName -> ownerUserId; return (userId, functionName)
+                out.add(new AbstractMap.SimpleEntry<>(e.getValue(), e.getKey()));
+            }
+            return out;
+        } finally {
+            read.unlock();
+        }
+    }
+
+    public static List<Map.Entry<String, String>> getFunctionEntries(String userId) {
+        var read = REGISTRY_LOCK.readLock();
+        read.lock();
+        try {
+            Map<String, List<SInstruction>> defs = DEFINITIONS_BY_USER.get(userId);
+            if (defs == null) return List.of();
+            List<Map.Entry<String, String>> out = new ArrayList<>(defs.size());
+            for (String name : defs.keySet()) {
+                out.add(new AbstractMap.SimpleEntry<>(userId, name));
+            }
+            return out;
+        } finally {
+            read.unlock();
+        }
+    }
+
+    public static List<Map.Entry<String, String>> getProgramEntries(String userId) {
+        var read = REGISTRY_LOCK.readLock();
+        read.lock();
+        try {
+            Map<String, Program> progs = PROGRAMS_BY_USER.get(userId);
+            if (progs == null) return List.of();
+            List<Map.Entry<String, String>> out = new ArrayList<>(progs.size());
+            for (String name : progs.keySet()) {
+                out.add(new AbstractMap.SimpleEntry<>(userId, name));
+            }
+            return out;
+        } finally {
+            read.unlock();
+        }
+    }
+
+    public static List<Map.Entry<String, String>> getProgramEntries() {
+        var read = REGISTRY_LOCK.readLock();
+        read.lock();
+        try {
+            List<Map.Entry<String, String>> out = new ArrayList<>(PROGRAM_OWNER_BY_NAME.size());
+            for (Map.Entry<String, String> e : PROGRAM_OWNER_BY_NAME.entrySet()) {
+                // e: programName -> ownerUserId; return (userId, programName)
+                out.add(new AbstractMap.SimpleEntry<>(e.getValue(), e.getKey()));
+            }
+            return out;
+        } finally {
+            read.unlock();
+        }
     }
 
     public static List<String> getFunctionCommands(String functionName){
