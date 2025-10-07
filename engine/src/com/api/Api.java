@@ -25,11 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.Map;
+import java.util.*;
 
 public class Api {
     private Program curProgram;
@@ -480,4 +476,30 @@ public class Api {
         }
         return p.getCommands().get(index).getCommandHistory();
     }
+
+    public static String getProgramOwner(String programName){
+        return FunctionRegistry.getOwnerByName(programName);
+    }
+
+    public static OptionalDouble getProgramAverageCost(String programName){
+        return FunctionRegistry.getAverageCost(programName);
+    }
+
+    public static int getCommandCount(String programName){
+        return FunctionRegistry.getProgramByName(programName).getCommands().size();
+    }
+
+    public static int getProgramRanCount(String programName){
+        return FunctionRegistry.getRunCountByName(programName);
+    }
+
+    public static int getProgramMaxExpansionLevel(String programName){
+        return FunctionRegistry.getProgramByName(programName).getMaxExpansionLevel();
+    }
+
+    public static String getFunctionSourceProgram(String functionName){
+        return FunctionRegistry.getFunctionSourceProgram(functionName);
+    }
+
+
 }

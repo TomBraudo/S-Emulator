@@ -40,7 +40,7 @@ public final class FunctionRegistry {
 
     // ---- Global per-program average cost registry ----
     // Key: program name; Value: (averageCostRoundedTo1Decimal, runCount)
-    private static final Map<String, java.util.Map.Entry<Double, Long>> AVERAGE_COST_BY_PROGRAM = new HashMap<>();
+    private static final Map<String, java.util.Map.Entry<Double, Integer>> AVERAGE_COST_BY_PROGRAM = new HashMap<>();
 
     // ---- Public registration APIs ----
     public static void registerFunctions(String userId, SFunctions functions, String programName) {
@@ -337,15 +337,15 @@ public final class FunctionRegistry {
         var write = REGISTRY_LOCK.writeLock();
         write.lock();
         try {
-            java.util.Map.Entry<Double, Long> cur = AVERAGE_COST_BY_PROGRAM.get(programName);
+            java.util.Map.Entry<Double, Integer> cur = AVERAGE_COST_BY_PROGRAM.get(programName);
             if (cur == null) {
                 double avg = roundTo1Decimal((double) cyclesPlusOverhead);
-                AVERAGE_COST_BY_PROGRAM.put(programName, new java.util.AbstractMap.SimpleEntry<>(avg, 1L));
+                AVERAGE_COST_BY_PROGRAM.put(programName, new java.util.AbstractMap.SimpleEntry<>(avg, 1));
                 return;
             }
             double prevAvg = cur.getKey();
-            long prevCount = cur.getValue();
-            long newCount = prevCount + 1L;
+            int prevCount = cur.getValue();
+            int newCount = prevCount + 1;
             double newAvg = (prevAvg * prevCount + cyclesPlusOverhead) / (double) newCount;
             newAvg = roundTo1Decimal(newAvg);
             AVERAGE_COST_BY_PROGRAM.put(programName, new java.util.AbstractMap.SimpleEntry<>(newAvg, newCount));
@@ -358,7 +358,7 @@ public final class FunctionRegistry {
         var read = REGISTRY_LOCK.readLock();
         read.lock();
         try {
-            java.util.Map.Entry<Double, Long> cur = AVERAGE_COST_BY_PROGRAM.get(programName);
+            java.util.Map.Entry<Double, Integer> cur = AVERAGE_COST_BY_PROGRAM.get(programName);
             if (cur == null) return OptionalDouble.empty();
             return OptionalDouble.of(cur.getKey());
         } finally {
@@ -419,6 +419,28 @@ public final class FunctionRegistry {
         }
         return maxIndex;
     }
+
+    public static String getOwnerByName(String name) {
+        var read = REGISTRY_LOCK.readLock();
+        read.lock();
+        try {
+            String owner = PROGRAM_OWNER_BY_NAME.get(name);
+            if (owner != null) return owner;
+            return FUNCTION_OWNER_BY_NAME.get(name);
+        } finally {
+            read.unlock();
+        }
+    }
+
+    public static int getRunCountByName(String name) {
+        var read = REGISTRY_LOCK.readLock();
+        read.lock();
+        try {
+            java.util.Map.Entry<Double, Integer> entry = AVERAGE_COST_BY_PROGRAM.get(name);
+            return entry != null ? entry.getValue() : 0;
+        } finally {
+            read.unlock();
+        }
+    }
+
 }
-
-
