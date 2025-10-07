@@ -5,6 +5,7 @@ import jakarta.servlet.*;
 import jakarta.servlet.http.*;
 import jakarta.servlet.annotation.*;
 import main.java.ServerApp;
+import main.java.utils.ResponseHelper;
 
 import java.io.*;
 
@@ -18,7 +19,7 @@ public class UploadServlet extends HttpServlet {
 
         String userId = req.getHeader("X-User-Id");
         if (userId == null || userId.isBlank()) {
-            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing user header");
+            ResponseHelper.error(resp, 400, "Missing X-User-Id header");
             return;
         }
 
@@ -26,18 +27,16 @@ public class UploadServlet extends HttpServlet {
 
         Part filePart = req.getPart("file");
         if (filePart == null) {
-            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing file part");
+            ResponseHelper.error(resp, 400, "Missing file part");
             return;
         }
 
         try (InputStream fileContent = filePart.getInputStream()) {
             api.loadSProgram(fileContent);
+            ResponseHelper.success(resp, "Program uploaded successfully", null);
         } catch (Exception e) {
-            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Failed to load program: " + e.getMessage());
+            ResponseHelper.error(resp, 400, "Failed to upload program: " + e.getMessage());
             return;
         }
-
-        resp.setContentType("text/plain");
-        resp.getWriter().println("Program uploaded successfully for user " + userId);
     }
 }

@@ -124,49 +124,81 @@ public final class FunctionRegistry {
     }
 
     // ---- Lookup APIs ----
-    public static Program getProgramByName(String functionName) {
-        // Fast path under read lock
+    public static Program getProgramByName(String name) {
+        // Fast path under read lock: check program registry first, then function cache
         var read = REGISTRY_LOCK.readLock();
         read.lock();
         try {
-            String owner = FUNCTION_OWNER_BY_NAME.get(functionName);
-            if (owner == null) throw new IllegalArgumentException("Function not found: " + functionName);
-            Map<String, Program> cache = FUNCTION_PROGRAM_CACHE_BY_USER.getOrDefault(owner, Map.of());
-            Program cached = cache.get(functionName);
+            // Is it a user program?
+            String programOwner = PROGRAM_OWNER_BY_NAME.get(name);
+            if (programOwner != null) {
+                Map<String, Program> progs = PROGRAMS_BY_USER.getOrDefault(programOwner, Map.of());
+                Program p = progs.get(name);
+                if (p == null) {
+                    throw new IllegalArgumentException("Program not found: " + name);
+                }
+                return new Program(p);
+            }
+            // Else, treat as function: try cached compiled program
+            String funcOwner = FUNCTION_OWNER_BY_NAME.get(name);
+            if (funcOwner == null) {
+                throw new IllegalArgumentException("Function or program not found: " + name);
+            }
+            Map<String, Program> cache = FUNCTION_PROGRAM_CACHE_BY_USER.getOrDefault(funcOwner, Map.of());
+            Program cached = cache.get(name);
             if (cached != null) return new Program(cached);
         } finally {
             read.unlock();
         }
 
-        // Build lazily under write lock
+        // If it's a function and not cached, lazily build under write lock
         var write = REGISTRY_LOCK.writeLock();
         write.lock();
         try {
-            String owner = FUNCTION_OWNER_BY_NAME.get(functionName);
-            if (owner == null) throw new IllegalArgumentException("Function not found: " + functionName);
-            Map<String, List<SInstruction>> defs = DEFINITIONS_BY_USER.get(owner);
-            List<SInstruction> instructions = defs == null ? null : defs.get(functionName);
-            if (instructions == null) throw new IllegalArgumentException("Function not found: " + functionName);
+            // Re-check function path under write lock
+            String funcOwner = FUNCTION_OWNER_BY_NAME.get(name);
+            if (funcOwner == null) {
+                throw new IllegalArgumentException("Function or program not found: " + name);
+            }
+            Map<String, List<SInstruction>> defs = DEFINITIONS_BY_USER.get(funcOwner);
+            List<SInstruction> instructions = defs == null ? null : defs.get(name);
+            if (instructions == null) throw new IllegalArgumentException("Function not found: " + name);
 
-            if (!BUILDING.add(functionName)) {
-                throw new IllegalStateException("Recursive function reference detected: " + functionName);
+            if (!BUILDING.add(name)) {
+                throw new IllegalStateException("Recursive function reference detected: " + name);
             }
             try {
-                Program program = Program.createProgram(functionName, instructions);
-                FUNCTION_PROGRAM_CACHE_BY_USER.computeIfAbsent(owner, k -> new HashMap<>()).put(functionName, program);
+                Program program = Program.createProgram(name, instructions);
+                FUNCTION_PROGRAM_CACHE_BY_USER.computeIfAbsent(funcOwner, k -> new HashMap<>()).put(name, program);
                 return new Program(program);
             } finally {
-                BUILDING.remove(functionName);
+                BUILDING.remove(name);
             }
         } finally {
             write.unlock();
         }
     }
 
-    public static int getFunctionArity(String functionName) {
-        Integer arity = FUNCTION_ARITY.get(functionName);
-        if (arity == null) throw new IllegalArgumentException("Function not found: " + functionName);
-        return arity;
+    public static int getFunctionArity(String name) {
+        // If name belongs to a user program, derive arity from its input variables (max x-index)
+        var read = REGISTRY_LOCK.readLock();
+        read.lock();
+        try {
+            String programOwner = PROGRAM_OWNER_BY_NAME.get(name);
+            if (programOwner != null) {
+                Map<String, Program> progs = PROGRAMS_BY_USER.getOrDefault(programOwner, Map.of());
+                Program p = progs.get(name);
+                if (p == null) {
+                    throw new IllegalArgumentException("Program not found: " + name);
+                }
+                return calculateProgramArity(p);
+            }
+            Integer arity = FUNCTION_ARITY.get(name);
+            if (arity == null) throw new IllegalArgumentException("Function not found: " + name);
+            return arity;
+        } finally {
+            read.unlock();
+        }
     }
 
     public static List<String> getFunctionNames() {
@@ -365,6 +397,14 @@ public final class FunctionRegistry {
             } catch (NumberFormatException ignored) {}
         }
         return 0;
+    }
+
+    private static int calculateProgramArity(Program program) {
+        int maxXIndex = 0;
+        for (String v : program.getPresentVariables()) {
+            maxXIndex = Math.max(maxXIndex, extractXIndex(v));
+        }
+        return maxXIndex;
     }
 
     private static int findMaxXIndexInString(String str) {

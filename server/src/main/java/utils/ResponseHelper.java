@@ -1,4 +1,4 @@
-package main.java.responses;
+package main.java.utils;
 
 import com.google.gson.Gson;
 import jakarta.servlet.http.HttpServletResponse;

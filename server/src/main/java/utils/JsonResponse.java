@@ -1,4 +1,4 @@
-package main.java.responses;
+package main.java.utils;
 
 public class JsonResponse<T> {
     private String message;

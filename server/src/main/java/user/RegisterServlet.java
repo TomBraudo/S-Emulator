@@ -6,7 +6,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import main.java.ServerApp;
-import main.java.responses.ResponseHelper;
+import main.java.utils.ResponseHelper;
 
 import java.io.IOException;
 
