@@ -23,29 +23,20 @@ import java.util.List;
 @MultipartConfig
 public class ExecuteServlet extends HttpServlet {
 
-    private static class requestDto{
+    private static class RequestDto{
         public int expansionLevel;
         public List<Integer> input;
         public String architecture;
     }
+
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws IOException, ServletException {
 
-        String userId;
-        try{
-            userId = RequestHelpers.getUserId(req);
-        }
-        catch (Exception e){
-            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing user header");
-            return;
-        }
+        Api api = RequestHelpers.getApi(req, resp);
+        if(api == null){return;}
 
-        Api api = ServerApp.getApiForUser(userId);
-
-
-        Gson gson = new Gson();
-        requestDto dto = gson.fromJson(req.getReader(), requestDto.class);
+        RequestDto dto = RequestHelpers.getBody(req, RequestDto.class);
 
         try{
             ProgramResult result = api.executeProgram(dto.input, dto.expansionLevel, dto.architecture);

@@ -1,10 +1,12 @@
 package main.java.utils;
 
+import com.api.Api;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.sun.xml.xsom.impl.Ref;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import main.java.ServerApp;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -23,7 +25,7 @@ public class RequestHelpers {
         return userId;
     }
 
-    public static HashMap<String, Object> getBody(HttpServletRequest req) throws IOException {
+    public static <T> T getBody(HttpServletRequest req, Class<T> clazz) throws IOException {
         StringBuilder body = new StringBuilder();
         try (BufferedReader reader = req.getReader()) {
             String line;
@@ -32,7 +34,25 @@ public class RequestHelpers {
             }
         }
         Gson gson = new Gson();
-        Type type = new TypeToken<HashMap<String, Object>>(){}.getType();
-        return gson.fromJson(body.toString(), type);
+        return gson.fromJson(body.toString(), clazz);
+    }
+
+    public static Api getApi(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        String userId;
+        try{
+            userId = RequestHelpers.getUserId(req);
+        }
+        catch (Exception e){
+            ResponseHelper.error(resp, 400, "User ID header missing");
+            return null;
+        }
+
+        Api api = ServerApp.getApiForUser(userId);
+        if(api == null){
+            ResponseHelper.error(resp, 400, "User not found");
+            return null;
+        }
+
+        return api;
     }
 }

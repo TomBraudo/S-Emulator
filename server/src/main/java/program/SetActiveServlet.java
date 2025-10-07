@@ -16,23 +16,18 @@ import java.util.HashMap;
 @WebServlet("/program/set")
 @MultipartConfig
 public class SetActiveServlet extends HttpServlet {
+    private static class RequestDto{
+        public String programName;
+    }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        String userId;
-        try {
-            userId = RequestHelpers.getUserId(req);
-        }
-        catch (Exception e) {
-            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing user header");
-            return;
-        }
+        Api api = RequestHelpers.getApi(req, resp);
+        if(api == null){return;}
 
-        Api api = ServerApp.getApiForUser(userId);
-        HashMap<String, Object> body = RequestHelpers.getBody(req);
-        String programName = (String) body.get("programName");
+        RequestDto dto = RequestHelpers.getBody(req, RequestDto.class);
         try {
-            api.setCurProgram(programName);
+            api.setCurProgram(dto.programName);
             ResponseHelper.success(resp, "Active program set successfully", null);
         } catch (Exception e) {
             ResponseHelper.error(resp, "Failed to set active program: " + e.getMessage());

@@ -18,16 +18,7 @@ public class AddCreditsServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        String userId;
-        try{
-            userId = RequestHelpers.getUserId(req);
-        }
-        catch (Exception e){
-            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing user header");
-            return;
-        }
-
-        Api api = ServerApp.getApiForUser(userId);
+        Api api = ServerApp.getApiForUser(RequestHelpers.getUserId(req));
 
         if(api == null){
             ResponseHelper.error(resp, 400, "User not found");
@@ -42,21 +33,8 @@ public class AddCreditsServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        String userId;
-        try{
-            userId = RequestHelpers.getUserId(req);
-        }
-        catch (Exception e){
-            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing user header");
-            return;
-        }
-
-        Api api = ServerApp.getApiForUser(userId);
-
-        if(api == null){
-            ResponseHelper.error(resp, 400, "User not found");
-            return;
-        }
+        Api api = RequestHelpers.getApi(req, resp);
+        if(api == null){return;}
 
         int credits = api.getCredits();
 

@@ -5,6 +5,7 @@ import jakarta.servlet.*;
 import jakarta.servlet.http.*;
 import jakarta.servlet.annotation.*;
 import main.java.ServerApp;
+import main.java.utils.RequestHelpers;
 import main.java.utils.ResponseHelper;
 
 import java.io.*;
@@ -17,13 +18,9 @@ public class UploadServlet extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws IOException, ServletException {
 
-        String userId = req.getHeader("X-User-Id");
-        if (userId == null || userId.isBlank()) {
-            ResponseHelper.error(resp, 400, "Missing X-User-Id header");
-            return;
-        }
+        Api api = RequestHelpers.getApi(req, resp);
+        if(api == null){return;}
 
-        Api api = ServerApp.getApiForUser(userId);
 
         Part filePart = req.getPart("file");
         if (filePart == null) {
