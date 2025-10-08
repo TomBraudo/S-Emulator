@@ -12,6 +12,7 @@ module client {
     opens com.app.ui.dashboard.components to javafx.fxml;
     opens com.app.ui.dashboard.components.user to javafx.fxml;
     opens com.app.ui.dashboard.components.program to javafx.fxml;
+    opens com.app.ui.dashboard.components.function to javafx.fxml;
     opens com.app.ui.dashboard.components.chargeCredits to javafx.fxml;
     opens com.app.ui.dashboard.components.statisticsView to javafx.fxml;
     opens com.app.ui.dashboard.components.errorComponents to javafx.fxml;

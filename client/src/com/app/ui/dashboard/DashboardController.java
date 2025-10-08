@@ -1,6 +1,7 @@
 package com.app.ui.dashboard;
 
 import com.app.ui.dashboard.components.program.ProgramLineController;
+import com.app.ui.dashboard.components.function.FunctionLineController;
 import com.app.ui.dashboard.components.statisticsView.RunDetailsController;
 import com.app.ui.dashboard.components.user.UserLineController;
 import com.dto.api.ProgramInfo;
@@ -101,6 +102,16 @@ public class DashboardController {
                 }
             });
         }
+
+        if(functionsContainer != null){
+            UiTicker.getInstance().registerTask("update-functions", () -> {
+                try {
+                    populateFunctionContainer();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
+        }
     }
 
     private void updateUserStats() throws IOException {
@@ -184,6 +195,46 @@ public class DashboardController {
         }
     }
 
+    private void populateFunctionContainer() throws IOException {
+        functionsContainer.getChildren().clear();
+        ApiClient api = new ApiClient();
+        Response<List<ProgramInfo>> resp = api.getListResponse("/function/information", null, ProgramInfo.class);
+
+        for(ProgramInfo info : resp.getData()){
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/app/ui/dashboard/components/function/functionLine.fxml"));
+            Parent functionLineNode = loader.load();
+            FunctionLineController controller = loader.getController();
+            controller.init(
+                    info.getName(),
+                    info.getSourceProgram() != null ? info.getSourceProgram() : "N/A",
+                    info.getOwner(),
+                    String.valueOf(info.getCommandsCount()),
+                    String.valueOf(info.getMaxLevel())
+            );
+            controller.setOnPressAction(() -> {
+                // Unselect all other function lines
+                for (Node node : functionsContainer.getChildren()) {
+                    if (node.getUserData() instanceof FunctionLineController) {
+                        ((FunctionLineController) node.getUserData()).setSelected(false);
+                    }
+                }
+
+                // Select this function line
+                controller.setSelected(true);
+                contextFunction = info.getName();
+            });
+
+            // Restore highlighting if this function was previously selected
+            if (contextFunction != null && contextFunction.equals(info.getName())) {
+                controller.setSelected(true);
+            }
+
+            // Store controller reference for easy access
+            functionLineNode.setUserData(controller);
+            functionsContainer.getChildren().add(functionLineNode);
+        }
+    }
+
     @FXML
     private void onLoadFile(ActionEvent event) {
         FileChooser chooser = new FileChooser();
@@ -259,7 +310,7 @@ public class DashboardController {
 
     @FXML
     private void onExecuteFunction(ActionEvent event) {
-        // TODO: implement function execution logic
+        // TODO: implement program execution logic
     }
     
     public void updateCreditsDisplay(int creditsToAdd) {
