@@ -79,12 +79,10 @@ public class Api {
         // Build and register program only after successful validation/registration
         Program p = Program.createProgram(sp.getName(), sp.getSInstructions().getSInstruction());
         FnArgs.registerProgram(this.userId, p);
-        Statistic.clearStatistics();
     }
     public void createEmptyProgram(String name){
         curProgram = Program.createProgram(name, Collections.emptyList());
         FnArgs.registerProgram(this.userId, curProgram);
-        Statistic.clearStatistics();
     }
 
 
@@ -501,5 +499,8 @@ public class Api {
         return FunctionRegistry.getFunctionSourceProgram(functionName);
     }
 
+    public static List<Statistic> getUserStatistics(String userId){
+        return Statistic.getStatistics(userId);
+    }
 
 }
