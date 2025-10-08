@@ -1,6 +1,7 @@
 package main.java.program;
 
 import com.api.Api;
+import com.dto.api.ProgramInfo;
 import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -10,6 +11,7 @@ import main.java.utils.RequestHelpers;
 import main.java.utils.ResponseHelper;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.OptionalDouble;
@@ -22,10 +24,13 @@ public class InformationServlet extends HttpServlet {
         Api api = RequestHelpers.getApi(req, resp);
         if(api == null){return;}
 
-        String programName = req.getParameter("programName");
         try {
-            com.dto.api.ProgramInfo info = Api.getProgramInformation(programName);
-            ResponseHelper.success(resp, "Information retrieved successfully", info);
+            List<ProgramInfo> programInfos = new ArrayList<>();
+            List<String> programs = Api.getProgramNames();
+            for(String program : programs){
+                programInfos.add(Api.getProgramInformation(program));
+            }
+            ResponseHelper.success(resp, "Information retrieved successfully", programInfos);
         } catch (Exception e) {
             ResponseHelper.error(resp, "Failed to retrieve information: " + e.getMessage());
         }

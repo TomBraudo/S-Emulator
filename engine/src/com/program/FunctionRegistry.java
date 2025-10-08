@@ -222,6 +222,17 @@ public final class FunctionRegistry {
         }
     }
 
+    public static List<String> getProgramNames() {
+        var read = REGISTRY_LOCK.readLock();
+        read.lock();
+        try {
+            return new ArrayList<>(PROGRAM_OWNER_BY_NAME.keySet());
+        }
+        finally {
+            read.unlock();
+        }
+    }
+
     public static List<String> getProgramNames(String userId) {
         var read = REGISTRY_LOCK.readLock();
         read.lock();

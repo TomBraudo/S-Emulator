@@ -501,6 +501,10 @@ public class Api {
         return FunctionRegistry.getFunctionSourceProgram(functionName);
     }
 
+    public static List<String> getProgramNames(){
+        return FunctionRegistry.getProgramNames();
+    }
+
     public static ProgramInfo getProgramInformation(String programName){
         String owner = getProgramOwner(programName);
         int commandsCount = getCommandCount(programName);

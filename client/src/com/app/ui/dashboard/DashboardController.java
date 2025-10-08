@@ -1,11 +1,14 @@
 package com.app.ui.dashboard;
 
+import com.app.ui.dashboard.components.program.ProgramLineController;
 import com.app.ui.dashboard.components.statisticsView.RunDetailsController;
 import com.app.ui.dashboard.components.user.UserLineController;
+import com.dto.api.ProgramInfo;
 import com.dto.api.Statistic;
 import com.dto.api.UserInfo;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -15,6 +18,8 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
 import javafx.event.ActionEvent;
 import javafx.stage.FileChooser;
+import javafx.stage.Stage;
+import javafx.scene.Scene;
 import javafx.application.Platform;
 
 import com.app.http.ApiClient;
@@ -41,7 +46,6 @@ public class DashboardController {
     @FXML private Label usernameLabel;
     @FXML private Label dashboardTitleLabel;
     @FXML private Label creditsTitleLabel;
-    private int creditsCounter = 0;
 
     // Users section
     @FXML private BorderPane usersPane;
@@ -65,8 +69,12 @@ public class DashboardController {
     @FXML private VBox functionsContainer;
     @FXML private Button executeFunctionButton;
 
+    private String contextProgram = null;
+    private String contextFunction = null;
+
     @FXML
     private void initialize() {
+        creditsLabel.setText("0");
         if (usernameLabel != null) {
             String id = UserContext.getUserId();
             if (id != null && !id.isBlank()) {
@@ -78,6 +86,16 @@ public class DashboardController {
             UiTicker.getInstance().registerTask("update-users", () -> {
                 try {
                     updateUserStats();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
+        }
+
+        if(programsContainer != null){
+            UiTicker.getInstance().registerTask("update-programs", () -> {
+                try {
+                    populateProgramContainer();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -125,6 +143,47 @@ public class DashboardController {
         }
     }
 
+    private void populateProgramContainer() throws IOException {
+        programsContainer.getChildren().clear();
+        ApiClient api = new ApiClient();
+        Response<List<ProgramInfo>> resp = api.getListResponse("/program/information", null, ProgramInfo.class);
+
+        for(ProgramInfo info : resp.getData()){
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/app/ui/dashboard/components/program/programLine.fxml"));
+            Parent programLineNode = loader.load();
+            ProgramLineController controller = loader.getController();
+            controller.init(
+                    info.getName(),
+                    info.getOwner(),
+                    String.valueOf(info.getCommandsCount()),
+                    String.valueOf(info.getMaxLevel()),
+                    String.valueOf(info.getRanCount()),
+                    String.valueOf(info.getAverageCost())
+            );
+            controller.setOnPressAction(() -> {
+                // Unselect all other program lines
+                for (Node node : programsContainer.getChildren()) {
+                    if (node.getUserData() instanceof ProgramLineController) {
+                        ((ProgramLineController) node.getUserData()).setSelected(false);
+                    }
+                }
+
+                // Select this program line
+                controller.setSelected(true);
+                contextProgram = info.getName();
+            });
+
+            // Restore highlighting if this program was previously selected
+            if (contextProgram != null && contextProgram.equals(info.getName())) {
+                controller.setSelected(true);
+            }
+
+            // Store controller reference for easy access
+            programLineNode.setUserData(controller);
+            programsContainer.getChildren().add(programLineNode);
+        }
+    }
+
     @FXML
     private void onLoadFile(ActionEvent event) {
         FileChooser chooser = new FileChooser();
@@ -155,7 +214,37 @@ public class DashboardController {
 
     @FXML
     private void onChargeCredits(ActionEvent event) {
-        // TODO: implement credit charging workflow
+        try {
+            Stage stage = new Stage();
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("components/chargeCredits/chargeCredits.fxml"));
+            Parent root = loader.load();
+            com.app.ui.dashboard.components.chargeCredits.ChargeCreditsController controller = loader.getController();
+            controller.setStage(stage);
+            
+            Scene scene = new Scene(root);
+            scene.getStylesheets().add(getClass().getResource("/com/app/ui/app.css").toExternalForm());
+            stage.setScene(scene);
+            stage.setTitle("Charge Credits");
+            stage.setResizable(false);
+            
+            // Make the dashboard unuseable while form is open
+            stage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
+            stage.initOwner(dashboardRoot.getScene().getWindow());
+            
+            // Show and wait for result
+            stage.showAndWait();
+            
+            // Get the result after the form is closed
+            int credits = controller.getResult();
+            if (credits > 0) {
+                updateCreditsDisplay(credits);
+                ApiClient api = new ApiClient();
+                Response<Void> resp = api.postResponse("/user/charge", null, new HashMap<>(){{ put("credits", credits); }}, Void.class);
+            }
+            // If credits <= 0 (cancelled), do nothing
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @FXML
@@ -171,6 +260,18 @@ public class DashboardController {
     @FXML
     private void onExecuteFunction(ActionEvent event) {
         // TODO: implement function execution logic
+    }
+    
+    public void updateCreditsDisplay(int creditsToAdd) {
+        try {
+            String currentCreditsText = creditsLabel.getText();
+            int currentCredits = Integer.parseInt(currentCreditsText);
+            int newCredits = currentCredits + creditsToAdd;
+            creditsLabel.setText(String.valueOf(newCredits));
+        } catch (NumberFormatException e) {
+            // If parsing fails, just set the new amount
+            creditsLabel.setText(String.valueOf(creditsToAdd));
+        }
     }
 }
 
