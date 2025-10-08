@@ -39,26 +39,30 @@ public class LoginController {
 
         CompletableFuture.runAsync(() -> {
             ApiClient api = new ApiClient();
-            Map<String, String> headers = new HashMap<>();
-            headers.put("X-User-Id", username);
             try {
+                // Ensure interceptor adds X-User-Id
+                com.app.ui.dashboard.UserContext.setUserId(username);
                 Response<Void> resp = api.postResponse("/user/register", null, null, Void.class);
                 if (resp != null && resp.isSuccess()) {
                     Platform.runLater(() -> openDashboard(username));
                 } else {
-                    String msg = resp == null ? "Unknown error" : resp.getMessage();
+                    String msg = (resp == null) ? "Unknown error" : resp.getMessage();
                     Platform.runLater(() -> {
                         errorLabel.setText("Registration failed: " + msg);
                         errorLabel.setVisible(true);
                         loginButton.setDisable(false);
                     });
+                    // Clear user id on failure
+                    com.app.ui.dashboard.UserContext.setUserId(null);
                 }
-            } catch (ApiException | IOException ex) {
+            } catch (Exception ex) {
+                ex.printStackTrace();
                 Platform.runLater(() -> {
                     errorLabel.setText("Registration failed: " + ex.getMessage());
                     errorLabel.setVisible(true);
                     loginButton.setDisable(false);
                 });
+                com.app.ui.dashboard.UserContext.setUserId(null);
             }
         });
     }
@@ -75,7 +79,8 @@ public class LoginController {
             stage.setScene(scene);
             stage.setTitle("S-Emulator - Dashboard");
             stage.show();
-        } catch (IOException ex) {
+        } catch (Exception ex) {
+            ex.printStackTrace();
             errorLabel.setText("Failed to open dashboard: " + ex.getMessage());
             errorLabel.setVisible(true);
             loginButton.setDisable(false);
