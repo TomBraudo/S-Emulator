@@ -22,6 +22,13 @@ public final class Json {
     public static <T> Type typeOfResponse(Class<T> dataType) {
         return TypeToken.getParameterized(com.app.ui.utils.Response.class, dataType).getType();
     }
+
+    public static <E> Type typeOfListResponse(Class<E> elem) {
+        return TypeToken.getParameterized(
+            com.app.ui.utils.Response.class,
+            TypeToken.getParameterized(java.util.List.class, elem).getType()
+        ).getType();
+    }
 }
 
 

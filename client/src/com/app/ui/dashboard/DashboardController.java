@@ -1,6 +1,11 @@
 package com.app.ui.dashboard;
 
+import com.app.ui.dashboard.components.user.UserLineController;
+import com.dto.api.Statistic;
+import com.dto.api.UserInfo;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
@@ -13,13 +18,13 @@ import javafx.application.Platform;
 
 import com.app.http.ApiClient;
 import com.app.http.ApiException;
-import com.app.http.Json;
 import com.app.ui.utils.Response;
+import com.app.ui.utils.UiTicker;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class DashboardController {
@@ -35,6 +40,7 @@ public class DashboardController {
     @FXML private Label usernameLabel;
     @FXML private Label dashboardTitleLabel;
     @FXML private Label creditsTitleLabel;
+    private int creditsCounter = 0;
 
     // Users section
     @FXML private BorderPane usersPane;
@@ -64,6 +70,43 @@ public class DashboardController {
             if (id != null && !id.isBlank()) {
                 usernameLabel.setText(id);
             }
+        }
+
+        if(usersContainer != null){
+            UiTicker.getInstance().registerTask("update-users", () -> {
+                try {
+                    updateUserStats();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
+        }
+    }
+
+    private void setStatisticsContainer(String user) throws IOException {
+        statisticsContainer.getChildren().clear();
+        ApiClient api = new ApiClient();
+        Response<List<Statistic>> resp = api.getListResponse("/user/statistics", new HashMap<>(){{ put("user", user); }}, Statistic.class);
+
+    }
+
+    private void updateUserStats() throws IOException {
+        usersContainer.getChildren().clear();
+        ApiClient api = new ApiClient();
+        Response<List<UserInfo>> resp = api.getListResponse("/user/all", null, UserInfo.class);
+        for(UserInfo user : resp.getData()){
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/app/ui/dashboard/components/user/userLine.fxml"));
+            Parent userLineNode = loader.load();
+            UserLineController controller = loader.getController();
+            controller.init(
+                    user.getName(),
+                    String.valueOf(user.getProgramUploadedCount()),
+                    String.valueOf(user.getFunctionUploadedCount()),
+                    String.valueOf(user.getCredits()),
+                    String.valueOf(user.getCreditsUsed()),
+                    String.valueOf(user.getRunCount())
+            );
+            usersContainer.getChildren().add(userLineNode);
         }
     }
 
@@ -110,3 +153,4 @@ public class DashboardController {
         // TODO: implement program execution logic
     }
 }
+

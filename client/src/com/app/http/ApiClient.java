@@ -106,6 +106,19 @@ public class ApiClient {
         }
     }
 
+    public <E> com.app.ui.utils.Response<java.util.List<E>> getListResponse(String path, Map<String, ?> query, Class<E> elementType) throws IOException {
+        java.lang.reflect.Type type = Json.typeOfListResponse(elementType);
+        String url = buildUrl(path, query);
+        Request request = new Request.Builder().url(url).get().build();
+        try (Response resp = httpClient.newCall(request).execute()) {
+            String body = resp.body() != null ? new String(resp.body().bytes(), StandardCharsets.UTF_8) : "";
+            if (!resp.isSuccessful()) {
+                throw new ApiException(resp.code(), "HTTP " + resp.code() + " for GET " + request.url(), body);
+            }
+            return gson.fromJson(body, type);
+        }
+    }
+
     public <B, T> com.app.ui.utils.Response<T> postResponse(String path, B body, Map<String, ?> query, Class<T> dataType) throws IOException {
         java.lang.reflect.Type type = Json.typeOfResponse(dataType);
         String url = buildUrl(path, query);

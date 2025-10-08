@@ -15,28 +15,28 @@
             <Label fx:id="loadedFilePathLabel" alignment="CENTER" layoutX="163.0" layoutY="31.0" prefHeight="31.0" prefWidth="475.0" styleClass="command-label" text="Currently Loaded File path" />
             <Button fx:id="chargeCreditsButton" layoutX="645.0" layoutY="31.0" mnemonicParsing="false" onAction="#onChargeCredits" prefHeight="29.0" prefWidth="111.0" styleClass="btn btn-primary" text="Charge Credits" />
             <Label fx:id="creditsLabel" alignment="CENTER" layoutX="762.0" layoutY="31.0" prefHeight="31.0" prefWidth="55.0" styleClass="command-label" text="credits" />
-            <BorderPane fx:id="usersPane" layoutX="25.0" layoutY="98.0" prefHeight="200.0" prefWidth="200.0" styleClass="card">
+            <BorderPane fx:id="usersPane" layoutX="25.0" layoutY="98.0" prefHeight="229.0" prefWidth="286.0" styleClass="card">
                <bottom>
                   <Button fx:id="unselectUserButton" mnemonicParsing="false" onAction="#onUnselectUser" prefHeight="29.0" prefWidth="122.0" styleClass="btn btn-ghost" text="Unselect User" BorderPane.alignment="CENTER" />
                </bottom>
                <top>
-                  <ScrollPane fx:id="usersScroll" prefHeight="200.0" prefWidth="200.0" styleClass="scroller" BorderPane.alignment="CENTER">
+                  <ScrollPane fx:id="usersScroll" prefHeight="200.0" prefWidth="267.0" styleClass="scroller" BorderPane.alignment="CENTER">
                      <content>
-                        <VBox fx:id="usersContainer" prefHeight="181.0" prefWidth="188.0" spacing="6.0" styleClass="content-pad" />
+                        <VBox fx:id="usersContainer" prefHeight="181.0" prefWidth="260.0" spacing="6.0" styleClass="content-pad" />
                      </content>
                   </ScrollPane>
                </top>
             </BorderPane>
-            <ScrollPane fx:id="statisticsScroll" layoutX="25.0" layoutY="342.0" prefHeight="188.0" prefWidth="201.0" styleClass="scroller">
+            <ScrollPane fx:id="statisticsScroll" layoutX="25.0" layoutY="342.0" prefHeight="188.0" prefWidth="284.0" styleClass="scroller">
                <content>
-                  <VBox fx:id="statisticsContainer" prefHeight="172.0" prefWidth="187.0" spacing="6.0" styleClass="content-pad" />
+                  <VBox fx:id="statisticsContainer" prefHeight="172.0" prefWidth="270.0" spacing="6.0" styleClass="content-pad" />
                </content>
             </ScrollPane>
-            <BorderPane fx:id="programsPane" layoutX="247.0" layoutY="98.0" prefHeight="231.0" prefWidth="558.0" styleClass="card">
+            <BorderPane fx:id="programsPane" layoutX="324.0" layoutY="98.0" prefHeight="231.0" prefWidth="481.0" styleClass="card">
                <top>
                   <ScrollPane fx:id="programsScroll" prefHeight="200.0" prefWidth="200.0" styleClass="scroller" BorderPane.alignment="CENTER">
                      <content>
-                        <VBox fx:id="programsContainer" prefHeight="181.0" prefWidth="540.0" spacing="6.0" styleClass="content-pad" />
+                        <VBox fx:id="programsContainer" prefHeight="181.0" prefWidth="467.0" spacing="6.0" styleClass="content-pad" />
                      </content>
                   </ScrollPane>
                </top>
@@ -44,11 +44,11 @@
                   <Button fx:id="executeProgramButton" mnemonicParsing="false" onAction="#onExecuteProgram" prefHeight="29.0" prefWidth="122.0" styleClass="btn btn-primary" text="Execute Program" BorderPane.alignment="CENTER" />
                </bottom>
             </BorderPane>
-            <BorderPane fx:id="functionsPane" layoutX="247.0" layoutY="342.0" prefHeight="189.0" prefWidth="559.0" styleClass="card">
+            <BorderPane fx:id="functionsPane" layoutX="326.0" layoutY="342.0" prefHeight="189.0" prefWidth="480.0" styleClass="card">
                <top>
                   <ScrollPane fx:id="functionsScroll" prefHeight="188.0" prefWidth="532.0" styleClass="scroller" BorderPane.alignment="CENTER">
                      <content>
-                        <VBox fx:id="functionsContainer" prefHeight="172.0" prefWidth="544.0" spacing="6.0" styleClass="content-pad" />
+                        <VBox fx:id="functionsContainer" prefHeight="172.0" prefWidth="461.0" spacing="6.0" styleClass="content-pad" />
                      </content>
                   </ScrollPane>
                </top>

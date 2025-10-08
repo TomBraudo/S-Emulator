@@ -19,7 +19,7 @@ import java.util.List;
 public class AllUsersServlet extends HttpServlet {
 
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         List<String> allUsers = ServerApp.getRegisteredUsers();
         List<UserInfo> userInfos = new ArrayList<>();
         for(String user : allUsers){
