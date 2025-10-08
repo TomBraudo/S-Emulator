@@ -1,0 +1,181 @@
+/* Root tokens (JavaFX lookup colors) */
+.root {
+    /* Colors (preserve current look) */
+    -color-primary: #38cb82;
+    -color-danger:  #d9534f;
+    -color-border:  black;
+    -color-border-subtle: #dddddd;
+    -color-bg: white;
+    -color-surface: #F5E6D3;
+    -color-text: #111111;
+    -color-muted: #666666;
+}
+
+/* Buttons */
+.btn {
+    -fx-font-weight: bold;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-padding: 8 12;
+    -fx-cursor: hand;
+}
+.btn-primary {
+    -fx-background-color: -color-primary;
+    -fx-text-fill: white;
+    -fx-border-color: -color-border;
+    -fx-border-width: 2;
+}
+.btn-danger {
+    -fx-background-color: -color-danger;
+    -fx-text-fill: white;
+    -fx-border-color: -color-border;
+    -fx-border-width: 2;
+}
+.btn-ghost {
+    -fx-background-color: transparent;
+    -fx-text-fill: -color-text;
+    -fx-border-color: -color-border;
+    -fx-border-width: 1;
+}
+
+/* ComboBox to match current green accents when used as primary control */
+.select-primary {
+    -fx-background-color: -color-primary;
+    -fx-border-color: -color-border;
+    -fx-border-width: 2;
+    -fx-text-fill: white;
+}
+
+/* Cards / section containers */
+.card {
+    -fx-background-color: -color-surface;
+    -fx-border-color: -color-border;
+    -fx-border-width: 2;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+}
+.card-subtle {
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1;
+}
+.card-danger {
+    -fx-background-color: #f8f9fa;
+    -fx-border-color: -color-danger;
+    -fx-border-width: 2;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+}
+
+/* ScrollPanes and inner content spacing */
+.scroller {
+    -fx-background-color: -color-surface;
+    -fx-border-color: -color-border;
+    -fx-border-width: 2;
+}
+.scroller .viewport {
+    -fx-background-color: -color-surface;
+}
+.content-pad {
+    -fx-padding: 10;
+    -fx-background-color: -color-surface;
+}
+.content-pad-sm {
+    -fx-padding: 6;
+    -fx-background-color: -color-surface;
+}
+
+/* Labels / typography */
+.label-title {
+    -fx-font-size: 32px;
+    -fx-text-fill: -color-text;
+    -fx-alignment: center;
+}
+.label-section {
+    -fx-font-size: 22px;
+    -fx-text-fill: -color-text;
+    -fx-alignment: center;
+}
+.label-strong {
+    -fx-font-weight: bold;
+}
+.label-meta {
+    -fx-text-fill: -color-muted;
+}
+
+/* Command row specifics */
+.gutter {
+    -fx-alignment: center;
+    -fx-cursor: hand;
+    -fx-min-width: 24;
+    -fx-pref-width: 24;
+    -fx-max-width: 24;
+}
+.command-label {
+    -fx-background-color: -color-surface;
+    -fx-border-color: -color-border;
+    -fx-border-width: 1;
+    -fx-padding: 5;
+}
+
+/* Segmented toggle look for Debug/Execute */
+.toggle-primary .toggle-button {
+    -fx-background-color: -color-surface;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-border-color: -color-border;
+    -fx-border-width: 1;
+    -fx-padding: 6 10;
+}
+.toggle-primary .toggle-button:selected {
+    -fx-background-color: -color-primary;
+    -fx-text-fill: white;
+}
+
+/* State highlights for dynamic content */
+.label-changed {
+    -fx-background-color: #b7f7b0;
+}
+.row-debug {
+    -fx-background-color: #ffd6d6; /* stronger red tint */
+    -fx-border-color: #ff4d4f;     /* vivid red border */
+    -fx-border-width: 2;           /* thicker border for emphasis */
+}
+.row-search {
+    -fx-background-color: #b7f7b0;
+}
+
+/* History chain look */
+.history-line {
+    /* Reuses command-label styling */
+}
+.history-arrow {
+    -fx-text-fill: #888;
+    -fx-font-size: 14px;
+}
+
+/* Input form container padding */
+.form-content {
+    -fx-padding: 10;
+}
+
+/* Optional fixed width for action buttons if keeping exact visual balance */
+.btn-wide {
+    -fx-pref-width: 150;
+}
+
+/* Text fields */
+.text-field {
+    -fx-background-color: -color-surface;
+    -fx-border-color: -color-border;
+    -fx-border-width: 1;
+}
+
+/* Main containers and panes */
+.anchor-pane {
+    -fx-background-color: -color-bg;
+}
+.pane {
+    -fx-background-color: -color-surface;
+}
+
+
