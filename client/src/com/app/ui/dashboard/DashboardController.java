@@ -32,6 +32,9 @@ public class DashboardController {
     @FXML private Label loadedFilePathLabel;
     @FXML private Button chargeCreditsButton;
     @FXML private Label creditsLabel;
+    @FXML private Label usernameLabel;
+    @FXML private Label dashboardTitleLabel;
+    @FXML private Label creditsTitleLabel;
 
     // Users section
     @FXML private BorderPane usersPane;
@@ -56,7 +59,12 @@ public class DashboardController {
 
     @FXML
     private void initialize() {
-        // Initialize UI state if needed
+        if (usernameLabel != null) {
+            String id = UserContext.getUserId();
+            if (id != null && !id.isBlank()) {
+                usernameLabel.setText(id);
+            }
+        }
     }
 
     @FXML
@@ -76,7 +84,7 @@ public class DashboardController {
             try {
                 Response<Void> resp = api.postMultipartFileResponse("/program/upload", "file", file, "application/xml", null, Void.class);
                 if (resp != null && resp.isSuccess()) {
-                    Platform.runLater(() -> loadedFilePathLabel.setText(resp.getMessage()));
+                    Platform.runLater(() -> loadedFilePathLabel.setText(file.getAbsolutePath()));
                 } else {
                     String msg = resp == null ? "Unknown error" : resp.getMessage();
                     Platform.runLater(() -> loadedFilePathLabel.setText("Upload failed: " + msg));

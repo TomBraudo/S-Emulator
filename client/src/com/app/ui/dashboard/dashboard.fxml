@@ -53,6 +53,9 @@
                   </ScrollPane>
                </top>
             </BorderPane>
+            <Label fx:id="usernameLabel" alignment="CENTER" layoutX="25.0" layoutY="3.0" prefHeight="27.0" prefWidth="121.0" styleClass="label-strong command-label" text="User Name" />
+            <Label fx:id="dashboardTitleLabel" alignment="CENTER" layoutX="323.0" layoutY="3.0" prefHeight="27.0" prefWidth="156.0" styleClass="label-strong command-label" text="S-Emulator - Dashboard" />
+            <Label fx:id="creditsTitleLabel" alignment="CENTER" layoutX="645.0" layoutY="3.0" prefHeight="27.0" prefWidth="156.0" styleClass="label-strong command-label" text="Available Credits:" />
          </children></AnchorPane>
   </content>
 </ScrollPane>

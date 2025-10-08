@@ -10,14 +10,11 @@ import com.commands.ReverseFactory;
 import com.commands.FnArgs;
 import com.dto.CommandSchemaDto;
 import com.dto.ProgramTreeDto;
+import com.dto.api.*;
 import com.program.MixedExpansionSession;
 import com.program.Program;
 import com.program.Architecture;
 import com.program.FunctionRegistry;
-import com.dto.api.ProgramResult;
-import com.dto.api.ProgramSummary;
-import com.dto.api.Statistic;
-import com.dto.api.ProgramInfo;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.Unmarshaller;
@@ -34,7 +31,7 @@ public class Api {
     private int debugExpansionLevel;
     // Mixed tree view state (visual-only)
     private MixedExpansionSession mixedSession;
-    private String userId;
+    private final String userId;
     private int credits;
     private int usedCredits;
     private int chargedDebugCycles;
@@ -517,6 +514,17 @@ public class Api {
 
     public static List<Statistic> getUserStatistics(String userId){
         return Statistic.getStatistics(userId);
+    }
+
+    public UserInfo getInfo(){
+        return new UserInfo(
+                userId,
+                FunctionRegistry.getProgramUploadedCount(userId),
+                FunctionRegistry.getFunctionUploadedCount(userId),
+                credits,
+                usedCredits,
+                getUserStatistics(userId).size()
+        );
     }
 
 }
