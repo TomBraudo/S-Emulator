@@ -10,5 +10,6 @@
     <orderEntry type="library" exported="" name="gson-2.11.0" level="project" />
     <orderEntry type="module" module-name="dto" exported="" />
     <orderEntry type="library" exported="" name="javafx" level="project" />
+    <orderEntry type="library" exported="" name="httpclient" level="project" />
   </component>
 </module>
