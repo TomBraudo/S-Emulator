@@ -7,27 +7,33 @@
 
 <VBox xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.app.ui.dashboard.components.statisticsView.RunDetailsController" styleClass="card" fx:id="root">
     <children>
-        <GridPane fx:id="gridPane" hgap="10" vgap="6" styleClass="content-pad">
+        <GridPane fx:id="gridPane" hgap="10" vgap="6" styleClass="content-pad" prefWidth="235">
             <columnConstraints>
-                <ColumnConstraints minWidth="100" prefWidth="140" />
-                <ColumnConstraints minWidth="200" prefWidth="320" />
+                <ColumnConstraints minWidth="80" prefWidth="100" />
+                <ColumnConstraints minWidth="120" prefWidth="125" />
             </columnConstraints>
 
             <children>
                 <Label text="Index:" styleClass="label-strong" GridPane.rowIndex="0" GridPane.columnIndex="0" />
                 <Label fx:id="indexLabel" GridPane.rowIndex="0" GridPane.columnIndex="1" />
 
-                <Label text="Expansion level:" styleClass="label-strong" GridPane.rowIndex="1" GridPane.columnIndex="0" />
-                <Label fx:id="expansionLevelLabel" GridPane.rowIndex="1" GridPane.columnIndex="1" />
+                <Label text="Run Type:" styleClass="label-strong" GridPane.rowIndex="1" GridPane.columnIndex="0" />
+                <Label fx:id="runTypeLabel" GridPane.rowIndex="1" GridPane.columnIndex="1" />
 
-                <Label text="Input:" styleClass="label-strong" GridPane.rowIndex="2" GridPane.columnIndex="0" />
-                <Label fx:id="inputLabel" wrapText="true" GridPane.rowIndex="2" GridPane.columnIndex="1" />
+                <Label text="Name:" styleClass="label-strong" GridPane.rowIndex="2" GridPane.columnIndex="0" />
+                <Label fx:id="nameLabel" wrapText="true" GridPane.rowIndex="2" GridPane.columnIndex="1" />
 
-                <Label text="Result:" styleClass="label-strong" GridPane.rowIndex="3" GridPane.columnIndex="0" />
-                <Label fx:id="resultLabel" GridPane.rowIndex="3" GridPane.columnIndex="1" />
+                <Label text="Architecture:" styleClass="label-strong" GridPane.rowIndex="3" GridPane.columnIndex="0" />
+                <Label fx:id="architectureLabel" GridPane.rowIndex="3" GridPane.columnIndex="1" />
 
-                <Label text="Cycles:" styleClass="label-strong" GridPane.rowIndex="4" GridPane.columnIndex="0" />
-                <Label fx:id="cyclesLabel" GridPane.rowIndex="4" GridPane.columnIndex="1" />
+                <Label text="Level:" styleClass="label-strong" GridPane.rowIndex="4" GridPane.columnIndex="0" />
+                <Label fx:id="levelLabel" GridPane.rowIndex="4" GridPane.columnIndex="1" />
+
+                <Label text="Result:" styleClass="label-strong" GridPane.rowIndex="5" GridPane.columnIndex="0" />
+                <Label fx:id="resultLabel" GridPane.rowIndex="5" GridPane.columnIndex="1" />
+
+                <Label text="Cycles:" styleClass="label-strong" GridPane.rowIndex="6" GridPane.columnIndex="0" />
+                <Label fx:id="cyclesLabel" GridPane.rowIndex="6" GridPane.columnIndex="1" />
             </children>
         </GridPane>
     </children>

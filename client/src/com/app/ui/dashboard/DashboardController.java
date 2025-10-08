@@ -1,5 +1,6 @@
 package com.app.ui.dashboard;
 
+import com.app.ui.dashboard.components.statisticsView.RunDetailsController;
 import com.app.ui.dashboard.components.user.UserLineController;
 import com.dto.api.Statistic;
 import com.dto.api.UserInfo;
@@ -62,6 +63,7 @@ public class DashboardController {
     @FXML private BorderPane functionsPane;
     @FXML private ScrollPane functionsScroll;
     @FXML private VBox functionsContainer;
+    @FXML private Button executeFunctionButton;
 
     @FXML
     private void initialize() {
@@ -83,13 +85,6 @@ public class DashboardController {
         }
     }
 
-    private void setStatisticsContainer(String user) throws IOException {
-        statisticsContainer.getChildren().clear();
-        ApiClient api = new ApiClient();
-        Response<List<Statistic>> resp = api.getListResponse("/user/statistics", new HashMap<>(){{ put("user", user); }}, Statistic.class);
-
-    }
-
     private void updateUserStats() throws IOException {
         usersContainer.getChildren().clear();
         ApiClient api = new ApiClient();
@@ -106,7 +101,27 @@ public class DashboardController {
                     String.valueOf(user.getCreditsUsed()),
                     String.valueOf(user.getRunCount())
             );
+            controller.setOnPressAction(() -> {
+                try {
+                    populateStatisticsContainer(user.getName());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
             usersContainer.getChildren().add(userLineNode);
+        }
+    }
+
+    private void populateStatisticsContainer(String userId) throws IOException {
+        statisticsContainer.getChildren().clear();
+        ApiClient api = new ApiClient();
+        Response<List<Statistic>> resp = api.getListResponse("/user/statistics", new HashMap<>(){{ put("user", userId); }}, Statistic.class);
+        for(Statistic stat : resp.getData()){
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/app/ui/dashboard/components/statisticsView/runDetails.fxml"));
+            Parent runDetailsNode = loader.load();
+            RunDetailsController controller = loader.getController();
+            controller.setStatistic(stat);
+            statisticsContainer.getChildren().add(runDetailsNode);
         }
     }
 
@@ -144,13 +159,18 @@ public class DashboardController {
     }
 
     @FXML
-    private void onUnselectUser(ActionEvent event) {
-        // TODO: implement user unselection logic
+    private void onUnselectUser(ActionEvent event) throws IOException {
+        populateStatisticsContainer(UserContext.getUserId());
     }
 
     @FXML
     private void onExecuteProgram(ActionEvent event) {
         // TODO: implement program execution logic
+    }
+
+    @FXML
+    private void onExecuteFunction(ActionEvent event) {
+        // TODO: implement function execution logic
     }
 }
 

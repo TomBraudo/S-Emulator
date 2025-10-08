@@ -19,9 +19,13 @@ public class RunDetailsController {
     @FXML
     private Label indexLabel;
     @FXML
-    private Label expansionLevelLabel;
+    private Label runTypeLabel;
     @FXML
-    private Label inputLabel;
+    private Label nameLabel;
+    @FXML
+    private Label architectureLabel;
+    @FXML
+    private Label levelLabel;
     @FXML
     private Label resultLabel;
     @FXML
@@ -37,9 +41,10 @@ public class RunDetailsController {
     public void setStatistic(Statistic stat){
         this.statistic = stat;
         indexLabel.setText(String.valueOf(stat.getIndex()));
-        expansionLevelLabel.setText(String.valueOf(stat.getExpansionLevel()));
-        String input = stat.getInput().stream().map(String::valueOf).collect(Collectors.joining(", "));
-        inputLabel.setText(input);
+        runTypeLabel.setText(stat.getRunType().toString());
+        nameLabel.setText(stat.getProgramName());
+        architectureLabel.setText(stat.getArchitecture());
+        levelLabel.setText(String.valueOf(stat.getExpansionLevel()));
         resultLabel.setText(String.valueOf(stat.getResult()));
         cyclesLabel.setText(String.valueOf(stat.getCyclesCount()));
 

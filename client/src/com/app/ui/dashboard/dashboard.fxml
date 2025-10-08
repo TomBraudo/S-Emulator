@@ -29,7 +29,7 @@
             </BorderPane>
             <ScrollPane fx:id="statisticsScroll" layoutX="25.0" layoutY="342.0" prefHeight="188.0" prefWidth="284.0" styleClass="scroller">
                <content>
-                  <VBox fx:id="statisticsContainer" prefHeight="172.0" prefWidth="270.0" spacing="6.0" styleClass="content-pad" />
+                  <VBox fx:id="statisticsContainer" prefHeight="172.0" prefWidth="235.0" spacing="6.0" styleClass="content-pad" />
                </content>
             </ScrollPane>
             <BorderPane fx:id="programsPane" layoutX="324.0" layoutY="98.0" prefHeight="231.0" prefWidth="481.0" styleClass="card">
@@ -52,6 +52,9 @@
                      </content>
                   </ScrollPane>
                </top>
+               <bottom>
+                  <Button fx:id="executeFunctionButton" mnemonicParsing="false" onAction="#onExecuteFunction" prefHeight="29.0" prefWidth="122.0" styleClass="btn btn-primary" text="Execute Function" BorderPane.alignment="CENTER" />
+               </bottom>
             </BorderPane>
             <Label fx:id="usernameLabel" alignment="CENTER" layoutX="25.0" layoutY="3.0" prefHeight="27.0" prefWidth="121.0" styleClass="label-strong command-label" text="User Name" />
             <Label fx:id="dashboardTitleLabel" alignment="CENTER" layoutX="323.0" layoutY="3.0" prefHeight="27.0" prefWidth="156.0" styleClass="label-strong command-label" text="S-Emulator - Dashboard" />
