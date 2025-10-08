@@ -1,13 +1,13 @@
 package com.commands;
 
 import com.XMLHandlerV2.SFunctions;
+import com.program.FunctionRegistry;
 import com.program.Program;
 import com.program.ProgramState;
 import com.dto.api.ProgramResult;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Handles function arguments:

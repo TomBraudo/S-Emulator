@@ -12,6 +12,9 @@ public class Statistic implements Serializable {
     static Map<String, List<Statistic>> statisticsByUser = new HashMap<>();
     private static Map<String, Integer> nextIndexByUser = new HashMap<>();
     private int index;
+    public enum RunType { Program, HelperFunction }
+    private String programName;
+    private RunType runType;
     private int expansionLevel;
     private String architecture;
     private List<Integer> input;
@@ -19,11 +22,16 @@ public class Statistic implements Serializable {
     private int cyclesCount;
     private List<ProgramResult.VariableToValue> variableToValue;
 
-    public static void saveRunDetails(String userId, int expansionLevel, String architecture, List<Integer> input, int result, int cyclesCount, List<ProgramResult.VariableToValue> variableToValue) {
+    /**
+     * New preferred API: include the program/function name and whether it is a function.
+     */
+    public static void saveRunDetails(String userId, String programName, boolean isFunction, int expansionLevel, String architecture, List<Integer> input, int result, int cyclesCount, List<ProgramResult.VariableToValue> variableToValue) {
         Statistic statistic = new Statistic();
         int next = nextIndexByUser.getOrDefault(userId, 1);
         statistic.index = next;
         nextIndexByUser.put(userId, next + 1);
+        statistic.programName = programName;
+        statistic.runType = isFunction ? RunType.HelperFunction : RunType.Program;
         statistic.expansionLevel = expansionLevel;
         statistic.architecture = architecture;
         statistic.input = List.copyOf(input);
@@ -31,6 +39,32 @@ public class Statistic implements Serializable {
         statistic.result = result;
         statistic.variableToValue = List.copyOf(variableToValue);
         statisticsByUser.computeIfAbsent(userId, k -> new ArrayList<>()).add(statistic);
+    }
+
+    /**
+     * Overload accepting explicit RunType enum.
+     */
+    public static void saveRunDetails(String userId, String programName, RunType runType, int expansionLevel, String architecture, List<Integer> input, int result, int cyclesCount, List<ProgramResult.VariableToValue> variableToValue) {
+        Statistic statistic = new Statistic();
+        int next = nextIndexByUser.getOrDefault(userId, 1);
+        statistic.index = next;
+        nextIndexByUser.put(userId, next + 1);
+        statistic.programName = programName;
+        statistic.runType = runType;
+        statistic.expansionLevel = expansionLevel;
+        statistic.architecture = architecture;
+        statistic.input = List.copyOf(input);
+        statistic.cyclesCount = cyclesCount;
+        statistic.result = result;
+        statistic.variableToValue = List.copyOf(variableToValue);
+        statisticsByUser.computeIfAbsent(userId, k -> new ArrayList<>()).add(statistic);
+    }
+
+    /**
+     * Backward-compatible shim (without programName/runType). Prefer the new overloads.
+     */
+    public static void saveRunDetails(String userId, int expansionLevel, String architecture, List<Integer> input, int result, int cyclesCount, List<ProgramResult.VariableToValue> variableToValue) {
+        saveRunDetails(userId, "UNKNOWN", false, expansionLevel, architecture, input, result, cyclesCount, variableToValue);
     }
 
     public static List<Statistic> getStatistics(String userId) {
@@ -55,6 +89,8 @@ public class Statistic implements Serializable {
     public int getExpansionLevel() {
         return expansionLevel;
     }
+    public String getProgramName() { return programName; }
+    public RunType getRunType() { return runType; }
     public String getArchitecture() { return architecture; }
     public List<Integer> getInput() {
         return Collections.unmodifiableList( input);

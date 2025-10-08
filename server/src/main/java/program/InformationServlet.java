@@ -24,20 +24,7 @@ public class InformationServlet extends HttpServlet {
 
         String programName = req.getParameter("programName");
         try {
-            String owner = Api.getProgramOwner(programName);
-            int commandsCount = Api.getCommandCount(programName);
-            int maxLevel = Api.getProgramMaxExpansionLevel(programName);
-            int ranCount = Api.getProgramRanCount(programName);
-            OptionalDouble averageCost = Api.getProgramAverageCost(programName);
-            String source = Api.getFunctionSourceProgram(programName);
-            HashMap<String, Object> info = new HashMap<>();
-            info.put("owner", owner);
-            info.put("commandsCount", commandsCount);
-            info.put("maxLevel", maxLevel);
-            info.put("ranCount", ranCount);
-            info.put("averageCost", averageCost.orElse(0.0));
-            info.put("source", source);
-
+            com.dto.api.ProgramInfo info = Api.getProgramInformation(programName);
             ResponseHelper.success(resp, "Information retrieved successfully", info);
         } catch (Exception e) {
             ResponseHelper.error(resp, "Failed to retrieve information: " + e.getMessage());

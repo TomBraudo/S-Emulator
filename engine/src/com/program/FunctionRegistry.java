@@ -1,9 +1,8 @@
-package com.commands;
+package com.program;
 
 import com.XMLHandlerV2.SFunction;
 import com.XMLHandlerV2.SFunctions;
 import com.XMLHandlerV2.SInstruction;
-import com.program.Program;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -441,6 +440,10 @@ public final class FunctionRegistry {
         } finally {
             read.unlock();
         }
+    }
+
+    public static boolean isFunction(String name) {
+        return FUNCTION_OWNER_BY_NAME.containsKey(name);
     }
 
 }

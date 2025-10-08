@@ -12,22 +12,19 @@ import com.dto.CommandSchemaDto;
 import com.dto.ProgramTreeDto;
 import com.program.MixedExpansionSession;
 import com.program.Program;
-import com.program.ProgramState;
 import com.program.Architecture;
-import com.commands.FunctionRegistry;
+import com.program.FunctionRegistry;
 import com.dto.api.ProgramResult;
 import com.dto.api.ProgramSummary;
 import com.dto.api.Statistic;
+import com.dto.api.ProgramInfo;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.Unmarshaller;
 
 import java.io.*;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 public class Api {
@@ -113,7 +110,8 @@ public class Api {
         credits -= res.getCycles();
         usedCredits += res.getCycles();
         // Save statistics and global averages (overhead + cycles)
-        Statistic.saveRunDetails(userId, expansionLevel, architecture, input, res.getResult(), res.getCycles(), res.getVariableToValue());
+        boolean isFunction = FunctionRegistry.isFunction(p.getName());
+        Statistic.saveRunDetails(userId, p.getName(), isFunction, expansionLevel, architecture, input, res.getResult(), res.getCycles(), res.getVariableToValue());
         FunctionRegistry.recordRunCost(p.getName(), overhead + res.getCycles());
         programsRanCount += 1;
         return res;
@@ -305,7 +303,8 @@ public class Api {
         }
         if(!res.isDebug()){
             // finished immediately
-            Statistic.saveRunDetails(userId, expansionLevel, architecture, input, res.getResult(), res.getCycles(), res.getVariableToValue());
+            boolean isFunction = FunctionRegistry.isFunction(p.getName());
+            Statistic.saveRunDetails(userId, p.getName(), isFunction, expansionLevel, architecture, input, res.getResult(), res.getCycles(), res.getVariableToValue());
             FunctionRegistry.recordRunCost(p.getName(), overhead + res.getCycles());
             programsRanCount += 1;
         } else {
@@ -330,7 +329,8 @@ public class Api {
         if (delta > 0) { credits -= delta; usedCredits += delta; }
         chargedDebugCycles = res.getCycles();
         if(!res.isDebug()){
-            Statistic.saveRunDetails(userId, debugExpansionLevel, currentRunArchitecture, debugInput, res.getResult(), res.getCycles(), res.getVariableToValue());
+            boolean isFunction = FunctionRegistry.isFunction(p.getName());
+            Statistic.saveRunDetails(userId, p.getName(), isFunction, debugExpansionLevel, currentRunArchitecture, debugInput, res.getResult(), res.getCycles(), res.getVariableToValue());
             FunctionRegistry.recordRunCost(p.getName(), currentRunOverhead + res.getCycles());
             programsRanCount += 1;
             debugProgram = null;
@@ -358,7 +358,8 @@ public class Api {
         if (delta > 0) { credits -= delta; usedCredits += delta; }
         chargedDebugCycles = res.getCycles();
         if(!res.isDebug()){
-            Statistic.saveRunDetails(userId, debugExpansionLevel, currentRunArchitecture, debugInput, res.getResult(), res.getCycles(), res.getVariableToValue());
+            boolean isFunction = FunctionRegistry.isFunction(p.getName());
+            Statistic.saveRunDetails(userId, p.getName(), isFunction, debugExpansionLevel, currentRunArchitecture, debugInput, res.getResult(), res.getCycles(), res.getVariableToValue());
             FunctionRegistry.recordRunCost(p.getName(), currentRunOverhead + res.getCycles());
             programsRanCount += 1;
             debugProgram = null;
@@ -377,7 +378,8 @@ public class Api {
         if (debugProgram != null){
             try {
                 ProgramResult snapshot = debugProgram.snapshotDebugAsFinished();
-                Statistic.saveRunDetails(userId, debugExpansionLevel, currentRunArchitecture, debugInput, snapshot.getResult(), snapshot.getCycles(), snapshot.getVariableToValue());
+                boolean isFunction = FunctionRegistry.isFunction(debugProgram.getName());
+                Statistic.saveRunDetails(userId, debugProgram.getName(), isFunction, debugExpansionLevel, currentRunArchitecture, debugInput, snapshot.getResult(), snapshot.getCycles(), snapshot.getVariableToValue());
             } catch (Exception ignored) {
                 // If snapshot fails, still proceed to stop debugging
             }
@@ -500,6 +502,17 @@ public class Api {
 
     public static String getFunctionSourceProgram(String functionName){
         return FunctionRegistry.getFunctionSourceProgram(functionName);
+    }
+
+    public static ProgramInfo getProgramInformation(String programName){
+        String owner = getProgramOwner(programName);
+        int commandsCount = getCommandCount(programName);
+        int maxLevel = getProgramMaxExpansionLevel(programName);
+        int ranCount = getProgramRanCount(programName);
+        double averageCost = getProgramAverageCost(programName).orElse(0.0);
+        boolean isFunction = FunctionRegistry.isFunction(programName);
+        String source = isFunction ? getFunctionSourceProgram(programName) : null;
+        return new ProgramInfo(programName, owner, commandsCount, maxLevel, ranCount, averageCost, source, isFunction);
     }
 
     public static List<Statistic> getUserStatistics(String userId){
