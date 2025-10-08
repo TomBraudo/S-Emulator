@@ -14,6 +14,7 @@ public class ServerApp {
     }
 
     public static void registerUser(String username) {
+        if (userApis.containsKey(username)) throw new IllegalArgumentException("User already registered");
         userApis.put(username, new Api(username));
     }
 }

@@ -1,4 +1,4 @@
-package com.api;
+package com.dto.api;
 import java.util.*;
 
 public class ProgramResult{
@@ -37,8 +37,8 @@ public class ProgramResult{
             }
         }
         variableToValue.sort(Comparator
-                .<VariableToValue, Character>comparing(v -> v.variable().charAt(0)) // first by prefix
-                .thenComparingInt(v -> Integer.parseInt(v.variable().substring(1))) // then by number
+                .<VariableToValue, Character>comparing(v -> v.variable().charAt(0))
+                .thenComparingInt(v -> Integer.parseInt(v.variable().substring(1)))
         );
         variableToValue.addFirst(new VariableToValue("y", variables.get("y")));
     }
@@ -64,3 +64,5 @@ public class ProgramResult{
     }
 
 }
+
+

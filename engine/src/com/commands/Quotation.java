@@ -1,7 +1,7 @@
 package com.commands;
 
 import com.XMLHandlerV2.SInstruction;
-import com.api.ProgramResult;
+import com.dto.api.ProgramResult;
 import com.program.Program;
 import com.program.ProgramState;
 import com.program.SingleStepChanges;

@@ -1,4 +1,4 @@
-package com.api;
+package com.dto.api;
 
 public class ProgramSummary {
     int baseCommands;
@@ -15,3 +15,5 @@ public class ProgramSummary {
         return syntheticCommands;
     }
 }
+
+

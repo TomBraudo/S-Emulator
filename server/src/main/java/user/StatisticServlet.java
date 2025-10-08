@@ -1,7 +1,7 @@
 package main.java.user;
 
 import com.api.Api;
-import com.api.Statistic;
+import com.dto.api.Statistic;
 import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;

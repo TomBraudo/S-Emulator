@@ -23,5 +23,6 @@
     <orderEntry type="library" exported="" name="annotations-api" level="project" />
     <orderEntry type="library" exported="" name="gson-2.11.0" level="project" />
     <orderEntry type="library" exported="" name="angus-activation" level="project" />
+    <orderEntry type="module" module-name="dto" exported="" />
   </component>
 </module>

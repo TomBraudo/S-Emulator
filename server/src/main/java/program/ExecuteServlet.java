@@ -1,7 +1,7 @@
 package main.java.program;
 
 import com.api.Api;
-import com.api.ProgramResult;
+import com.dto.api.ProgramResult;
 import com.google.gson.Gson;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.MultipartConfig;

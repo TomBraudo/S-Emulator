@@ -1,4 +1,4 @@
-package com.api;
+package com.dto.api;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -72,3 +72,5 @@ public class Statistic implements Serializable {
         return Collections.unmodifiableList(variableToValue);
     }
 }
+
+

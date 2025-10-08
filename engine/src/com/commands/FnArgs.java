@@ -3,7 +3,7 @@ package com.commands;
 import com.XMLHandlerV2.SFunctions;
 import com.program.Program;
 import com.program.ProgramState;
-import com.api.ProgramResult;
+import com.dto.api.ProgramResult;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,7 +1,7 @@
 package com.commands;
 
 import com.api.Api;
-import com.api.ProgramResult;
+import com.dto.api.ProgramResult;
 import com.program.Program;
 
 import java.util.ArrayList;

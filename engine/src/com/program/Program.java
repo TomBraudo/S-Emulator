@@ -1,8 +1,8 @@
 package com.program;
 
 import com.XMLHandlerV2.SInstruction;
-import com.api.ProgramResult;
-import com.api.ProgramSummary;
+import com.dto.api.ProgramResult;
+import com.dto.api.ProgramSummary;
 import com.commands.BaseCommand;
 import com.commands.CommandFactory;
 import com.commands.Variable;
@@ -13,7 +13,7 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-
+import com.dto.api.*;
 public class Program implements Serializable {
     String name;
     List<com.commands.BaseCommand> commands;
@@ -77,10 +77,10 @@ public class Program implements Serializable {
             command.execute(programState);
             if (programState.cyclesCount > maxCycles){
                 rollbackLastStep(programState);
-                return new ProgramResult(programState.cyclesCount, variableToValue(programState), programState.currentCommandIndex, false, com.api.ProgramResult.HaltReason.INSUFFICIENT_CREDITS);
+                return new ProgramResult(programState.cyclesCount, variableToValue(programState), programState.currentCommandIndex, false, com.dto.api.ProgramResult.HaltReason.INSUFFICIENT_CREDITS);
             }
         }
-        return new ProgramResult(programState.cyclesCount, variableToValue(programState), programState.currentCommandIndex, false, com.api.ProgramResult.HaltReason.FINISHED);
+        return new ProgramResult(programState.cyclesCount, variableToValue(programState), programState.currentCommandIndex, false, com.dto.api.ProgramResult.HaltReason.FINISHED);
     }
 
     // Legacy startDebug removed; use startDebugWithBudget
@@ -93,14 +93,14 @@ public class Program implements Serializable {
         // If exceeded budget, revert one step and report insufficient credits
         if (debugState != null && debugState.cyclesCount > maxCycles){
             rollbackLastStep(debugState);
-            return new ProgramResult(debugState.cyclesCount, variableToValue(debugState), debugState.currentCommandIndex, true, com.api.ProgramResult.HaltReason.INSUFFICIENT_CREDITS);
+            return new ProgramResult(debugState.cyclesCount, variableToValue(debugState), debugState.currentCommandIndex, true, com.dto.api.ProgramResult.HaltReason.INSUFFICIENT_CREDITS);
         }
         if (!res.isDebug()){
             // Finished normally within budget
-            return new ProgramResult(res.getCycles(), (HashMap<String,Integer>) res.getVariableToValue().stream().collect(java.util.stream.Collectors.toMap(com.api.ProgramResult.VariableToValue::variable, com.api.ProgramResult.VariableToValue::value, (a,b)->a, java.util.HashMap::new)), res.getDebugIndex(), false, com.api.ProgramResult.HaltReason.FINISHED);
+            return new ProgramResult(res.getCycles(), (HashMap<String,Integer>) res.getVariableToValue().stream().collect(java.util.stream.Collectors.toMap(com.dto.api.ProgramResult.VariableToValue::variable, com.dto.api.ProgramResult.VariableToValue::value, (a,b)->a, java.util.HashMap::new)), res.getDebugIndex(), false, com.dto.api.ProgramResult.HaltReason.FINISHED);
         }
         // Still debugging and within budget
-        return new ProgramResult(res.getCycles(), (HashMap<String,Integer>) res.getVariableToValue().stream().collect(java.util.stream.Collectors.toMap(com.api.ProgramResult.VariableToValue::variable, com.api.ProgramResult.VariableToValue::value, (a,b)->a, java.util.HashMap::new)), res.getDebugIndex(), true, com.api.ProgramResult.HaltReason.STOPPED_MANUALLY);
+        return new ProgramResult(res.getCycles(), (HashMap<String,Integer>) res.getVariableToValue().stream().collect(java.util.stream.Collectors.toMap(com.dto.api.ProgramResult.VariableToValue::variable, com.dto.api.ProgramResult.VariableToValue::value, (a,b)->a, java.util.HashMap::new)), res.getDebugIndex(), true, com.dto.api.ProgramResult.HaltReason.STOPPED_MANUALLY);
     }
 
     // Legacy stepOver removed; use stepOverWithBudget
@@ -115,12 +115,12 @@ public class Program implements Serializable {
         ProgramResult res = new ProgramResult(programState.cyclesCount, variableToValue(programState), programState.currentCommandIndex, stillDebug);
         if (debugState != null && debugState.cyclesCount > maxCycles){
             rollbackLastStep(debugState);
-            return new ProgramResult(debugState.cyclesCount, variableToValue(debugState), debugState.currentCommandIndex, true, com.api.ProgramResult.HaltReason.INSUFFICIENT_CREDITS);
+            return new ProgramResult(debugState.cyclesCount, variableToValue(debugState), debugState.currentCommandIndex, true, com.dto.api.ProgramResult.HaltReason.INSUFFICIENT_CREDITS);
         }
         if (!res.isDebug()){
-            return new ProgramResult(res.getCycles(), (HashMap<String,Integer>) res.getVariableToValue().stream().collect(java.util.stream.Collectors.toMap(com.api.ProgramResult.VariableToValue::variable, com.api.ProgramResult.VariableToValue::value, (a,b)->a, java.util.HashMap::new)), res.getDebugIndex(), false, com.api.ProgramResult.HaltReason.FINISHED);
+            return new ProgramResult(res.getCycles(), (HashMap<String,Integer>) res.getVariableToValue().stream().collect(java.util.stream.Collectors.toMap(com.dto.api.ProgramResult.VariableToValue::variable, com.dto.api.ProgramResult.VariableToValue::value, (a,b)->a, java.util.HashMap::new)), res.getDebugIndex(), false, com.dto.api.ProgramResult.HaltReason.FINISHED);
         }
-        return new ProgramResult(res.getCycles(), (HashMap<String,Integer>) res.getVariableToValue().stream().collect(java.util.stream.Collectors.toMap(com.api.ProgramResult.VariableToValue::variable, com.api.ProgramResult.VariableToValue::value, (a,b)->a, java.util.HashMap::new)), res.getDebugIndex(), true, com.api.ProgramResult.HaltReason.STOPPED_MANUALLY);
+        return new ProgramResult(res.getCycles(), (HashMap<String,Integer>) res.getVariableToValue().stream().collect(java.util.stream.Collectors.toMap(com.dto.api.ProgramResult.VariableToValue::variable, com.dto.api.ProgramResult.VariableToValue::value, (a,b)->a, java.util.HashMap::new)), res.getDebugIndex(), true, com.dto.api.ProgramResult.HaltReason.STOPPED_MANUALLY);
     }
 
     // Legacy continueDebug removed; use continueDebugWithBudget
@@ -139,19 +139,19 @@ public class Program implements Serializable {
                 rollbackLastStep(programState);
                 debugState = programState; // remain in debug mode since not finished due to budget
                 isMidDebug = true;
-                return new ProgramResult(debugState.cyclesCount, variableToValue(debugState), debugState.currentCommandIndex, true, com.api.ProgramResult.HaltReason.INSUFFICIENT_CREDITS);
+                return new ProgramResult(debugState.cyclesCount, variableToValue(debugState), debugState.currentCommandIndex, true, com.dto.api.ProgramResult.HaltReason.INSUFFICIENT_CREDITS);
             }
-            return new ProgramResult(res.getCycles(), (HashMap<String,Integer>) res.getVariableToValue().stream().collect(java.util.stream.Collectors.toMap(com.api.ProgramResult.VariableToValue::variable, com.api.ProgramResult.VariableToValue::value, (a,b)->a, java.util.HashMap::new)), res.getDebugIndex(), false, com.api.ProgramResult.HaltReason.FINISHED);
+            return new ProgramResult(res.getCycles(), (HashMap<String,Integer>) res.getVariableToValue().stream().collect(java.util.stream.Collectors.toMap(com.dto.api.ProgramResult.VariableToValue::variable, com.dto.api.ProgramResult.VariableToValue::value, (a,b)->a, java.util.HashMap::new)), res.getDebugIndex(), false, com.dto.api.ProgramResult.HaltReason.FINISHED);
         }
         ProgramResult res = runToBreakpoint(programState);
         if (debugState != null && debugState.cyclesCount > maxCycles){
             rollbackLastStep(debugState);
-            return new ProgramResult(debugState.cyclesCount, variableToValue(debugState), debugState.currentCommandIndex, true, com.api.ProgramResult.HaltReason.INSUFFICIENT_CREDITS);
+            return new ProgramResult(debugState.cyclesCount, variableToValue(debugState), debugState.currentCommandIndex, true, ProgramResult.HaltReason.INSUFFICIENT_CREDITS);
         }
         if (!res.isDebug()){
-            return new ProgramResult(res.getCycles(), (HashMap<String,Integer>) res.getVariableToValue().stream().collect(java.util.stream.Collectors.toMap(com.api.ProgramResult.VariableToValue::variable, com.api.ProgramResult.VariableToValue::value, (a,b)->a, java.util.HashMap::new)), res.getDebugIndex(), false, com.api.ProgramResult.HaltReason.FINISHED);
+            return new ProgramResult(res.getCycles(), (HashMap<String,Integer>) res.getVariableToValue().stream().collect(java.util.stream.Collectors.toMap(ProgramResult.VariableToValue::variable, ProgramResult.VariableToValue::value, (a,b)->a, java.util.HashMap::new)), res.getDebugIndex(), false, ProgramResult.HaltReason.FINISHED);
         }
-        return new ProgramResult(res.getCycles(), (HashMap<String,Integer>) res.getVariableToValue().stream().collect(java.util.stream.Collectors.toMap(com.api.ProgramResult.VariableToValue::variable, com.api.ProgramResult.VariableToValue::value, (a,b)->a, java.util.HashMap::new)), res.getDebugIndex(), true, com.api.ProgramResult.HaltReason.STOPPED_MANUALLY);
+        return new ProgramResult(res.getCycles(), (HashMap<String,Integer>) res.getVariableToValue().stream().collect(java.util.stream.Collectors.toMap(com.dto.api.ProgramResult.VariableToValue::variable, com.dto.api.ProgramResult.VariableToValue::value, (a,b)->a, java.util.HashMap::new)), res.getDebugIndex(), true, com.dto.api.ProgramResult.HaltReason.STOPPED_MANUALLY);
     }
 
     private ProgramResult runToBreakpoint(ProgramState programState) {

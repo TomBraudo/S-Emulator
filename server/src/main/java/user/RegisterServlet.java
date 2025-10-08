@@ -22,7 +22,14 @@ public class RegisterServlet extends HttpServlet {
             return;
         }
 
-        ServerApp.registerUser(userId);
+        try {
+            ServerApp.registerUser(userId);
+        }
+        catch (Exception e){
+            ResponseHelper.error(resp, 400, "Failed to register user: " + e.getMessage());
+            return;
+        }
+
 
         ResponseHelper.success(resp, "User registered successfully", null);
     }
