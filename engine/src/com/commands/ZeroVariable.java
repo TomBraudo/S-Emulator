@@ -34,7 +34,7 @@ class ZeroVariable extends BaseCommand {
 
     @Override
     protected String toStringBase() {
-        return String.format("#%d (S) [ %s ] %s <- 0 (%d)", index+1, displayLabel(), variableName, cycles);
+        return String.format("#%d (S) [ %s ] %s <- 0 (%d) | %s", index+1, displayLabel(), variableName, cycles, getArchitecture());
     }
 
     @Override

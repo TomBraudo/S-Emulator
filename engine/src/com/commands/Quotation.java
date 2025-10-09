@@ -55,7 +55,7 @@ class Quotation extends BaseCommand{
     protected String toStringBase() {
         List<String> parts = FnArgs.renderArgList(input);
         return String.format("#%d (S) [ %s ] %s <- (%s,", index + 1, displayLabel(), variableName, p.getName()) +
-                String.join(",", parts) + ")" + " (X + 5)";
+                String.join(",", parts) + ")" + " (X + 5) | " + getArchitecture();
     }
 
     @Override

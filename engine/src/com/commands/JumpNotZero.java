@@ -49,7 +49,7 @@ class JumpNotZero extends BaseCommand {
 
     @Override
     public String toStringBase() {
-        return String.format("#%d (B) [ %s ] IF %s != 0 GOTO %s (%d)", index+1, displayLabel(), variableName, targetLabel, cycles);
+        return String.format("#%d (B) [ %s ] IF %s != 0 GOTO %s (%d) | %s", index+1, displayLabel(), variableName, targetLabel, cycles, getArchitecture());
     }
 
     @Override

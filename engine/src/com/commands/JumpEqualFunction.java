@@ -73,7 +73,7 @@ class JumpEqualFunction extends BaseCommand{
     protected String toStringBase() {
         List<String> parts = FnArgs.renderArgList(input);
         return String.format("#%d (S) [ %s ] IF %s = %s(", index + 1, displayLabel(), variableName, p.getName()) +
-                String.join(",", parts) + ")" + String.format(" GOTO %s (X + %d)", targetLabel, cycles);
+                String.join(",", parts) + ")" + String.format(" GOTO %s (X + %d) | %s", targetLabel, cycles, getArchitecture());
     }
 
     @Override

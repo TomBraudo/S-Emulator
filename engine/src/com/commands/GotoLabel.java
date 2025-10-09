@@ -40,7 +40,7 @@ class GotoLabel extends BaseCommand {
 
     @Override
     public String toStringBase() {
-        return String.format("#%d (S) [ %s ] GOTO %s (%d)", index+1, displayLabel(), targetLabel, cycles);
+        return String.format("#%d (S) [ %s ] GOTO %s (%d) | %s", index+1, displayLabel(), targetLabel, cycles, getArchitecture());
     }
 
     @Override

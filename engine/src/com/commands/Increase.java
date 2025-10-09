@@ -35,7 +35,7 @@ class Increase extends BaseCommand {
 
     @Override
     public String toStringBase() {
-        return String.format("#%d (B) [ %s ] %s <- %s + 1 (%d)", index+1, displayLabel(), variableName, variableName, cycles);
+        return String.format("#%d (B) [ %s ] %s <- %s + 1 (%d) | %s", index+1, displayLabel(), variableName, variableName, cycles, getArchitecture());
     }
 
     @Override

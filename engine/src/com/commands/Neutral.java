@@ -32,7 +32,7 @@ class Neutral extends BaseCommand {
 
     @Override
     public String toStringBase() {
-        return String.format("#%d (B) [ %s ] %s <- %s (%d)", index+1, displayLabel(), variableName, variableName, cycles);
+        return String.format("#%d (B) [ %s ] %s <- %s (%d) | %s", index+1, displayLabel(), variableName, variableName, cycles, getArchitecture());
     }
 
     @Override
