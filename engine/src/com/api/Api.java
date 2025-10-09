@@ -138,8 +138,11 @@ public class Api {
         return curProgram.getInputVariables();
     }
 
-    public List<String> getProgramCommands(int expansionLevel){
-        return curProgram.expand(expansionLevel).getCommands().stream().map(BaseCommand::toString).toList();
+    public ProgramCommands getProgramCommands(int expansionLevel){
+        Program p = curProgram.expand(expansionLevel);
+        List<String> commands = p.getCommands().stream().map(BaseCommand::toString).toList();
+        List<String> architectures = p.getCommands().stream().map(BaseCommand::getArchitecture).toList();
+        return new ProgramCommands(commands, architectures);
     }
 
     public static List<String> getAvailableFunctions(){

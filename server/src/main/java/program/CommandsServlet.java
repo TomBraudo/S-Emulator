@@ -1,6 +1,7 @@
 package main.java.program;
 
 import com.api.Api;
+import com.dto.api.ProgramCommands;
 import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -22,7 +23,7 @@ public class CommandsServlet extends HttpServlet {
 
         int expansionLevel = Integer.parseInt(req.getParameter("expansionLevel"));
         try {
-            List<String> commands = api.getProgramCommands(expansionLevel);
+            ProgramCommands commands = api.getProgramCommands(expansionLevel);
             ResponseHelper.success(resp, "Commands retrieved successfully", commands);
         } catch (Exception e) {
             ResponseHelper.error(resp, "Failed to retrieve commands: " + e.getMessage());

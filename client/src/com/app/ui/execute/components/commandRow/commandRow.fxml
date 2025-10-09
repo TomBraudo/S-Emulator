@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.shape.Circle?>
+
+<HBox xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.app.ui.execute.components.commandRow.CommandRowController" spacing="0">
+    <children>
+        <StackPane fx:id="gutter" prefWidth="24.0" minWidth="24.0" maxWidth="24.0" styleClass="gutter">
+            <children>
+                <Circle fx:id="bpCircle" radius="6" visible="false" />
+            </children>
+        </StackPane>
+        <Label fx:id="commandLabel" wrapText="true" maxWidth="1.7976931348623157E308" styleClass="command-label" />
+    </children>
+</HBox>
+

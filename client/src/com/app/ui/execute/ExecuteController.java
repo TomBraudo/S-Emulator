@@ -1,6 +1,12 @@
 package com.app.ui.execute;
 
+import com.app.http.ApiClient;
+import com.app.ui.dashboard.components.errorComponents.ErrorMessageController;
+import com.app.ui.execute.components.commandRow.CommandRowController;
+import com.app.ui.utils.Response;
+import com.dto.api.ProgramCommands;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
@@ -10,6 +16,12 @@ import javafx.scene.control.ToggleButton;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
+import kotlin.Result;
+
+import java.io.IOException;
+import java.lang.reflect.Type;
+import java.util.*;
+import java.util.function.IntConsumer;
 
 public class ExecuteController {
     
@@ -85,12 +97,147 @@ public class ExecuteController {
     private Button stopBtn;
     private Button stepBackBtn;
     
+    // Breakpoint management
+    private final Set<Integer> breakpointIndices = new HashSet<>();
+    
+    // State tracking
+    private int currentExpansionLevel = 0;
+    private int selectedArchitecture = 1; // Default to architecture 1
+    private List<String> currentCommands = new ArrayList<>();
+    private List<String> currentArchitectures = new ArrayList<>();
+    
     @FXML
-    public void initialize() {
+    public void initialize(){
         // Initialize UI components
+        setActiveProgram();
         setupToggleActions();
         setupArchitectureToggle();
         setupBackButton();
+        setupExpansionLevelMenu();
+        setupHighlightSelectorMenu();
+        
+        // Load initial commands
+        populateCommands(currentExpansionLevel);
+    }
+
+    private void setActiveProgram() {
+        String name = ExecuteContext.getProgramName() == null ? ExecuteContext.getFunctionName() : ExecuteContext.getProgramName();
+        ApiClient api = new ApiClient();
+        try{
+            Response<Void> resp = api.postResponse("/program/set", null,new HashMap<>(){{put("programName", name);}}, Void.class);
+        }
+        catch (Exception e){
+            ErrorMessageController.showError(e.getMessage());
+        }
+
+    }
+
+    private void populateCommands(int expansionLevel){
+        ApiClient api = new ApiClient();
+        try {
+            Response<ProgramCommands> resp = api.getResponse("/program/commands", new HashMap<>(){{put("expansionLevel", String.valueOf(expansionLevel));}}, ProgramCommands.class);
+            
+            if (resp.getData() != null) {
+                currentCommands = resp.getData().getCommands();
+                currentArchitectures = resp.getData().getArchitectures();
+                currentExpansionLevel = expansionLevel;
+                
+                // Clear existing command rows
+                commandsContainer.getChildren().clear();
+                
+                // Populate command rows with architecture highlighting
+                for (int i = 0; i < currentCommands.size(); i++) {
+                    String command = currentCommands.get(i);
+                    int commandArch = parseArchitecture(currentArchitectures.get(i));
+                    
+                    try {
+                        FXMLLoader loader = new FXMLLoader(getClass().getResource("components/commandRow/commandRow.fxml"));
+                        javafx.scene.Node row = loader.load();
+                        CommandRowController controller = loader.getController();
+                        
+                        int index = i;
+                        IntConsumer toggle = (idx) -> toggleBreakpoint(idx, controller);
+                        controller.init(index, command, breakpointIndices.contains(index), toggle);
+                        controller.setOnCommandClicked(this::showHistoryInChain);
+                        
+                        // Apply architecture highlighting
+                        controller.setArchitecture(commandArch, selectedArchitecture);
+                        
+                        // Store controller on the row for later access
+                        row.getProperties().put("controller", controller);
+                        
+                        commandsContainer.getChildren().add(row);
+                    } catch (IOException e) {
+                        // Fallback to simple label if loading fails
+                        Label commandLabel = new Label(command);
+                        commandLabel.getStyleClass().add("command-label");
+                        commandLabel.setMaxWidth(Double.MAX_VALUE);
+                        commandLabel.setWrapText(true);
+                        commandsContainer.getChildren().add(commandLabel);
+                    }
+                }
+            }
+        }
+        catch (Exception e){
+            ErrorMessageController.showError(e.getMessage());
+        }
+    }
+    
+    private int parseArchitecture(String arch) {
+        // Parse architecture string (e.g., "I", "II", "III", "IV") to integer
+        if (arch == null || arch.isEmpty()) return 1;
+        switch (arch.trim()) {
+            case "I": return 1;
+            case "II": return 2;
+            case "III": return 3;
+            case "IV": return 4;
+            default: return 1;
+        }
+    }
+    
+    private void toggleBreakpoint(int index, CommandRowController controller) {
+        if (breakpointIndices.contains(index)) {
+            removeBreakpoint(index);
+            controller.setActive(false);
+        } else {
+            setBreakpoint(index);
+            controller.setActive(true);
+        }
+    }
+    
+    private void setBreakpoint(int index) {
+        breakpointIndices.add(index);
+        // TODO: If debugging is active, notify the backend about the new breakpoint
+    }
+    
+    private void removeBreakpoint(int index) {
+        breakpointIndices.remove(index);
+        // TODO: If debugging is active, notify the backend about breakpoint removal
+    }
+    
+    private void setHighlightedIndex(int highlightedIndex) {
+        for (javafx.scene.Node n : commandsContainer.getChildren()) {
+            if (n instanceof javafx.scene.layout.HBox row) {
+                Object controllerObj = row.getProperties().get("controller");
+                if (controllerObj instanceof CommandRowController crc) {
+                    crc.setHighlighted(crc.getCommandIndex() == highlightedIndex);
+                }
+            }
+        }
+    }
+    
+    private void refreshArchitectureHighlighting() {
+        // Update all command rows with new architecture highlighting
+        for (int i = 0; i < commandsContainer.getChildren().size(); i++) {
+            javafx.scene.Node n = commandsContainer.getChildren().get(i);
+            if (n instanceof javafx.scene.layout.HBox row) {
+                Object controllerObj = row.getProperties().get("controller");
+                if (controllerObj instanceof CommandRowController crc) {
+                    int commandArch = parseArchitecture(currentArchitectures.get(crc.getCommandIndex()));
+                    crc.setArchitecture(commandArch, selectedArchitecture);
+                }
+            }
+        }
     }
     
     public void initializeWithContext() {
@@ -192,13 +339,33 @@ public class ExecuteController {
     }
     
     private void onArchitectureChanged(int architecture) {
-        // TODO: Implement architecture change logic
-        System.out.println("Architecture changed to: " + architecture);
+        selectedArchitecture = architecture;
+        // Refresh the highlighting for all command rows
+        refreshArchitectureHighlighting();
     }
     
     private void setupBackButton() {
         if (backToDashboardBtn != null) {
             backToDashboardBtn.setOnAction(e -> handleBackToDashboard());
+        }
+    }
+    
+    private void setupExpansionLevelMenu() {
+        if (expansionLevelMenu != null) {
+            expansionLevelMenu.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+                if (newVal != null) {
+                    currentExpansionLevel = newVal;
+                    populateCommands(currentExpansionLevel);
+                }
+            });
+        }
+    }
+    
+    private void setupHighlightSelectorMenu() {
+        if (highlightSelectorMenu != null) {
+            highlightSelectorMenu.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+                // TODO: Implement search highlighting similar to GUI module if needed
+            });
         }
     }
     
@@ -297,6 +464,49 @@ public class ExecuteController {
     
     private void stepBack() {
         // TODO: Step back one instruction in debug mode
+    }
+    
+    private void showHistoryInChain(int commandIndex) {
+        try {
+            // Get the command history from the API
+            ApiClient api = new ApiClient();
+            Response<List<String>> resp = api.getResponse(
+                "/program/history", 
+                new HashMap<>() {{
+                    put("expansionLevel", String.valueOf(currentExpansionLevel));
+                    put("commandIndex", String.valueOf(commandIndex));
+                }},
+                (Class<List<String>>)(Class<?>)List.class
+            );
+            
+            if (resp.getData() != null) {
+                renderHistoryChain(resp.getData());
+            }
+        } catch (Exception e) {
+            ErrorMessageController.showError("Failed to load command history:\n" + e.getMessage());
+        }
+    }
+    
+    private void renderHistoryChain(List<String> history) {
+        if (historyChainContainer == null) return;
+        historyChainContainer.getChildren().clear();
+        
+        if (history == null || history.isEmpty()) {
+            Label empty = new Label("No history available");
+            empty.getStyleClass().add("label-meta");
+            historyChainContainer.getChildren().add(empty);
+            return;
+        }
+        
+        // Present newest first: commands[N-1] at the top
+        for (int i = history.size() - 1; i >= 0; i--) {
+            String command = history.get(i);
+            Label commandLabel = new Label(command);
+            commandLabel.setMaxWidth(Double.MAX_VALUE);
+            commandLabel.setWrapText(true);
+            commandLabel.getStyleClass().add("command-label");
+            historyChainContainer.getChildren().add(commandLabel);
+        }
     }
     
     private void handleBackToDashboard() {

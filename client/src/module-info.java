@@ -17,6 +17,7 @@ module client {
     opens com.app.ui.dashboard.components.statisticsView to javafx.fxml;
     opens com.app.ui.dashboard.components.errorComponents to javafx.fxml;
     opens com.app.ui.execute to javafx.fxml;
+    opens com.app.ui.execute.components.commandRow to javafx.fxml;
     opens com.app.ui.execute.components.executionComponents to javafx.fxml;
     opens com.app.ui.execute.components.historyView to javafx.fxml;
     opens com.app.ui.execute.components.inputComponent to javafx.fxml;

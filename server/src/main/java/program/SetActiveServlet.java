@@ -16,18 +16,15 @@ import java.util.HashMap;
 @WebServlet("/program/set")
 @MultipartConfig
 public class SetActiveServlet extends HttpServlet {
-    private static class RequestDto{
-        public String programName;
-    }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         Api api = RequestHelpers.getApi(req, resp);
         if(api == null){return;}
 
-        RequestDto dto = RequestHelpers.getBody(req, RequestDto.class);
+        String programName = req.getParameter("programName");
         try {
-            api.setCurProgram(dto.programName);
+            api.setCurProgram(programName);
             ResponseHelper.success(resp, "Active program set successfully", null);
         } catch (Exception e) {
             ResponseHelper.error(resp, "Failed to set active program: " + e.getMessage());
