@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import com.gluonhq.charm.glisten.control.ToggleButtonGroup?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
@@ -12,11 +11,12 @@
 <?import javafx.scene.layout.Pane?>
 <?import javafx.scene.layout.VBox?>
 
-
-<AnchorPane prefHeight="567.0" prefWidth="914.0" styleClass="content-pad" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.app.ui.execute.ExecuteController" stylesheets="@../app.css">
-   <children>
+<ScrollPane fitToHeight="true" fitToWidth="true" prefHeight="583.0" prefWidth="931.0" stylesheets="@../app.css" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.app.ui.execute.ExecuteController">
+   <content>
+      <AnchorPane prefHeight="567.0" prefWidth="914.0" styleClass="content-pad">
+         <children>
       <Label fx:id="userNameLabel" layoutX="36.0" layoutY="14.0" prefHeight="32.0" prefWidth="95.0" styleClass="label-strong" text="User name" />
-      <Label alignment="CENTER" layoutX="362.0" layoutY="14.0" prefHeight="32.0" prefWidth="190.0" styleClass="label-title" text="S-Emulator - Execution" />
+      <Label alignment="CENTER" layoutX="274.0" prefHeight="39.0" prefWidth="355.0" styleClass="label-title" text="S-Emulator - Execution" />
       <Label fx:id="creditsLabel" alignment="CENTER" layoutX="677.0" layoutY="14.0" prefHeight="32.0" prefWidth="209.0" styleClass="label-strong" text="Available Credits:" />
       <ComboBox fx:id="expansionLevelMenu" layoutX="38.0" layoutY="70.0" prefHeight="25.0" prefWidth="122.0" styleClass="select-primary" />
       <ComboBox fx:id="highlightSelectorMenu" layoutX="390.0" layoutY="70.0" prefHeight="25.0" prefWidth="122.0" styleClass="select-primary" />
@@ -34,28 +34,28 @@
             <HBox fx:id="summaryLineContainer" prefHeight="61.0" prefWidth="474.0" spacing="8.0" styleClass="card-subtle content-pad-sm" BorderPane.alignment="CENTER" />
          </bottom>
       </BorderPane>
-      <ScrollPane fx:id="historyChainScrollPane" layoutX="39.0" layoutY="430.0" prefHeight="114.0" prefWidth="476.0" styleClass="scroller card">
+      <ScrollPane fx:id="historyChainScrollPane" fitToWidth="true" layoutX="39.0" layoutY="430.0" prefHeight="114.0" prefWidth="476.0" styleClass="scroller">
          <content>
-            <VBox fx:id="historyChainContainer" prefHeight="99.0" prefWidth="456.0" spacing="5.0" styleClass="content-pad" />
+            <VBox fx:id="historyChainContainer" spacing="5.0" styleClass="content-pad" />
          </content>
       </ScrollPane>
       <Pane layoutX="552.0" layoutY="46.0" prefHeight="501.0" prefWidth="344.0" styleClass="card">
          <children>
-            <ToggleButtonGroup fx:id="modeSelection" layoutX="66.0" layoutY="21.0" selectionType="SINGLE" styleClass="toggle-primary">
-                <toggles>
-                    <ToggleButton fx:id="debugBtn" prefHeight="30.0" prefWidth="112.0" selected="true" text="Debug" />
-                    <ToggleButton fx:id="executeBtn" prefHeight="30.0" prefWidth="112.0" text="Execute" />
-                </toggles>
-            </ToggleButtonGroup>
-            <Pane fx:id="actionButtonsContainer" layoutX="20.0" layoutY="65.0" prefHeight="100.0" prefWidth="308.0" styleClass="card-subtle" />
-            <ToggleButtonGroup fx:id="architectureSelection" layoutX="186.0" layoutY="172.0" selectionType="SINGLE" styleClass="toggle-primary">
-                <toggles>
-                    <ToggleButton fx:id="arch1Btn" minWidth="36.0" prefHeight="30.0" prefWidth="36.0" text="I" />
-                    <ToggleButton fx:id="arch2Btn" minWidth="43.0" prefHeight="30.0" prefWidth="36.0" selected="true" text="II" />
-                    <ToggleButton fx:id="arch3Btn" minWidth="36.0" prefHeight="30.0" prefWidth="36.0" text="III" />
-                  <ToggleButton fx:id="arch4Btn" minWidth="36.0" prefHeight="30.0" prefWidth="36.0" text="IV" />
-                </toggles>
-            </ToggleButtonGroup>
+            <HBox fx:id="modeSelection" layoutX="66.0" layoutY="21.0" spacing="0" styleClass="toggle-primary">
+                <children>
+                    <ToggleButton fx:id="debugBtn" prefHeight="30.0" prefWidth="90.0" text="Debug" />
+                    <ToggleButton fx:id="executeBtn" prefHeight="30.0" prefWidth="90.0" selected="true" text="Execute" />
+                </children>
+            </HBox>
+            <Pane fx:id="actionButtonsContainer" layoutX="20.0" layoutY="65.0" prefHeight="100.0" prefWidth="308.0" style="-fx-border-color: black; -fx-border-width: 2;" styleClass="card-subtle" />
+            <HBox fx:id="architectureSelection" layoutX="186.0" layoutY="172.0" spacing="0" styleClass="toggle-primary">
+                <children>
+                    <ToggleButton fx:id="arch1Btn" prefHeight="30.0" prefWidth="36.0" text="I" />
+                    <ToggleButton fx:id="arch2Btn" prefHeight="30.0" prefWidth="36.0" selected="true" text="II" />
+                    <ToggleButton fx:id="arch3Btn" prefHeight="30.0" prefWidth="36.0" text="III" />
+                    <ToggleButton fx:id="arch4Btn" prefHeight="30.0" prefWidth="36.0" text="IV" />
+                </children>
+            </HBox>
             <ScrollPane layoutX="186.0" layoutY="210.0" prefHeight="233.0" prefWidth="144.0" styleClass="scroller">
                <content>
                   <VBox fx:id="executionInputContainer" prefHeight="211.0" prefWidth="132.0" spacing="5.0" styleClass="content-pad" />
@@ -70,5 +70,7 @@
             <Label fx:id="cyclesLabel" alignment="CENTER" layoutX="20.0" layoutY="464.0" prefHeight="32.0" prefWidth="144.0" styleClass="label-strong" text="Cycles: 0" />
          </children>
       </Pane>
-   </children>
-</AnchorPane>
+         </children>
+      </AnchorPane>
+   </content>
+</ScrollPane>

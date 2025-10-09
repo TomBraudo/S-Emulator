@@ -6,7 +6,6 @@ module client {
     requires kotlin.stdlib;
     requires com.google.gson;
     requires transitive dto;
-    requires com.gluonhq.charm.glisten;
 
     opens com.app.ui to javafx.fxml, javafx.graphics;
     opens com.app.ui.dashboard to javafx.fxml;

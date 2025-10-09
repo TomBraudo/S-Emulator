@@ -7,9 +7,9 @@
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.VBox?>
 
-<ScrollPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="561.0" prefWidth="834.0" stylesheets="../app.css" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.app.ui.dashboard.DashboardController">
+<ScrollPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="561.0" prefWidth="834.0" style="-fx-background: -color-surface; -fx-background-color: -color-surface;" stylesheets="../app.css" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.app.ui.dashboard.DashboardController">
   <content>
-    <AnchorPane fx:id="dashboardRoot" minHeight="0.0" minWidth="0.0" prefHeight="556.0" prefWidth="831.0" styleClass="anchor-pane">
+    <AnchorPane fx:id="dashboardRoot" minHeight="0.0" minWidth="0.0" prefHeight="556.0" prefWidth="831.0" styleClass="content-pad">
          <children>
             <Button fx:id="loadFileButton" layoutX="25.0" layoutY="31.0" mnemonicParsing="false" onAction="#onLoadFile" prefHeight="29.0" prefWidth="122.0" styleClass="btn btn-primary" text="Load File" />
             <Label fx:id="loadedFilePathLabel" alignment="CENTER" layoutX="163.0" layoutY="31.0" prefHeight="31.0" prefWidth="417.0" styleClass="command-label" text="Currently Loaded File path" />

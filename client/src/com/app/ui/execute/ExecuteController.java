@@ -10,7 +10,6 @@ import javafx.scene.control.ToggleButton;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
-import com.gluonhq.charm.glisten.control.ToggleButtonGroup;
 
 public class ExecuteController {
     
@@ -42,7 +41,7 @@ public class ExecuteController {
     
     // Right panel - execution controls
     @FXML
-    private ToggleButtonGroup modeSelection;
+    private HBox modeSelection;
     
     @FXML
     private ToggleButton debugBtn;
@@ -54,7 +53,7 @@ public class ExecuteController {
     private Pane actionButtonsContainer;
     
     @FXML
-    private ToggleButtonGroup architectureSelection;
+    private HBox architectureSelection;
     
     @FXML
     private ToggleButton arch1Btn;
@@ -94,18 +93,43 @@ public class ExecuteController {
         setupBackButton();
     }
     
+    public void initializeWithContext() {
+        // Load context from ExecuteContext
+        String username = ExecuteContext.getUsername();
+        int credits = ExecuteContext.getCredits();
+        String programName = ExecuteContext.getProgramName();
+        String functionName = ExecuteContext.getFunctionName();
+        
+        // Update UI with context
+        if (username != null) {
+            setUserName(username);
+        }
+        setCredits(credits);
+        
+        // Update title or display program/function name
+        // For now, we'll just set initial state
+        setCycles(0);
+    }
+    
     private void setupToggleActions() {
+        // Default to execute mode (matches FXML selected="true" on executeBtn)
         showExecuteActions();
 
         executeBtn.setOnAction(event -> {
-            if(executeBtn.isSelected()){
+            // Prevent deselection - always keep one selected
+            if(!executeBtn.isSelected()){
+                executeBtn.setSelected(true);
+            } else {
                 showExecuteActions();
                 debugBtn.setSelected(false);
             }
         });
 
         debugBtn.setOnAction(event -> {
-            if(debugBtn.isSelected()){
+            // Prevent deselection - always keep one selected
+            if(!debugBtn.isSelected()){
+                debugBtn.setSelected(true);
+            } else {
                 showDebugActions();
                 executeBtn.setSelected(false);
             }
@@ -113,15 +137,63 @@ public class ExecuteController {
     }
     
     private void setupArchitectureToggle() {
-        // Set up architecture selection toggle behavior
-        if (architectureSelection != null) {
-            architectureSelection.selectedToggleProperty().addListener((obs, oldVal, newVal) -> {
-                if (newVal != null) {
-                    // Handle architecture change
-                    // TODO: Implement architecture selection logic
+        // Set up individual toggle button handlers to prevent deselection
+        if (arch1Btn != null) {
+            arch1Btn.setOnAction(e -> {
+                if (!arch1Btn.isSelected()) {
+                    arch1Btn.setSelected(true);
+                } else {
+                    arch2Btn.setSelected(false);
+                    arch3Btn.setSelected(false);
+                    arch4Btn.setSelected(false);
+                    onArchitectureChanged(1);
                 }
             });
         }
+        
+        if (arch2Btn != null) {
+            arch2Btn.setOnAction(e -> {
+                if (!arch2Btn.isSelected()) {
+                    arch2Btn.setSelected(true);
+                } else {
+                    arch1Btn.setSelected(false);
+                    arch3Btn.setSelected(false);
+                    arch4Btn.setSelected(false);
+                    onArchitectureChanged(2);
+                }
+            });
+        }
+        
+        if (arch3Btn != null) {
+            arch3Btn.setOnAction(e -> {
+                if (!arch3Btn.isSelected()) {
+                    arch3Btn.setSelected(true);
+                } else {
+                    arch1Btn.setSelected(false);
+                    arch2Btn.setSelected(false);
+                    arch4Btn.setSelected(false);
+                    onArchitectureChanged(3);
+                }
+            });
+        }
+        
+        if (arch4Btn != null) {
+            arch4Btn.setOnAction(e -> {
+                if (!arch4Btn.isSelected()) {
+                    arch4Btn.setSelected(true);
+                } else {
+                    arch1Btn.setSelected(false);
+                    arch2Btn.setSelected(false);
+                    arch3Btn.setSelected(false);
+                    onArchitectureChanged(4);
+                }
+            });
+        }
+    }
+    
+    private void onArchitectureChanged(int architecture) {
+        // TODO: Implement architecture change logic
+        System.out.println("Architecture changed to: " + architecture);
     }
     
     private void setupBackButton() {
@@ -133,11 +205,17 @@ public class ExecuteController {
     private void showExecuteActions() {
         actionButtonsContainer.getChildren().clear();
 
+        VBox executeBox = new VBox();
+        executeBox.setAlignment(Pos.CENTER);
+        executeBox.setPrefWidth(308);  // Match container width
+        executeBox.setPrefHeight(100); // Match container height
+        
         Button startExecution = new Button("Start execution");
         startExecution.setOnAction(event -> startExecution());
-        styleActionButton(startExecution);
+        styleStartButton(startExecution);
 
-        actionButtonsContainer.getChildren().add(startExecution);
+        executeBox.getChildren().add(startExecution);
+        actionButtonsContainer.getChildren().add(executeBox);
     }
 
     private void showDebugActions() {
@@ -152,7 +230,7 @@ public class ExecuteController {
         continueBtn = new Button("Continue");
         stepBackBtn = new Button("Step back");
 
-        styleActionButton(startDebug);
+        styleStartButton(startDebug);
         styleActionButton(stepOverBtn);
         styleActionButton(stopBtn);
         styleActionButton(continueBtn);
@@ -186,8 +264,13 @@ public class ExecuteController {
     }
 
     private void styleActionButton(Button button) {
-        button.setPrefWidth(150);
-        button.getStyleClass().addAll("btn", "btn-primary", "btn-wide");
+        button.setPrefWidth(95);
+        button.getStyleClass().addAll("btn", "btn-primary");
+    }
+    
+    private void styleStartButton(Button button) {
+        button.setPrefWidth(130);
+        button.getStyleClass().addAll("btn", "btn-primary");
     }
     
     // Action button handlers (TODO: Implement logic)
@@ -217,7 +300,32 @@ public class ExecuteController {
     }
     
     private void handleBackToDashboard() {
-        // TODO: Navigate back to dashboard
+        try {
+            // Get username from context
+            String username = ExecuteContext.getUsername();
+            
+            // Clear execution context
+            ExecuteContext.clear();
+            
+            // Load dashboard
+            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(
+                getClass().getResource("/com/app/ui/dashboard/dashboard.fxml")
+            );
+            javafx.scene.Parent root = loader.load();
+            
+            // Switch scene
+            javafx.stage.Stage stage = (javafx.stage.Stage) backToDashboardBtn.getScene().getWindow();
+            javafx.scene.Scene scene = new javafx.scene.Scene(root);
+            scene.getStylesheets().add(
+                getClass().getResource("/com/app/ui/app.css").toExternalForm()
+            );
+            stage.setScene(scene);
+            stage.setTitle("S-Emulator - Dashboard");
+            stage.show();
+        } catch (Exception e) {
+            e.printStackTrace();
+            // TODO: Show error message
+        }
     }
     
     // Public methods for updating UI

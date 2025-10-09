@@ -305,12 +305,59 @@ public class DashboardController {
 
     @FXML
     private void onExecuteProgram(ActionEvent event) {
-        // TODO: implement program execution logic
+        if (contextProgram == null || contextProgram.isEmpty()) {
+            com.app.ui.dashboard.components.errorComponents.ErrorMessageController.showError("Please select a program to execute");
+            return;
+        }
+        
+        openExecutePage(contextProgram, null);
     }
 
     @FXML
     private void onExecuteFunction(ActionEvent event) {
-        // TODO: implement program execution logic
+        if (contextFunction == null || contextFunction.isEmpty()) {
+            com.app.ui.dashboard.components.errorComponents.ErrorMessageController.showError("Please select a function to execute");
+            return;
+        }
+        
+        openExecutePage(null, contextFunction);
+    }
+    
+    private void openExecutePage(String programName, String functionName) {
+        try {
+            // Get current credits from label
+            int currentCredits = 0;
+            try {
+                currentCredits = Integer.parseInt(creditsLabel.getText());
+            } catch (NumberFormatException e) {
+                currentCredits = 0;
+            }
+            
+            // Set execution context
+            com.app.ui.execute.ExecuteContext.setProgramName(programName);
+            com.app.ui.execute.ExecuteContext.setFunctionName(functionName);
+            com.app.ui.execute.ExecuteContext.setUsername(UserContext.getUserId());
+            com.app.ui.execute.ExecuteContext.setCredits(currentCredits);
+            
+            // Load execute page
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/app/ui/execute/execute.fxml"));
+            Parent root = loader.load();
+            
+            // Get controller and initialize with context
+            com.app.ui.execute.ExecuteController controller = loader.getController();
+            controller.initializeWithContext();
+            
+            // Switch scene
+            Stage stage = (Stage) dashboardRoot.getScene().getWindow();
+            Scene scene = new Scene(root);
+            scene.getStylesheets().add(getClass().getResource("/com/app/ui/app.css").toExternalForm());
+            stage.setScene(scene);
+            stage.setTitle("S-Emulator - Execution");
+            stage.show();
+        } catch (IOException e) {
+            e.printStackTrace();
+            com.app.ui.dashboard.components.errorComponents.ErrorMessageController.showError("Failed to open execution page:\n" + e.getMessage());
+        }
     }
     
     public void updateCreditsDisplay(int creditsToAdd) {
