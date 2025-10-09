@@ -13,7 +13,7 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import com.dto.api.*;
+
 public class Program implements Serializable {
     String name;
     List<com.commands.BaseCommand> commands;
@@ -45,8 +45,16 @@ public class Program implements Serializable {
     }
 
     private void createSummary(List<com.commands.BaseCommand> commands){
-        int baseCommands = Math.toIntExact(commands.stream().filter(BaseCommand::isBaseCommand).count());
-        summary = new ProgramSummary(baseCommands, commands.size() - baseCommands);
+        List<Integer> architectureCommandsCount = new ArrayList<>(List.of(0, 0, 0, 0));
+        for(BaseCommand command : commands){
+            switch (command.getArchitecture()){
+                case "I" -> architectureCommandsCount.set(0, architectureCommandsCount.get(0) + 1);
+                case "II" -> architectureCommandsCount.set(1, architectureCommandsCount.get(1) + 1);
+                case "III" -> architectureCommandsCount.set(2, architectureCommandsCount.get(2) + 1);
+                case "IV" -> architectureCommandsCount.set(3, architectureCommandsCount.get(3) + 1);
+            }
+        }
+        summary = new ProgramSummary(architectureCommandsCount);
     }
 
     public ProgramSummary getSummary(){
@@ -629,7 +637,7 @@ public class Program implements Serializable {
 
     public String getMaxArchitecture(){
         return commands.stream()
-                .map(com.commands.BaseCommand::getMinArchitecture)
+                .map(com.commands.BaseCommand::getArchitecture)
                 .max(Comparator.comparingInt(a -> switch (a) {
                     case "I" -> 1;
                     case "II" -> 2;

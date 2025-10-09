@@ -87,7 +87,7 @@ public abstract class BaseCommand implements Serializable {
         }
         return history;
     }
-    public abstract String getMinArchitecture();
+    public abstract String getArchitecture();
 
 
 }

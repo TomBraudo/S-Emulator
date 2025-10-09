@@ -11,5 +11,14 @@
     <orderEntry type="module" module-name="dto" exported="" />
     <orderEntry type="library" exported="" name="javafx" level="project" />
     <orderEntry type="library" exported="" name="httpclient" level="project" />
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://$USER_HOME$/Downloads/charm-glisten-6.0.6.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
   </component>
 </module>

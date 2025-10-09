@@ -92,7 +92,7 @@ class Decrease extends BaseCommand {
     }
 
     @Override
-    public String getMinArchitecture() {
+    public String getArchitecture() {
         return "I";
     }
 }

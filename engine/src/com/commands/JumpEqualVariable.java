@@ -136,7 +136,7 @@ class JumpEqualVariable extends BaseCommand {
     }
 
     @Override
-    public String getMinArchitecture() {
+    public String getArchitecture() {
         return "III";
     }
 }

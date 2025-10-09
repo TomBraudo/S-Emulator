@@ -107,7 +107,7 @@ class ConstantAssignment extends BaseCommand {
     }
 
     @Override
-    public String getMinArchitecture() {
+    public String getArchitecture() {
         return "II";
     }
 }

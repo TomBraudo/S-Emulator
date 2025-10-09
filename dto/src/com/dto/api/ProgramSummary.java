@@ -1,18 +1,15 @@
 package com.dto.api;
 
-public class ProgramSummary {
-    int baseCommands;
-    int syntheticCommands;
+import java.util.List;
 
-    public ProgramSummary(int baseCommands, int syntheticCommands) {
-        this.baseCommands = baseCommands;
-        this.syntheticCommands = syntheticCommands;
+public class ProgramSummary {
+    List<Integer> architectureCommandsCount;
+
+    public ProgramSummary(List<Integer> architectureCommandsCount) {
+        this.architectureCommandsCount = architectureCommandsCount;
     }
-    public int getBaseCommands() {
-        return baseCommands;
-    }
-    public int getSyntheticCommands() {
-        return syntheticCommands;
+    public int getArchitectureCommandsCount(int architectureIndex) {
+        return architectureCommandsCount.get(architectureIndex);
     }
 }
 
