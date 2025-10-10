@@ -5,6 +5,7 @@ import com.app.ui.dashboard.components.errorComponents.ErrorMessageController;
 import com.app.ui.execute.components.commandRow.CommandRowController;
 import com.app.ui.utils.Response;
 import com.dto.api.ProgramCommands;
+import com.dto.api.ProgramSummary;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Pos;
@@ -31,6 +32,9 @@ public class ExecuteController {
     
     @FXML
     private Label creditsLabel;
+    
+    @FXML
+    private Label programNameLabel;
     
     @FXML
     private ComboBox<Integer> expansionLevelMenu;
@@ -105,19 +109,24 @@ public class ExecuteController {
     private int selectedArchitecture = 1; // Default to architecture 1
     private List<String> currentCommands = new ArrayList<>();
     private List<String> currentArchitectures = new ArrayList<>();
+    private boolean isDebugging = false;
     
     @FXML
     public void initialize(){
         // Initialize UI components
         setActiveProgram();
+        // Set program/function name in header
+        String displayName = ExecuteContext.getProgramName() == null ? ExecuteContext.getFunctionName() : ExecuteContext.getProgramName();
+        setProgramName(displayName);
         setupToggleActions();
         setupArchitectureToggle();
         setupBackButton();
         setupExpansionLevelMenu();
         setupHighlightSelectorMenu();
         
-        // Load initial commands
-        populateCommands(currentExpansionLevel);
+        // Populate menus on init (highlight with expansion level 0)
+        populateExpansionLevelMenu();
+        populateHighlightSelectorMenu(0);
     }
 
     private void setActiveProgram() {
@@ -182,6 +191,39 @@ public class ExecuteController {
             ErrorMessageController.showError(e.getMessage());
         }
     }
+
+    private void populateExpansionLevelMenu(){
+        ApiClient api = new ApiClient();
+        try {
+            Response<Integer> resp = api.getResponse("/program/level", null, Integer.class);
+
+            if (resp.getData() != null) {
+                expansionLevelMenu.getItems().clear();
+                for(int i = 0; i <= resp.getData(); i++){
+                    expansionLevelMenu.getItems().add(i);
+                }
+                expansionLevelMenu.getSelectionModel().select(0);
+            }
+        }
+        catch (Exception e){
+            ErrorMessageController.showError(e.getMessage());
+        }
+    }
+
+    private void populateHighlightSelectorMenu(int expansionLevel){
+        ApiClient api = new ApiClient();
+        try {
+            Response<List<String>> resp = api.getListResponse("/program/highlight", new HashMap<>(){{put("expansionLevel", String.valueOf(expansionLevel));}}, String.class);
+            if (resp.getData() != null) {
+                highlightSelectorMenu.getItems().clear();
+                highlightSelectorMenu.getItems().addAll(resp.getData());
+                highlightSelectorMenu.getSelectionModel().select(0);
+            }
+        }
+        catch (Exception e){
+            ErrorMessageController.showError(e.getMessage());
+        }
+    }
     
     private int parseArchitecture(String arch) {
         // Parse architecture string (e.g., "I", "II", "III", "IV") to integer
@@ -233,6 +275,8 @@ public class ExecuteController {
             if (n instanceof javafx.scene.layout.HBox row) {
                 Object controllerObj = row.getProperties().get("controller");
                 if (controllerObj instanceof CommandRowController crc) {
+                    // ensure non-debug visuals reflect current debug state
+                    crc.setDebugMode(debugBtn != null && debugBtn.isSelected());
                     int commandArch = parseArchitecture(currentArchitectures.get(crc.getCommandIndex()));
                     crc.setArchitecture(commandArch, selectedArchitecture);
                 }
@@ -356,6 +400,9 @@ public class ExecuteController {
                 if (newVal != null) {
                     currentExpansionLevel = newVal;
                     populateCommands(currentExpansionLevel);
+                    // Refresh highlight options for the selected expansion level
+                    populateHighlightSelectorMenu(currentExpansionLevel);
+                    writeProgramSummary(currentExpansionLevel);
                 }
             });
         }
@@ -364,8 +411,74 @@ public class ExecuteController {
     private void setupHighlightSelectorMenu() {
         if (highlightSelectorMenu != null) {
             highlightSelectorMenu.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
-                // TODO: Implement search highlighting similar to GUI module if needed
+                applySearchHighlight(newVal);
             });
+        }
+    }
+
+    private void writeProgramSummary(int expansionLevel) {
+        ApiClient api = new ApiClient();
+        try {
+            Response<ProgramSummary> resp = api.getResponse("/program/summary", new HashMap<>(){{put("expansionLevel", String.valueOf(expansionLevel));}}, ProgramSummary.class);
+            summaryLineContainer.getChildren().clear();
+            Label title = new Label("Program summary:");
+            title.getStyleClass().add("label-strong");
+            summaryLineContainer.getChildren().add(title);
+            summaryLineContainer.getChildren().add(new Label("I: " + resp.getData().getArchitectureCommandsCount(0)));
+            summaryLineContainer.getChildren().add(new Label("II: " + resp.getData().getArchitectureCommandsCount(1)));
+            summaryLineContainer.getChildren().add(new Label("III: " + resp.getData().getArchitectureCommandsCount(2)));
+            summaryLineContainer.getChildren().add(new Label("IV: " + resp.getData().getArchitectureCommandsCount(3)));
+        }
+        catch (Exception e){
+            ErrorMessageController.showError(e.getMessage());
+        }
+    }
+
+    private void applySearchHighlight(String selection){
+        // If currently in debug mode, suppress search highlighting entirely
+        if (debugBtn != null && debugBtn.isSelected()){
+            return;
+        }
+        String token = selection;
+        if (token == null || token.equals("None")){
+            // clear all search highlights
+            for (javafx.scene.Node n : commandsContainer.getChildren()){
+                if (n instanceof javafx.scene.layout.HBox row){
+                    Object controllerObj = row.getProperties().get("controller");
+                    if (controllerObj instanceof CommandRowController crc){
+                        crc.setSearchHighlighted(false);
+                    }
+                }
+            }
+            return;
+        }
+
+        List<String> tokensToMatch = new ArrayList<>();
+        if (token.startsWith("L")){
+            tokensToMatch.add(token);
+        } else if (token.startsWith("x") || token.startsWith("z")){
+            String suffix = token.substring(1);
+            tokensToMatch.add("x" + suffix);
+            tokensToMatch.add("z" + suffix);
+        } else {
+            // fallback: match raw token
+            tokensToMatch.add(token);
+        }
+
+        for (javafx.scene.Node n : commandsContainer.getChildren()){
+            if (n instanceof javafx.scene.layout.HBox row){
+                Object controllerObj = row.getProperties().get("controller");
+                if (controllerObj instanceof CommandRowController crc){
+                    String text = crc.getCommandText();
+                    boolean match = false;
+                    if (text != null){
+                        for (String t : tokensToMatch){
+                            if (text.contains(t)) { match = true; break; }
+                        }
+                    }
+                    crc.setSearchHighlighted(match);
+                }
+            }
         }
     }
     
@@ -383,6 +496,10 @@ public class ExecuteController {
 
         executeBox.getChildren().add(startExecution);
         actionButtonsContainer.getChildren().add(executeBox);
+
+        // Leaving execute mode: disable debug-only visuals
+        setDebugVisualMode(false);
+        setDebugging(false);
     }
 
     private void showDebugActions() {
@@ -428,6 +545,9 @@ public class ExecuteController {
         debugBox.getChildren().addAll(row1, row2);
 
         actionButtonsContainer.getChildren().add(debugBox);
+
+        // Entering debug mode: ensure only debug highlight is visible
+        setDebugVisualMode(true);
     }
 
     private void styleActionButton(Button button) {
@@ -448,6 +568,7 @@ public class ExecuteController {
     
     private void startDebugging() {
         // TODO: Open input form, then start debugging
+        setDebugging(true);
     }
     
     private void stepOverInstruction() {
@@ -456,6 +577,8 @@ public class ExecuteController {
     
     private void stopDebugging() {
         // TODO: Stop debugging session
+        setDebugVisualMode(false);
+        setDebugging(false);
     }
     
     private void continueDebug() {
@@ -464,6 +587,30 @@ public class ExecuteController {
     
     private void stepBack() {
         // TODO: Step back one instruction in debug mode
+    }
+
+    private void setDebugVisualMode(boolean debugMode){
+        for (int i = 0; i < commandsContainer.getChildren().size(); i++) {
+            javafx.scene.Node n = commandsContainer.getChildren().get(i);
+            if (n instanceof javafx.scene.layout.HBox row) {
+                Object controllerObj = row.getProperties().get("controller");
+                if (controllerObj instanceof CommandRowController crc) {
+                    crc.setDebugMode(debugMode);
+                    if (debugMode){
+                        // clear non-debug highlights while in debug mode
+                        crc.setSearchHighlighted(false);
+                    }
+                }
+            }
+        }
+    }
+
+    private void setDebugging(boolean debugging){
+        this.isDebugging = debugging;
+        if (stepOverBtn != null) stepOverBtn.setDisable(!debugging);
+        if (stopBtn != null) stopBtn.setDisable(!debugging);
+        if (continueBtn != null) continueBtn.setDisable(!debugging);
+        if (stepBackBtn != null) stepBackBtn.setDisable(!debugging);
     }
     
     private void showHistoryInChain(int commandIndex) {
@@ -555,6 +702,12 @@ public class ExecuteController {
     public void setCycles(int cycles) {
         if (cyclesLabel != null) {
             cyclesLabel.setText("Cycles: " + cycles);
+        }
+    }
+    
+    public void setProgramName(String programName) {
+        if (programNameLabel != null && programName != null) {
+            programNameLabel.setText(programName);
         }
     }
 }

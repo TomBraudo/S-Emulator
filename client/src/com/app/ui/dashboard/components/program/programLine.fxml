@@ -11,37 +11,37 @@
          <children>
             <HBox prefHeight="17.0" prefWidth="376.0">
                <children>
-                  <Label prefHeight="17.0" prefWidth="133.0" styleClass="label-strong" text="Program Name:" />
+                  <Label prefHeight="17.0" prefWidth="180.0" styleClass="label-strong" text="Program Name:" />
                   <Label fx:id="nameLabel" prefHeight="17.0" prefWidth="236.0" styleClass="command-label" text="name" />
                </children>
             </HBox>
             <HBox prefHeight="100.0" prefWidth="200.0">
                <children>
-                  <Label prefHeight="17.0" prefWidth="133.0" styleClass="label-strong" text="Uploader Username:" />
+                  <Label prefHeight="17.0" prefWidth="180.0" styleClass="label-strong" text="Uploader Username:" />
                   <Label fx:id="usernameLabel" prefHeight="17.0" prefWidth="236.0" styleClass="command-label" text="username" />
                </children>
             </HBox>
             <HBox prefHeight="100.0" prefWidth="200.0">
                <children>
-                  <Label prefHeight="17.0" prefWidth="133.0" styleClass="label-strong" text="Commands Count:" />
+                  <Label prefHeight="17.0" prefWidth="180.0" styleClass="label-strong" text="Commands Count:" />
                   <Label fx:id="commandsCountLabel" prefHeight="17.0" prefWidth="236.0" styleClass="command-label" text="count" />
                </children>
             </HBox>
             <HBox prefHeight="100.0" prefWidth="200.0">
                <children>
-                  <Label prefHeight="17.0" prefWidth="133.0" styleClass="label-strong" text="Max Expansion Level:" />
+                  <Label prefHeight="17.0" prefWidth="180.0" styleClass="label-strong" text="Max Expansion Level:" />
                   <Label fx:id="maxExpansionLevelLabel" prefHeight="17.0" prefWidth="236.0" styleClass="command-label" text="level" />
                </children>
             </HBox>
             <HBox prefHeight="100.0" prefWidth="200.0">
                <children>
-                  <Label prefHeight="17.0" prefWidth="133.0" styleClass="label-strong" text="Ran Count:" />
+                  <Label prefHeight="17.0" prefWidth="180.0" styleClass="label-strong" text="Ran Count:" />
                   <Label fx:id="ranCountLabel" prefHeight="17.0" prefWidth="236.0" styleClass="command-label" text="count" />
                </children>
             </HBox>
             <HBox prefHeight="100.0" prefWidth="200.0">
                <children>
-                  <Label prefHeight="17.0" prefWidth="133.0" styleClass="label-strong" text="Average Credit Cost:" />
+                  <Label prefHeight="17.0" prefWidth="180.0" styleClass="label-strong" text="Average Credit Cost:" />
                   <Label fx:id="averageCreditCostLabel" prefHeight="17.0" prefWidth="236.0" styleClass="command-label" text="cost" />
                </children>
             </HBox>

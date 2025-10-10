@@ -22,6 +22,8 @@ public class CommandRowController {
     private IntConsumer onCommandClick;
     private String baseLabelStyle;
     private boolean debugHighlighted;
+    private boolean searchHighlighted;
+    private boolean debugMode;
     private boolean architectureCompatible;
     private Integer commandArchitecture;
     private Integer selectedArchitecture;
@@ -72,6 +74,16 @@ public class CommandRowController {
         applyCurrentStyle();
     }
 
+    public void setSearchHighlighted(boolean highlighted){
+        this.searchHighlighted = highlighted;
+        applyCurrentStyle();
+    }
+
+    public void setDebugMode(boolean debugMode){
+        this.debugMode = debugMode;
+        applyCurrentStyle();
+    }
+
     public void setArchitecture(int commandArch, int selectedArch) {
         this.commandArchitecture = commandArch;
         this.selectedArchitecture = selectedArch;
@@ -81,11 +93,13 @@ public class CommandRowController {
 
     private void applyCurrentStyle(){
         // Remove any existing highlight classes
-        commandLabel.getStyleClass().removeAll("row-debug", "row-arch-compatible", "row-arch-incompatible");
+        commandLabel.getStyleClass().removeAll("row-debug", "row-search", "row-arch-compatible", "row-arch-incompatible");
         
         if (debugHighlighted){
             commandLabel.getStyleClass().add("row-debug");
-        } else if (commandArchitecture != null && selectedArchitecture != null) {
+        } else if (!debugMode && searchHighlighted){
+            commandLabel.getStyleClass().add("row-search");
+        } else if (!debugMode && commandArchitecture != null && selectedArchitecture != null) {
             // Apply architecture highlighting
             if (architectureCompatible) {
                 commandLabel.getStyleClass().add("row-arch-compatible");

@@ -90,6 +90,9 @@
 }
 
 /* Labels / typography */
+.label {
+    -fx-font-size: 14px; /* increase default label size app-wide */
+}
 .label-title {
     -fx-font-size: 32px;
     -fx-text-fill: -color-text;
@@ -146,7 +149,9 @@
     -fx-border-width: 2;           /* thicker border for emphasis */
 }
 .row-search {
-    -fx-background-color: #b7f7b0;
+    -fx-background-color: #cfe8ff; /* light blue for search highlight */
+    -fx-border-color: #5aa0ff;
+    -fx-border-width: 1;
 }
 .row-arch-compatible {
     -fx-background-color: #d4edda; /* light green */

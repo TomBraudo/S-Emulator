@@ -70,6 +70,7 @@
             <Label fx:id="cyclesLabel" alignment="CENTER" layoutX="20.0" layoutY="464.0" prefHeight="32.0" prefWidth="144.0" styleClass="label-strong" text="Cycles: 0" />
          </children>
       </Pane>
+           <Label fx:id="programNameLabel" layoutX="196.0" layoutY="70.0" prefHeight="31.0" prefWidth="147.0" styleClass="label-strong" text="" />
          </children>
       </AnchorPane>
    </content>
