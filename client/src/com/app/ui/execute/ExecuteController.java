@@ -743,16 +743,18 @@ public class ExecuteController {
     public void populateInputVariablesContainer(Map<String, Integer> inputMap){
         executionInputContainer.getChildren().clear();
         for (Map.Entry<String, Integer> entry : inputMap.entrySet()) {
-            Label varLabel = new Label(entry.getKey() + " : " + entry.getValue());
-            varLabel.getStyleClass().add("label-meta");
+            Label varLabel = new Label(entry.getKey() + ": " + entry.getValue());
+            varLabel.getStyleClass().add("label-strong");
+            varLabel.setWrapText(true);
             executionInputContainer.getChildren().add(varLabel);
         }
     }
     public void populateVariablesContainer(List<ProgramResult.VariableToValue> variableMap){
         variablesContainer.getChildren().clear();
         for (ProgramResult.VariableToValue variableToValue: variableMap) {
-            Label varLabel = new Label(variableToValue.variable() + " : " + variableToValue.value());
-            varLabel.getStyleClass().add("label-meta");
+            Label varLabel = new Label(variableToValue.variable() + ": " + variableToValue.value());
+            varLabel.getStyleClass().add("label-strong");
+            varLabel.setWrapText(true);
             variablesContainer.getChildren().add(varLabel);
         }
     }
