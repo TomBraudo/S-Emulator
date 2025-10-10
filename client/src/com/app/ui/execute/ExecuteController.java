@@ -617,13 +617,13 @@ public class ExecuteController {
         try {
             // Get the command history from the API
             ApiClient api = new ApiClient();
-            Response<List<String>> resp = api.getResponse(
-                "/program/history", 
+            Response<List<String>> resp = api.getListResponse(
+                "/command/history",
                 new HashMap<>() {{
+                    put("index", String.valueOf(commandIndex));
                     put("expansionLevel", String.valueOf(currentExpansionLevel));
-                    put("commandIndex", String.valueOf(commandIndex));
                 }},
-                (Class<List<String>>)(Class<?>)List.class
+                String.class
             );
             
             if (resp.getData() != null) {
