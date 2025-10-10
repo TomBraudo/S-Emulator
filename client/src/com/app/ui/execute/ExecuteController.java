@@ -2,9 +2,12 @@ package com.app.ui.execute;
 
 import com.app.http.ApiClient;
 import com.app.ui.dashboard.components.errorComponents.ErrorMessageController;
+import com.app.ui.dashboard.components.errorComponents.WarningMessageController;
 import com.app.ui.execute.components.commandRow.CommandRowController;
 import com.app.ui.utils.Response;
 import com.dto.api.ProgramCommands;
+import com.dto.api.ProgramInfo;
+import com.dto.api.ProgramResult;
 import com.dto.api.ProgramSummary;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -23,6 +26,8 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.*;
 import java.util.function.IntConsumer;
+
+import com.app.ui.execute.components.inputComponent.InputFormController;
 
 public class ExecuteController {
     
@@ -234,6 +239,16 @@ public class ExecuteController {
             case "III": return 3;
             case "IV": return 4;
             default: return 1;
+        }
+    }
+    
+    private String architectureCode(int selected){
+        switch (selected){
+            case 1: return "I";
+            case 2: return "II";
+            case 3: return "III";
+            case 4: return "IV";
+            default: return "I";
         }
     }
     
@@ -563,9 +578,72 @@ public class ExecuteController {
     // Action button handlers (TODO: Implement logic)
     
     private void startExecution() {
-        // TODO: Open input form, then execute program
+        ApiClient api = new ApiClient();
+        try {
+            Response<List<ProgramInfo>> resp = api.getListResponse("/program/information", null, ProgramInfo.class);
+            for (ProgramInfo pi : resp.getData()) {
+                if(Objects.equals(pi.getName(), ExecuteContext.getName()) && pi.getAverageCost() + architectureToCost(selectedArchitecture) > ExecuteContext.getCredits()){
+                    ErrorMessageController.showError("Average cost: " + (pi.getAverageCost() + architectureToCost(selectedArchitecture)) + "\nCredits remaining: " + ExecuteContext.getCredits());
+                    return;
+                }
+            }
+
+            // Ensure selected architecture supports all commands at current expansion level
+            Integer required = getMaxRequiredArchitectureForLevel(currentExpansionLevel);
+            if (required != null && required > selectedArchitecture){
+                ErrorMessageController.showError(
+                        "Selected architecture " + architectureCode(selectedArchitecture) +
+                        " cannot execute all commands. Minimum required: " + architectureCode(required)
+                );
+                return;
+            }
+        }catch (Exception e){
+            ErrorMessageController.showError(e.getMessage());
+            return;
+        }
+
+        openInputFormForExecution();
     }
-    
+
+    private Integer getMaxRequiredArchitectureForLevel(int expansionLevel) {
+        // Prefer cached architectures if already loaded
+        List<String> arches = currentArchitectures != null && !currentArchitectures.isEmpty()
+                ? currentArchitectures
+                : null;
+        if (arches == null){
+            try{
+                ApiClient api = new ApiClient();
+                Response<ProgramCommands> resp = api.getResponse("/program/commands", new HashMap<>(){{
+                    put("expansionLevel", String.valueOf(expansionLevel));
+                }}, ProgramCommands.class);
+                if (resp != null && resp.getData() != null){
+                    arches = resp.getData().getArchitectures();
+                }
+            } catch (Exception ignored) {}
+        }
+        if (arches == null || arches.isEmpty()){
+            return null;
+        }
+        int maxReq = 1;
+        for (String a : arches){
+            int parsed = parseArchitecture(a);
+            if (parsed > maxReq){
+                maxReq = parsed;
+            }
+        }
+        return maxReq;
+    }
+
+    private int architectureToCost(int arch) {
+        return switch (arch) {
+            case 1 -> 5;
+            case 2 -> 100;
+            case 3 -> 500;
+            case 4-> 1000;
+            default -> 0;
+        };
+    }
+
     private void startDebugging() {
         // TODO: Open input form, then start debugging
         setDebugging(true);
@@ -587,6 +665,96 @@ public class ExecuteController {
     
     private void stepBack() {
         // TODO: Step back one instruction in debug mode
+    }
+
+    private void openInputFormForExecution(){
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("components/inputComponent/inputForm.fxml"));
+            ScrollPane root = loader.load();
+
+            InputFormController inputFormController = loader.getController();
+
+            // Placeholder: fetch the input variable names for the current program/function and level
+            // Replace the following line with a real fetch and pass the result to initData
+            ApiClient api = new ApiClient();
+            Response<List<String>> resp = api.getListResponse("/program/input", null, String.class);
+            inputFormController.initData(resp.getData());
+
+            // Provide a callback for when Finish is clicked; leave body empty for now
+            inputFormController.setDataCallback(inputMap -> {
+                populateInputVariablesContainer(inputMap);
+                executeCallback(inputMap);
+            });
+
+            javafx.stage.Stage formStage = new javafx.stage.Stage();
+            formStage.setTitle("Input Form");
+            formStage.setScene(new javafx.scene.Scene(root));
+            formStage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
+            formStage.showAndWait();
+
+        } catch (IOException e) {
+            ErrorMessageController.showError("Failed to load input form:\n" + e.getMessage());
+        }
+    }
+
+    private void executeCallback(Map<String, Integer> inputMap){
+        // Build a positional input list [x1, x2, ..., xN] filling missing with 0
+        Map<Integer, Integer> indexToValue = new HashMap<>();
+        int maxIndex = 0;
+        for (Map.Entry<String, Integer> entry : inputMap.entrySet()){
+            String key = entry.getKey();
+            if (key != null && key.startsWith("x")){
+                try{
+                    int idx = Integer.parseInt(key.substring(1));
+                    maxIndex = Math.max(maxIndex, idx);
+                    indexToValue.put(idx, entry.getValue());
+                } catch (NumberFormatException ignored){ }
+            }
+        }
+        List<Integer> input = new ArrayList<>();
+        for (int i = 1; i <= maxIndex; i++){
+            input.add(indexToValue.getOrDefault(i, 0));
+        }
+
+        ApiClient api = new ApiClient();
+        try {
+            Response<ProgramResult> resp = api.postResponse("/program/execute",
+                    new HashMap<>() {{
+                        put("expansionLevel", currentExpansionLevel);
+                        put("architecture", architectureCode(selectedArchitecture));
+                        put("input", input);
+                    }},
+                    null,
+                    ProgramResult.class);
+            ProgramResult result = resp.getData();
+            if(result.getHaltReason() == ProgramResult.HaltReason.INSUFFICIENT_CREDITS){
+                WarningMessageController.showWarning("Program execution halted due to insufficient credits, and did not execute completely");
+            }
+            populateVariablesContainer(result.getVariableToValue());
+            int newCredits = ExecuteContext.getCredits() - (result.getCycles() + architectureToCost(selectedArchitecture));
+            ExecuteContext.setCredits(newCredits);
+            setCredits(newCredits);
+            cyclesLabel.setText("Cycles: " + String.valueOf(result.getCycles()));
+
+        } catch (Exception e){
+            ErrorMessageController.showError(e.getMessage());
+        }
+    }
+    public void populateInputVariablesContainer(Map<String, Integer> inputMap){
+        executionInputContainer.getChildren().clear();
+        for (Map.Entry<String, Integer> entry : inputMap.entrySet()) {
+            Label varLabel = new Label(entry.getKey() + " : " + entry.getValue());
+            varLabel.getStyleClass().add("label-meta");
+            executionInputContainer.getChildren().add(varLabel);
+        }
+    }
+    public void populateVariablesContainer(List<ProgramResult.VariableToValue> variableMap){
+        variablesContainer.getChildren().clear();
+        for (ProgramResult.VariableToValue variableToValue: variableMap) {
+            Label varLabel = new Label(variableToValue.variable() + " : " + variableToValue.value());
+            varLabel.getStyleClass().add("label-meta");
+            variablesContainer.getChildren().add(varLabel);
+        }
     }
 
     private void setDebugVisualMode(boolean debugMode){
@@ -658,12 +826,16 @@ public class ExecuteController {
     
     private void handleBackToDashboard() {
         try {
+            // Persist current credits to dashboard context before loading UI
+            int creditsNow = getCurrentCreditsSafe();
+            com.app.ui.dashboard.UserContext.setCredits(creditsNow);
+
             // Get username from context
             String username = ExecuteContext.getUsername();
-            
+
             // Clear execution context
             ExecuteContext.clear();
-            
+
             // Load dashboard
             javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(
                 getClass().getResource("/com/app/ui/dashboard/dashboard.fxml")
@@ -683,6 +855,24 @@ public class ExecuteController {
             e.printStackTrace();
             // TODO: Show error message
         }
+    }
+
+    private int getCurrentCreditsSafe(){
+        try{
+            if (creditsLabel != null){
+                String text = creditsLabel.getText();
+                if (text != null){
+                    // Expected format: "Available Credits: X"
+                    int idx = text.lastIndexOf(':');
+                    if (idx >= 0 && idx + 1 < text.length()){
+                        String num = text.substring(idx + 1).trim();
+                        return Integer.parseInt(num);
+                    }
+                    return Integer.parseInt(text.trim());
+                }
+            }
+        } catch (Exception ignored) {}
+        return 0;
     }
     
     // Public methods for updating UI

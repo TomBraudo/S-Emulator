@@ -75,7 +75,8 @@ public class DashboardController {
 
     @FXML
     private void initialize() {
-        creditsLabel.setText("0");
+        Integer stored = UserContext.getCredits();
+        creditsLabel.setText(String.valueOf(stored == null ? 0 : stored));
         if (usernameLabel != null) {
             String id = UserContext.getUserId();
             if (id != null && !id.isBlank()) {
@@ -290,7 +291,7 @@ public class DashboardController {
             if (credits > 0) {
                 updateCreditsDisplay(credits);
                 ApiClient api = new ApiClient();
-                Response<Void> resp = api.postResponse("/user/charge", null, new HashMap<>(){{ put("credits", credits); }}, Void.class);
+                Response<Void> resp = api.postResponse("/user/credits", null, new HashMap<>(){{ put("credits", credits); }}, Void.class);
             }
             // If credits <= 0 (cancelled), do nothing
         } catch (IOException e) {

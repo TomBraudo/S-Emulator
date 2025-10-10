@@ -40,6 +40,10 @@ public final class ExecuteContext {
         credits = value;
     }
 
+    public static String getName(){
+        return programName == null ? functionName : programName;
+    }
+
     public static void clear() {
         programName = null;
         functionName = null;

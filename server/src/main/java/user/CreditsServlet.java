@@ -14,7 +14,7 @@ import java.io.IOException;
 
 @WebServlet("/user/credits")
 @MultipartConfig
-public class AddCreditsServlet extends HttpServlet {
+public class CreditsServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
