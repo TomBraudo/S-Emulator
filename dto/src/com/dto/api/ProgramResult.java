@@ -3,6 +3,7 @@ import java.util.*;
 
 public class ProgramResult{
     private final int cycles;
+    private final int sessionCycles;
     private int result;
     public record VariableToValue(String variable, int value){}
     private List<VariableToValue> variableToValue;
@@ -12,6 +13,7 @@ public class ProgramResult{
     private final HaltReason haltReason;
     public ProgramResult(int cycles, HashMap<String, Integer> variables, int debugIndex, boolean isDebug){
         this.cycles = cycles;
+        this.sessionCycles = cycles; // For non-debug, session cycles equals total cycles
         this.debugIndex = debugIndex;
         this.isDebug = isDebug;
         this.haltReason = isDebug ? HaltReason.STOPPED_MANUALLY : HaltReason.FINISHED;
@@ -20,6 +22,16 @@ public class ProgramResult{
 
     public ProgramResult(int cycles, HashMap<String, Integer> variables, int debugIndex, boolean isDebug, HaltReason haltReason){
         this.cycles = cycles;
+        this.sessionCycles = cycles; // For non-debug, session cycles equals total cycles
+        this.debugIndex = debugIndex;
+        this.isDebug = isDebug;
+        this.haltReason = haltReason;
+        UnpackVariables(variables);
+    }
+
+    public ProgramResult(int cycles, int sessionCycles, HashMap<String, Integer> variables, int debugIndex, boolean isDebug, HaltReason haltReason){
+        this.cycles = cycles;
+        this.sessionCycles = sessionCycles;
         this.debugIndex = debugIndex;
         this.isDebug = isDebug;
         this.haltReason = haltReason;
@@ -45,6 +57,9 @@ public class ProgramResult{
 
     public int getCycles() {
         return cycles;
+    }
+    public int getSessionCycles() {
+        return sessionCycles;
     }
     public int getResult() {
         return result;

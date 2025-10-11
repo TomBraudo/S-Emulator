@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.OptionalDouble;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
@@ -364,13 +363,13 @@ public final class FunctionRegistry {
         }
     }
 
-    public static OptionalDouble getAverageCost(String programName) {
+    public static double getAverageCost(String programName) {
         var read = REGISTRY_LOCK.readLock();
         read.lock();
         try {
             java.util.Map.Entry<Double, Integer> cur = AVERAGE_COST_BY_PROGRAM.get(programName);
-            if (cur == null) return OptionalDouble.empty();
-            return OptionalDouble.of(cur.getKey());
+            if (cur == null) return 0.0;
+            return cur.getKey();
         } finally {
             read.unlock();
         }

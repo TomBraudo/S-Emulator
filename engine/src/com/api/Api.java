@@ -95,7 +95,7 @@ public class Api {
         if (credits < overhead){
             throw new IllegalStateException("Insufficient credits for architecture overhead");
         }
-        double avg = FunctionRegistry.getAverageCost(p.getName()).orElse(0.0);
+        double avg = FunctionRegistry.getAverageCost(p.getName());
         if (avg + overhead > credits){
             throw new IllegalStateException("Insufficient credits: average run cost plus overhead exceeds available credits");
         }
@@ -287,7 +287,7 @@ public class Api {
         if (credits < overhead){
             throw new IllegalStateException("Insufficient credits for architecture overhead");
         }
-        double avg = FunctionRegistry.getAverageCost(p.getName()).orElse(0.0);
+        double avg = FunctionRegistry.getAverageCost(p.getName());
         if (avg + overhead > credits){
             throw new IllegalStateException("Insufficient credits: average run cost plus overhead exceeds available credits");
         }
@@ -296,26 +296,35 @@ public class Api {
         usedCredits += overhead;
         currentRunOverhead = overhead;
         ProgramResult res = p.startDebugWithBudget(input, breakpoints, credits);
-        // Debit cycles executed up to initial breakpoint/end
-        if (res.getCycles() > 0){
-            credits -= res.getCycles();
-            usedCredits += res.getCycles();
+        
+        // Wrap result with sessionCycles (initial cycles = total cycles since starting from 0)
+        int sessionCycles = res.getCycles();
+        HashMap<String, Integer> vars = new HashMap<>();
+        for (ProgramResult.VariableToValue vtv : res.getVariableToValue()) {
+            vars.put(vtv.variable(), vtv.value());
         }
-        if(!res.isDebug()){
+        ProgramResult wrappedRes = new ProgramResult(res.getCycles(), sessionCycles, vars, res.getDebugIndex(), res.isDebug(), res.getHaltReason());
+        
+        // Debit cycles executed up to initial breakpoint/end
+        if (wrappedRes.getCycles() > 0){
+            credits -= wrappedRes.getCycles();
+            usedCredits += wrappedRes.getCycles();
+        }
+        if(!wrappedRes.isDebug()){
             // finished immediately
             boolean isFunction = FunctionRegistry.isFunction(p.getName());
-            Statistic.saveRunDetails(userId, p.getName(), isFunction, expansionLevel, architecture, input, res.getResult(), res.getCycles(), res.getVariableToValue());
-            FunctionRegistry.recordRunCost(p.getName(), overhead + res.getCycles());
+            Statistic.saveRunDetails(userId, p.getName(), isFunction, expansionLevel, architecture, input, wrappedRes.getResult(), wrappedRes.getCycles(), wrappedRes.getVariableToValue());
+            FunctionRegistry.recordRunCost(p.getName(), overhead + wrappedRes.getCycles());
             programsRanCount += 1;
         } else {
             debugProgram = p;
             debugInput = new ArrayList<>(input);
             debugExpansionLevel = expansionLevel;
-            chargedDebugCycles = res.getCycles();
+            chargedDebugCycles = wrappedRes.getCycles();
             currentRunArchitecture = architecture;
         }
 
-        return res;
+        return wrappedRes;
     }
 
     public ProgramResult stepOver(){
@@ -328,10 +337,18 @@ public class Api {
         int delta = res.getCycles() - chargedDebugCycles;
         if (delta > 0) { credits -= delta; usedCredits += delta; }
         chargedDebugCycles = res.getCycles();
-        if(!res.isDebug()){
+        
+        // Wrap result with sessionCycles = delta
+        HashMap<String, Integer> vars = new HashMap<>();
+        for (ProgramResult.VariableToValue vtv : res.getVariableToValue()) {
+            vars.put(vtv.variable(), vtv.value());
+        }
+        ProgramResult wrappedRes = new ProgramResult(res.getCycles(), delta, vars, res.getDebugIndex(), res.isDebug(), res.getHaltReason());
+        
+        if(!wrappedRes.isDebug()){
             boolean isFunction = FunctionRegistry.isFunction(p.getName());
-            Statistic.saveRunDetails(userId, p.getName(), isFunction, debugExpansionLevel, currentRunArchitecture, debugInput, res.getResult(), res.getCycles(), res.getVariableToValue());
-            FunctionRegistry.recordRunCost(p.getName(), currentRunOverhead + res.getCycles());
+            Statistic.saveRunDetails(userId, p.getName(), isFunction, debugExpansionLevel, currentRunArchitecture, debugInput, wrappedRes.getResult(), wrappedRes.getCycles(), wrappedRes.getVariableToValue());
+            FunctionRegistry.recordRunCost(p.getName(), currentRunOverhead + wrappedRes.getCycles());
             programsRanCount += 1;
             debugProgram = null;
             debugInput = null;
@@ -341,11 +358,31 @@ public class Api {
             currentRunArchitecture = null;
         }
 
-        return res;
+        return wrappedRes;
     }
 
     public ProgramResult stepBack(){
-        return debugProgram.stepBack();
+        Program p = debugProgram;
+        if (p == null){
+            throw new IllegalStateException("Not in a debug session");
+        }
+        int previousCycles = chargedDebugCycles;
+        ProgramResult res = p.stepBack();
+        // Calculate delta (cycles decreased, but we still CHARGE for stepping back)
+        int delta = Math.abs(res.getCycles() - previousCycles);
+        // CHARGE credits for stepping back (not refund)
+        credits -= delta;
+        usedCredits += delta;
+        chargedDebugCycles = res.getCycles();
+        
+        // Wrap result with sessionCycles = delta
+        HashMap<String, Integer> vars = new HashMap<>();
+        for (ProgramResult.VariableToValue vtv : res.getVariableToValue()) {
+            vars.put(vtv.variable(), vtv.value());
+        }
+        ProgramResult wrappedRes = new ProgramResult(res.getCycles(), delta, vars, res.getDebugIndex(), res.isDebug(), res.getHaltReason());
+        
+        return wrappedRes;
     }
 
     public ProgramResult continueDebug(){
@@ -357,10 +394,18 @@ public class Api {
         int delta = res.getCycles() - chargedDebugCycles;
         if (delta > 0) { credits -= delta; usedCredits += delta; }
         chargedDebugCycles = res.getCycles();
-        if(!res.isDebug()){
+        
+        // Wrap result with sessionCycles = delta
+        HashMap<String, Integer> vars = new HashMap<>();
+        for (ProgramResult.VariableToValue vtv : res.getVariableToValue()) {
+            vars.put(vtv.variable(), vtv.value());
+        }
+        ProgramResult wrappedRes = new ProgramResult(res.getCycles(), delta, vars, res.getDebugIndex(), res.isDebug(), res.getHaltReason());
+        
+        if(!wrappedRes.isDebug()){
             boolean isFunction = FunctionRegistry.isFunction(p.getName());
-            Statistic.saveRunDetails(userId, p.getName(), isFunction, debugExpansionLevel, currentRunArchitecture, debugInput, res.getResult(), res.getCycles(), res.getVariableToValue());
-            FunctionRegistry.recordRunCost(p.getName(), currentRunOverhead + res.getCycles());
+            Statistic.saveRunDetails(userId, p.getName(), isFunction, debugExpansionLevel, currentRunArchitecture, debugInput, wrappedRes.getResult(), wrappedRes.getCycles(), wrappedRes.getVariableToValue());
+            FunctionRegistry.recordRunCost(p.getName(), currentRunOverhead + wrappedRes.getCycles());
             programsRanCount += 1;
             debugProgram = null;
             debugInput = null;
@@ -370,12 +415,16 @@ public class Api {
             currentRunArchitecture = null;
         }
 
-        return res;
+        return wrappedRes;
     }
 
-    public void stopDebug(){
+    public int stopDebug(){
+        int totalCost = 0;
         // If there is an ongoing debug session, snapshot its current state as a completed run
         if (debugProgram != null){
+            // Calculate total cost (overhead + cycles already charged)
+            totalCost = currentRunOverhead + chargedDebugCycles;
+            
             try {
                 ProgramResult snapshot = debugProgram.snapshotDebugAsFinished();
                 boolean isFunction = FunctionRegistry.isFunction(debugProgram.getName());
@@ -386,12 +435,15 @@ public class Api {
             debugProgram.stopDebug();
             programsRanCount += 1;
         }
+
         debugProgram = null;
         debugInput = null;
         debugExpansionLevel = 0;
         chargedDebugCycles = 0;
         currentRunOverhead = 0;
         currentRunArchitecture = null;
+        
+        return totalCost;
     }
 
     public void setBreakpoint(int index){
@@ -484,7 +536,7 @@ public class Api {
         return FunctionRegistry.getOwnerByName(programName);
     }
 
-    public static OptionalDouble getProgramAverageCost(String programName){
+    public static double getProgramAverageCost(String programName){
         return FunctionRegistry.getAverageCost(programName);
     }
 
@@ -517,7 +569,7 @@ public class Api {
         int commandsCount = getCommandCount(programName);
         int maxLevel = getProgramMaxExpansionLevel(programName);
         int ranCount = getProgramRanCount(programName);
-        double averageCost = getProgramAverageCost(programName).orElse(0.0);
+        double averageCost = getProgramAverageCost(programName);
         boolean isFunction = FunctionRegistry.isFunction(programName);
         String source = isFunction ? getFunctionSourceProgram(programName) : null;
         return new ProgramInfo(programName, owner, commandsCount, maxLevel, ranCount, averageCost, source, isFunction);
@@ -536,6 +588,33 @@ public class Api {
                 usedCredits,
                 getUserStatistics(userId).size()
         );
+    }
+
+    public Map.Entry<Boolean, String> canRun(int expansionLevel, String architecture){
+        //part 1, verifies average cost against available credits
+        Program p = curProgram;
+        if(expansionLevel > 0){
+            p = curProgram.expand(expansionLevel);
+        }
+        double neededCredits = getProgramAverageCost(p.getName()) + getArchitectureOverhead(architecture);
+        if (neededCredits > credits){
+            return new AbstractMap.SimpleEntry<>(false, "Insufficient credits");
+        }
+
+        //part 2, verifies all commands are allowed
+        try {
+            for (BaseCommand cmd : p.getCommands()) {
+                String cmdArch = cmd.getArchitecture();
+                if (architectureRank(architecture) < architectureRank(cmdArch)) {
+                    return new AbstractMap.SimpleEntry<>(false, "Chosen architecture is lower than command's minimum: required=" + cmdArch + ", chosen=" + architecture);
+                }
+            }
+        }
+        catch (IllegalArgumentException e){
+            return new AbstractMap.SimpleEntry<>(false, "Program contains unknown command: " + e.getMessage());
+        }
+
+        return new AbstractMap.SimpleEntry<>(true, null);
     }
 
 }

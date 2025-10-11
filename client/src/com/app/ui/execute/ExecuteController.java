@@ -101,6 +101,7 @@ public class ExecuteController {
     private Button backToDashboardBtn;
     
     // Action buttons - created dynamically
+    private Button startDebugBtn;
     private Button stepOverBtn;
     private Button continueBtn;
     private Button stopBtn;
@@ -264,12 +265,38 @@ public class ExecuteController {
     
     private void setBreakpoint(int index) {
         breakpointIndices.add(index);
-        // TODO: If debugging is active, notify the backend about the new breakpoint
+        
+        // If debugging is active, notify the backend about the new breakpoint
+        if (isDebugging) {
+            ApiClient api = new ApiClient();
+            try {
+                api.postResponse("/program/debug/breakpoint", null, 
+                    new HashMap<>(){{put("index", String.valueOf(index));}}, 
+                    Void.class);
+            } catch (Exception e) {
+                ErrorMessageController.showError("Failed to set breakpoint: " + e.getMessage());
+                // Rollback the local change
+                breakpointIndices.remove(index);
+            }
+        }
     }
     
     private void removeBreakpoint(int index) {
         breakpointIndices.remove(index);
-        // TODO: If debugging is active, notify the backend about breakpoint removal
+        
+        // If debugging is active, notify the backend about breakpoint removal
+        if (isDebugging) {
+            ApiClient api = new ApiClient();
+            try {
+                api.deleteResponse("/program/debug/breakpoint", 
+                    new HashMap<>(){{put("index", String.valueOf(index));}}, 
+                    Void.class);
+            } catch (Exception e) {
+                ErrorMessageController.showError("Failed to remove breakpoint: " + e.getMessage());
+                // Rollback the local change
+                breakpointIndices.add(index);
+            }
+        }
     }
     
     private void setHighlightedIndex(int highlightedIndex) {
@@ -290,8 +317,8 @@ public class ExecuteController {
             if (n instanceof javafx.scene.layout.HBox row) {
                 Object controllerObj = row.getProperties().get("controller");
                 if (controllerObj instanceof CommandRowController crc) {
-                    // ensure non-debug visuals reflect current debug state
-                    crc.setDebugMode(debugBtn != null && debugBtn.isSelected());
+                    // ensure non-debug visuals reflect current debug state (only when actively debugging)
+                    crc.setDebugMode(isDebugging);
                     int commandArch = parseArchitecture(currentArchitectures.get(crc.getCommandIndex()));
                     crc.setArchitecture(commandArch, selectedArchitecture);
                 }
@@ -523,20 +550,20 @@ public class ExecuteController {
         VBox debugBox = new VBox(10); // spacing 10
         debugBox.setAlignment(Pos.CENTER);
 
-        Button startDebug = new Button("Start debugging");
+        startDebugBtn = new Button("Start debugging");
         stepOverBtn = new Button("Step over");
         stopBtn = new Button("Stop");
         continueBtn = new Button("Continue");
         stepBackBtn = new Button("Step back");
 
-        styleStartButton(startDebug);
+        styleStartButton(startDebugBtn);
         styleActionButton(stepOverBtn);
         styleActionButton(stopBtn);
         styleActionButton(continueBtn);
         styleActionButton(stepBackBtn);
 
         // skeleton handlers
-        startDebug.setOnAction(e -> startDebugging());
+        startDebugBtn.setOnAction(e -> startDebugging());
         stepOverBtn.setOnAction(e -> stepOverInstruction());
         stopBtn.setOnAction(e -> stopDebugging());
         continueBtn.setOnAction(e -> continueDebug());
@@ -551,7 +578,7 @@ public class ExecuteController {
         // Two rows: [Start debugging, Step over] and [Stop, Continue, Step back]
         HBox row1 = new HBox(10);
         row1.setAlignment(Pos.CENTER);
-        row1.getChildren().addAll(startDebug, stepOverBtn);
+        row1.getChildren().addAll(startDebugBtn, stepOverBtn);
 
         HBox row2 = new HBox(10);
         row2.setAlignment(Pos.CENTER);
@@ -561,8 +588,7 @@ public class ExecuteController {
 
         actionButtonsContainer.getChildren().add(debugBox);
 
-        // Entering debug mode: ensure only debug highlight is visible
-        setDebugVisualMode(true);
+        // Don't activate debug visual mode until debugging actually starts
     }
 
     private void styleActionButton(Button button) {
@@ -580,58 +606,22 @@ public class ExecuteController {
     private void startExecution() {
         ApiClient api = new ApiClient();
         try {
-            Response<List<ProgramInfo>> resp = api.getListResponse("/program/information", null, ProgramInfo.class);
-            for (ProgramInfo pi : resp.getData()) {
-                if(Objects.equals(pi.getName(), ExecuteContext.getName()) && pi.getAverageCost() + architectureToCost(selectedArchitecture) > ExecuteContext.getCredits()){
-                    ErrorMessageController.showError("Average cost: " + (pi.getAverageCost() + architectureToCost(selectedArchitecture)) + "\nCredits remaining: " + ExecuteContext.getCredits());
-                    return;
-                }
-            }
-
-            // Ensure selected architecture supports all commands at current expansion level
-            Integer required = getMaxRequiredArchitectureForLevel(currentExpansionLevel);
-            if (required != null && required > selectedArchitecture){
-                ErrorMessageController.showError(
-                        "Selected architecture " + architectureCode(selectedArchitecture) +
-                        " cannot execute all commands. Minimum required: " + architectureCode(required)
-                );
-                return;
-            }
+            // Check if program is runnable with current expansion level and architecture
+            Response<Void> resp = api.getResponse("/program/runnability", 
+                new HashMap<>(){{
+                    put("expansionLevel", String.valueOf(currentExpansionLevel));
+                    put("architecture", architectureCode(selectedArchitecture));
+                }}, 
+                Void.class);
+            
+            // If we get here with a successful response, program is runnable
         }catch (Exception e){
+            // Error response (non-2xx status code) means program is not runnable
             ErrorMessageController.showError(e.getMessage());
             return;
         }
 
         openInputFormForExecution();
-    }
-
-    private Integer getMaxRequiredArchitectureForLevel(int expansionLevel) {
-        // Prefer cached architectures if already loaded
-        List<String> arches = currentArchitectures != null && !currentArchitectures.isEmpty()
-                ? currentArchitectures
-                : null;
-        if (arches == null){
-            try{
-                ApiClient api = new ApiClient();
-                Response<ProgramCommands> resp = api.getResponse("/program/commands", new HashMap<>(){{
-                    put("expansionLevel", String.valueOf(expansionLevel));
-                }}, ProgramCommands.class);
-                if (resp != null && resp.getData() != null){
-                    arches = resp.getData().getArchitectures();
-                }
-            } catch (Exception ignored) {}
-        }
-        if (arches == null || arches.isEmpty()){
-            return null;
-        }
-        int maxReq = 1;
-        for (String a : arches){
-            int parsed = parseArchitecture(a);
-            if (parsed > maxReq){
-                maxReq = parsed;
-            }
-        }
-        return maxReq;
     }
 
     private int architectureToCost(int arch) {
@@ -645,26 +635,114 @@ public class ExecuteController {
     }
 
     private void startDebugging() {
-        // TODO: Open input form, then start debugging
-        setDebugging(true);
+        // 1. Collect all active breakpoints
+        List<Integer> breakpoints = new ArrayList<>(breakpointIndices);
+        
+        // 2. Save current expansion level from combo box
+        int expansionLevel = currentExpansionLevel;
+        
+        // 3. Save current architecture from toggle
+        int architecture = selectedArchitecture;
+        
+        // 4. Verify it's legal to start debugging
+        ApiClient api = new ApiClient();
+        try {
+            // Check if program is runnable with current expansion level and architecture
+            Response<Void> resp = api.getResponse("/program/runnability", 
+                new HashMap<>(){{
+                    put("expansionLevel", String.valueOf(expansionLevel));
+                    put("architecture", architectureCode(architecture));
+                }}, 
+                Void.class);
+            
+            // If we get here with a successful response, program is runnable
+        }catch (Exception e){
+            // Error response (non-2xx status code) means program is not runnable
+            ErrorMessageController.showError(e.getMessage());
+            return;
+        }
+        
+        // 5. Open input form with callback
+        openInputFormForDebugging(breakpoints, expansionLevel, architecture);
     }
     
     private void stepOverInstruction() {
-        // TODO: Step over one instruction in debug mode
-    }
-    
-    private void stopDebugging() {
-        // TODO: Stop debugging session
-        setDebugVisualMode(false);
-        setDebugging(false);
+        ApiClient api = new ApiClient();
+        try {
+            Response<ProgramResult> resp = api.postResponse("/program/debug/step", null, null, ProgramResult.class);
+            handleDebugStepResult(resp.getData());
+        } catch (Exception e){
+            ErrorMessageController.showError(e.getMessage());
+            setDebugVisualMode(false);
+            setDebugging(false);
+        }
     }
     
     private void continueDebug() {
-        // TODO: Continue execution until next breakpoint
+        ApiClient api = new ApiClient();
+        try {
+            Response<ProgramResult> resp = api.postResponse("/program/debug/continue", null, null, ProgramResult.class);
+            handleDebugStepResult(resp.getData());
+        } catch (Exception e){
+            ErrorMessageController.showError(e.getMessage());
+            setDebugVisualMode(false);
+            setDebugging(false);
+        }
     }
     
     private void stepBack() {
-        // TODO: Step back one instruction in debug mode
+        ApiClient api = new ApiClient();
+        try {
+            Response<ProgramResult> resp = api.deleteResponse("/program/debug/step", null, ProgramResult.class);
+            handleDebugStepResult(resp.getData());
+        } catch (Exception e){
+            ErrorMessageController.showError(e.getMessage());
+            setDebugVisualMode(false);
+            setDebugging(false);
+        }
+    }
+    
+    private void handleDebugStepResult(ProgramResult result) {
+        // 1. Update credits from sessionCycles
+        int newCredits = ExecuteContext.getCredits() - result.getSessionCycles();
+        ExecuteContext.setCredits(newCredits);
+        setCredits(newCredits);
+        
+        // 2. Update variable table and cycles
+        populateVariablesContainer(result.getVariableToValue());
+        cyclesLabel.setText("Cycles: " + result.getCycles());
+        
+        // 3. If finished, stop debugging session
+        if(!result.isDebug()){
+            if(result.getHaltReason() == ProgramResult.HaltReason.INSUFFICIENT_CREDITS){
+                WarningMessageController.showWarning("Program execution halted due to insufficient credits");
+            }
+            setDebugVisualMode(false);
+            setDebugging(false);
+            return;
+        }
+        
+        // 4. If not finished, highlight the current line and update button states
+        setHighlightedIndex(result.getDebugIndex());
+        
+        // Disable step back button if at the beginning (cycles == 0)
+        if (stepBackBtn != null) {
+            stepBackBtn.setDisable(result.getCycles() == 0);
+        }
+    }
+    
+    private void stopDebugging() {
+        ApiClient api = new ApiClient();
+        try {
+            // Notify the server to stop the debugging session
+            api.postResponse("/program/debug/stop", null, null, Void.class);
+        } catch (Exception e) {
+            ErrorMessageController.showError("Failed to stop debugging: " + e.getMessage());
+        } finally {
+            // Always turn off debug mode locally, even if API call fails
+            setDebugVisualMode(false);
+            setDebugging(false);
+        }
     }
 
     private void openInputFormForExecution(){
@@ -688,6 +766,35 @@ public class ExecuteController {
 
             javafx.stage.Stage formStage = new javafx.stage.Stage();
             formStage.setTitle("Input Form");
+            formStage.setScene(new javafx.scene.Scene(root));
+            formStage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
+            formStage.showAndWait();
+
+        } catch (IOException e) {
+            ErrorMessageController.showError("Failed to load input form:\n" + e.getMessage());
+        }
+    }
+
+    private void openInputFormForDebugging(List<Integer> breakpoints, int expansionLevel, int architecture){
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("components/inputComponent/inputForm.fxml"));
+            ScrollPane root = loader.load();
+
+            InputFormController inputFormController = loader.getController();
+
+            // Fetch the input variable names for the current program/function
+            ApiClient api = new ApiClient();
+            Response<List<String>> resp = api.getListResponse("/program/input", null, String.class);
+            inputFormController.initData(resp.getData());
+
+            // Provide callback for when Finish is clicked
+            inputFormController.setDataCallback(inputMap -> {
+                populateInputVariablesContainer(inputMap);
+                debugStartCallback(inputMap, breakpoints, expansionLevel, architecture);
+            });
+
+            javafx.stage.Stage formStage = new javafx.stage.Stage();
+            formStage.setTitle("Input Form - Debugging");
             formStage.setScene(new javafx.scene.Scene(root));
             formStage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
             formStage.showAndWait();
@@ -740,9 +847,86 @@ public class ExecuteController {
             ErrorMessageController.showError(e.getMessage());
         }
     }
+
+    private void debugStartCallback(Map<String, Integer> inputMap, List<Integer> breakpoints, int expansionLevel, int architecture){
+        // Build a positional input list [x1, x2, ..., xN] filling missing with 0
+        Map<Integer, Integer> indexToValue = new HashMap<>();
+        int maxIndex = 0;
+        for (Map.Entry<String, Integer> entry : inputMap.entrySet()){
+            String key = entry.getKey();
+            if (key != null && key.startsWith("x")){
+                try{
+                    int idx = Integer.parseInt(key.substring(1));
+                    maxIndex = Math.max(maxIndex, idx);
+                    indexToValue.put(idx, entry.getValue());
+                } catch (NumberFormatException ignored){ }
+            }
+        }
+        List<Integer> input = new ArrayList<>();
+        for (int i = 1; i <= maxIndex; i++){
+            input.add(indexToValue.getOrDefault(i, 0));
+        }
+
+        ApiClient api = new ApiClient();
+        try {
+            // 1. Call /program/debug/start with the needed body
+            Response<ProgramResult> resp = api.postResponse("/program/debug/start",
+                    new HashMap<>() {{
+                        put("expansionLevel", expansionLevel);
+                        put("architecture", architectureCode(architecture));
+                        put("input", input);
+                        put("breakpoints", breakpoints);
+                    }},
+                    null,
+                    ProgramResult.class);
+            
+            ProgramResult result = resp.getData();
+            
+            // 3. Populate the variables container from the variables map
+            populateVariablesContainer(result.getVariableToValue());
+            
+            // 4. Charge credits from the user (overhead + sessionCycles)
+            int newCredits = ExecuteContext.getCredits() - (result.getSessionCycles() + architectureToCost(architecture));
+            ExecuteContext.setCredits(newCredits);
+            setCredits(newCredits);
+            cyclesLabel.setText("Cycles: " + result.getCycles());
+            
+            // 5. Check if the program has ended (regardless of reason)
+            if(!result.isDebug()){
+                // Program ended during start - stop debugging session
+                if(result.getHaltReason() == ProgramResult.HaltReason.INSUFFICIENT_CREDITS){
+                    WarningMessageController.showWarning("Program execution halted due to insufficient credits");
+                }
+                // Don't activate debug mode if program already finished
+                setDebugVisualMode(false);
+                setDebugging(false);
+                return;
+            }
+            
+            // Debugging started successfully and still active - activate debug mode and enable buttons
+            setDebugVisualMode(true);
+            setDebugging(true);
+            
+            // Highlight the current instruction index
+            setHighlightedIndex(result.getDebugIndex());
+            
+            // Disable step back button if at the beginning (cycles == 0)
+            if (stepBackBtn != null) {
+                stepBackBtn.setDisable(result.getCycles() == 0);
+            }
+
+        } catch (Exception e){
+            // 2. If error response, show error, turn off debug mode, return
+            ErrorMessageController.showError(e.getMessage());
+            setDebugVisualMode(false);
+            setDebugging(false);
+            return;
+        }
+    }
     public void populateInputVariablesContainer(Map<String, Integer> inputMap){
         executionInputContainer.getChildren().clear();
-        for (Map.Entry<String, Integer> entry : inputMap.entrySet()) {
+        for (Map.Entry<String, Integer> entry :
+                inputMap.entrySet()) {
             Label varLabel = new Label(entry.getKey() + ": " + entry.getValue());
             varLabel.getStyleClass().add("label-strong");
             varLabel.setWrapText(true);
@@ -777,10 +961,19 @@ public class ExecuteController {
 
     private void setDebugging(boolean debugging){
         this.isDebugging = debugging;
+        
+        // Enable/disable debug step buttons
         if (stepOverBtn != null) stepOverBtn.setDisable(!debugging);
         if (stopBtn != null) stopBtn.setDisable(!debugging);
         if (continueBtn != null) continueBtn.setDisable(!debugging);
         if (stepBackBtn != null) stepBackBtn.setDisable(!debugging);
+        
+        // Disable start debugging button when actively debugging
+        if (startDebugBtn != null) startDebugBtn.setDisable(debugging);
+        
+        // Disable execute/debug toggle when actively debugging
+        if (debugBtn != null) debugBtn.setDisable(debugging);
+        if (executeBtn != null) executeBtn.setDisable(debugging);
     }
     
     private void showHistoryInChain(int commandIndex) {

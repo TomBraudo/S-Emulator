@@ -79,7 +79,8 @@ public class ApiClient {
         try (Response response = httpClient.newCall(request).execute()) {
             String body = response.body() != null ? new String(response.body().bytes(), StandardCharsets.UTF_8) : "";
             if (!response.isSuccessful()) {
-                throw new ApiException(response.code(), "HTTP " + response.code() + " for " + request.method() + " " + request.url(), body);
+                String errorMessage = extractMessageFromErrorBody(body);
+                throw new ApiException(response.code(), errorMessage, body);
             }
             if (responseType == null || responseType == Void.class) {
                 return null;
@@ -92,6 +93,22 @@ public class ApiClient {
             return gson.fromJson(body, responseType);
         }
     }
+    
+    private String extractMessageFromErrorBody(String body) {
+        // Try to parse the error response body as a Response object and extract the message
+        try {
+            if (body != null && !body.isEmpty()) {
+                com.app.ui.utils.Response<?> errorResponse = gson.fromJson(body, com.app.ui.utils.Response.class);
+                if (errorResponse != null && errorResponse.getMessage() != null && !errorResponse.getMessage().isEmpty()) {
+                    return errorResponse.getMessage();
+                }
+            }
+        } catch (Exception ignored) {
+            // If parsing fails, return the raw body
+        }
+        // Fallback to the raw response body if message extraction fails
+        return body;
+    }
 
     public <T> com.app.ui.utils.Response<T> getResponse(String path, Map<String, ?> query, Class<T> dataType) throws IOException {
         java.lang.reflect.Type type = Json.typeOfResponse(dataType);
@@ -100,7 +117,8 @@ public class ApiClient {
         try (Response resp = httpClient.newCall(request).execute()) {
             String body = resp.body() != null ? new String(resp.body().bytes(), StandardCharsets.UTF_8) : "";
             if (!resp.isSuccessful()) {
-                throw new ApiException(resp.code(), "HTTP " + resp.code() + " for GET " + request.url(), body);
+                String errorMessage = extractMessageFromErrorBody(body);
+                throw new ApiException(resp.code(), errorMessage, body);
             }
             return gson.fromJson(body, type);
         }
@@ -113,7 +131,8 @@ public class ApiClient {
         try (Response resp = httpClient.newCall(request).execute()) {
             String body = resp.body() != null ? new String(resp.body().bytes(), StandardCharsets.UTF_8) : "";
             if (!resp.isSuccessful()) {
-                throw new ApiException(resp.code(), "HTTP " + resp.code() + " for GET " + request.url(), body);
+                String errorMessage = extractMessageFromErrorBody(body);
+                throw new ApiException(resp.code(), errorMessage, body);
             }
             return gson.fromJson(body, type);
         }
@@ -128,7 +147,8 @@ public class ApiClient {
         try (Response resp = httpClient.newCall(request).execute()) {
             String respBody = resp.body() != null ? new String(resp.body().bytes(), StandardCharsets.UTF_8) : "";
             if (!resp.isSuccessful()) {
-                throw new ApiException(resp.code(), "HTTP " + resp.code() + " for POST " + request.url(), respBody);
+                String errorMessage = extractMessageFromErrorBody(respBody);
+                throw new ApiException(resp.code(), errorMessage, respBody);
             }
             return gson.fromJson(respBody, type);
         }
@@ -145,9 +165,24 @@ public class ApiClient {
         try (Response resp = httpClient.newCall(req).execute()) {
             String respBody = resp.body() != null ? new String(resp.body().bytes(), StandardCharsets.UTF_8) : "";
             if (!resp.isSuccessful()) {
-                throw new ApiException(resp.code(), "HTTP " + resp.code() + " for POST " + req.url(), respBody);
+                String errorMessage = extractMessageFromErrorBody(respBody);
+                throw new ApiException(resp.code(), errorMessage, respBody);
             }
             return gson.fromJson(respBody, type);
+        }
+    }
+
+    public <T> com.app.ui.utils.Response<T> deleteResponse(String path, Map<String, ?> query, Class<T> dataType) throws IOException {
+        java.lang.reflect.Type type = Json.typeOfResponse(dataType);
+        String url = buildUrl(path, query);
+        Request request = new Request.Builder().url(url).delete().build();
+        try (Response resp = httpClient.newCall(request).execute()) {
+            String body = resp.body() != null ? new String(resp.body().bytes(), StandardCharsets.UTF_8) : "";
+            if (!resp.isSuccessful()) {
+                String errorMessage = extractMessageFromErrorBody(body);
+                throw new ApiException(resp.code(), errorMessage, body);
+            }
+            return gson.fromJson(body, type);
         }
     }
 
