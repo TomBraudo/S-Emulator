@@ -90,11 +90,11 @@ public abstract class BaseCommand implements Serializable {
     public abstract String getArchitecture();
     
     /**
-     * Returns the name of the function called by this command, or null if this command doesn't call a function.
-     * Default implementation returns null; override in Quotation and JumpEqualFunction.
+     * Returns all function names called by this command (recursively), or empty list if this command doesn't call functions.
+     * Default implementation returns empty list; override in Quotation and JumpEqualFunction.
      */
-    public String getCalledFunctionName() {
-        return null;
+    public java.util.List<String> getCalledFunctionNames() {
+        return java.util.Collections.emptyList();
     }
 
 

@@ -4,10 +4,7 @@ import com.XMLHandlerV2.SFunction;
 import com.XMLHandlerV2.SFunctions;
 import com.XMLHandlerV2.SInstruction;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
@@ -60,7 +57,7 @@ public final class FunctionRegistry {
                     throw new IllegalStateException("Function name already registered by another user: " + name);
                 }
             }
-            // Phase B: mutate state
+            // Phase B: register metadata and definitions
             Map<String, List<SInstruction>> defs = DEFINITIONS_BY_USER.computeIfAbsent(userId, k -> new HashMap<>());
             Map<String, Program> cache = FUNCTION_PROGRAM_CACHE_BY_USER.computeIfAbsent(userId, k -> new HashMap<>());
             for (SFunction f : functions.getSFunction()) {
@@ -72,6 +69,32 @@ public final class FunctionRegistry {
                 int arity = calculateArity(instructions);
                 FUNCTION_ARITY.put(name, arity);
                 FUNCTION_SOURCE_PROGRAM_BY_NAME.put(name, programName);
+            }
+            
+            // Phase C: eagerly compile all functions and track dependencies
+            for (SFunction f : functions.getSFunction()) {
+                String name = f.getName();
+                
+                // Skip if already compiled (might have been compiled as dependency of another function)
+                if (cache.containsKey(name)) {
+                    continue;
+                }
+                
+                List<SInstruction> instructions = defs.get(name);
+                
+                if (!BUILDING.add(name)) {
+                    throw new IllegalStateException("Recursive function reference detected: " + name);
+                }
+                try {
+                    Program program = Program.createProgram(name, instructions);
+                    cache.put(name, program);
+                    
+                    // Track function usage for this function
+                    List<String> usedFunctions = extractFunctionNamesFromProgram(program);
+                    updateUsageTracking(name, usedFunctions);
+                } finally {
+                    BUILDING.remove(name);
+                }
             }
         } finally {
             write.unlock();
@@ -160,6 +183,8 @@ public final class FunctionRegistry {
         }
 
         // If it's a function and not cached, lazily build under write lock
+        // NOTE: Functions should normally be eagerly compiled during registerFunctions.
+        // This lazy path is mainly for edge cases and transitive dependencies during compilation.
         var write = REGISTRY_LOCK.writeLock();
         write.lock();
         try {
@@ -474,14 +499,18 @@ public final class FunctionRegistry {
     // ---- Function usage tracking methods ----
     
     /**
-     * Extracts all function names called by a Program (from Quotation and JumpEqualFunction commands)
+     * Extracts all function names called by a Program (recursively from all nested commands)
      */
     private static List<String> extractFunctionNamesFromProgram(Program program) {
         List<String> functionNames = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+        
         for (com.commands.BaseCommand cmd : program.getCommands()) {
-            String funcName = cmd.getCalledFunctionName();
-            if (funcName != null && !functionNames.contains(funcName)) {
-                functionNames.add(funcName);
+            for (String funcName : cmd.getCalledFunctionNames()) {
+                if (!seen.contains(funcName)) {
+                    seen.add(funcName);
+                    functionNames.add(funcName);
+                }
             }
         }
         return functionNames;

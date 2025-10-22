@@ -144,7 +144,42 @@ class JumpEqualFunction extends BaseCommand{
     }
     
     @Override
-    public String getCalledFunctionName() {
-        return p != null ? p.getName() : null;
+    public java.util.List<String> getCalledFunctionNames() {
+        if (p == null) {
+            return java.util.Collections.emptyList();
+        }
+        
+        java.util.List<String> result = new java.util.ArrayList<>();
+        java.util.Set<String> visited = new java.util.HashSet<>();
+        
+        // Add the main function name
+        if (!visited.contains(p.getName())) {
+            visited.add(p.getName());
+            result.add(p.getName());
+        }
+        
+        // Extract nested function calls from the input arguments
+        if (input != null) {
+            extractFromArgs(input, result, visited);
+        }
+        
+        return result;
+    }
+    
+    private void extractFromArgs(java.util.List<Object> args, java.util.List<String> result, java.util.Set<String> visited) {
+        for (Object arg : args) {
+            if (arg instanceof ArgExpr.ArgCall) {
+                ArgExpr.ArgCall call = (ArgExpr.ArgCall) arg;
+                String funcName = call.name();
+                if (!visited.contains(funcName)) {
+                    visited.add(funcName);
+                    result.add(funcName);
+                }
+                // Recursively process nested arguments
+                if (call.args() != null) {
+                    extractFromArgs(call.args(), result, visited);
+                }
+            }
+        }
     }
 }
