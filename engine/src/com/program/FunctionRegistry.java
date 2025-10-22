@@ -40,6 +40,12 @@ public final class FunctionRegistry {
     // Key: program name; Value: (averageCostRoundedTo1Decimal, runCount)
     private static final Map<String, java.util.Map.Entry<Double, Integer>> AVERAGE_COST_BY_PROGRAM = new HashMap<>();
 
+    // ---- Function usage tracking ----
+    // Key: program/function name; Value: list of function names it uses
+    private static final Map<String, List<String>> FUNCTIONS_USED_BY = new HashMap<>();
+    // Key: function name; Value: list of program/function names that use it
+    private static final Map<String, List<String>> PROGRAMS_USING_FUNCTION = new HashMap<>();
+
     // ---- Public registration APIs ----
     public static void registerFunctions(String userId, SFunctions functions, String programName) {
         if (functions == null) return;
@@ -103,6 +109,10 @@ public final class FunctionRegistry {
             }
             PROGRAM_OWNER_BY_NAME.put(name, userId);
             PROGRAMS_BY_USER.computeIfAbsent(userId, k -> new HashMap<>()).put(name, p);
+            
+            // Track function usage
+            List<String> usedFunctions = extractFunctionNamesFromProgram(p);
+            updateUsageTracking(name, usedFunctions);
         } finally {
             write.unlock();
         }
@@ -168,6 +178,11 @@ public final class FunctionRegistry {
             try {
                 Program program = Program.createProgram(name, instructions);
                 FUNCTION_PROGRAM_CACHE_BY_USER.computeIfAbsent(funcOwner, k -> new HashMap<>()).put(name, program);
+                
+                // Track function usage for this function
+                List<String> usedFunctions = extractFunctionNamesFromProgram(program);
+                updateUsageTracking(name, usedFunctions);
+                
                 return new Program(program);
             } finally {
                 BUILDING.remove(name);
@@ -342,20 +357,20 @@ public final class FunctionRegistry {
     }
 
     // ---- Average cost APIs ----
-    public static void recordRunCost(String programName, long cyclesPlusOverhead) {
+    public static void recordRunCost(String programName, long cycles) {
         var write = REGISTRY_LOCK.writeLock();
         write.lock();
         try {
             java.util.Map.Entry<Double, Integer> cur = AVERAGE_COST_BY_PROGRAM.get(programName);
             if (cur == null) {
-                double avg = roundTo1Decimal((double) cyclesPlusOverhead);
+                double avg = roundTo1Decimal((double) cycles);
                 AVERAGE_COST_BY_PROGRAM.put(programName, new java.util.AbstractMap.SimpleEntry<>(avg, 1));
                 return;
             }
             double prevAvg = cur.getKey();
             int prevCount = cur.getValue();
             int newCount = prevCount + 1;
-            double newAvg = (prevAvg * prevCount + cyclesPlusOverhead) / (double) newCount;
+            double newAvg = (prevAvg * prevCount + cycles) / (double) newCount;
             newAvg = roundTo1Decimal(newAvg);
             AVERAGE_COST_BY_PROGRAM.put(programName, new java.util.AbstractMap.SimpleEntry<>(newAvg, newCount));
         } finally {
@@ -454,6 +469,99 @@ public final class FunctionRegistry {
 
     public static boolean isFunction(String name) {
         return FUNCTION_OWNER_BY_NAME.containsKey(name);
+    }
+
+    // ---- Function usage tracking methods ----
+    
+    /**
+     * Extracts all function names called by a Program (from Quotation and JumpEqualFunction commands)
+     */
+    private static List<String> extractFunctionNamesFromProgram(Program program) {
+        List<String> functionNames = new ArrayList<>();
+        for (com.commands.BaseCommand cmd : program.getCommands()) {
+            String funcName = cmd.getCalledFunctionName();
+            if (funcName != null && !functionNames.contains(funcName)) {
+                functionNames.add(funcName);
+            }
+        }
+        return functionNames;
+    }
+
+    /**
+     * Updates the usage tracking maps for a program/function
+     */
+    private static void updateUsageTracking(String programName, List<String> usedFunctions) {
+        // Store which functions this program uses
+        FUNCTIONS_USED_BY.put(programName, new ArrayList<>(usedFunctions));
+        
+        // Update reverse mapping: for each function, add this program to its users
+        for (String funcName : usedFunctions) {
+            PROGRAMS_USING_FUNCTION.computeIfAbsent(funcName, k -> new ArrayList<>()).add(programName);
+        }
+    }
+
+    /**
+     * Get list of PROGRAM names that use a specific function (excludes other functions)
+     */
+    public static List<String> getProgramsUsing(String functionName) {
+        var read = REGISTRY_LOCK.readLock();
+        read.lock();
+        try {
+            List<String> allUsers = PROGRAMS_USING_FUNCTION.get(functionName);
+            if (allUsers == null || allUsers.isEmpty()) {
+                return List.of();
+            }
+            // Filter to only return programs (not functions)
+            List<String> programs = new ArrayList<>();
+            for (String name : allUsers) {
+                if (PROGRAM_OWNER_BY_NAME.containsKey(name)) {
+                    programs.add(name);
+                }
+            }
+            return programs;
+        } finally {
+            read.unlock();
+        }
+    }
+
+    /**
+     * Recursively get all functions in the dependency chain (transitive closure)
+     * @param programName the program or function name to analyze
+     * @return List of all function names used directly or indirectly (no duplicates)
+     */
+    public static List<String> getAllFunctionsInChain(String programName) {
+        var read = REGISTRY_LOCK.readLock();
+        read.lock();
+        try {
+            List<String> allFunctions = new ArrayList<>();
+            java.util.Set<String> visited = new java.util.HashSet<>();
+            collectFunctionsRecursive(programName, allFunctions, visited);
+            return allFunctions;
+        } finally {
+            read.unlock();
+        }
+    }
+
+    /**
+     * Helper method for recursive dependency collection (assumes no cycles)
+     */
+    private static void collectFunctionsRecursive(String name, List<String> result, java.util.Set<String> visited) {
+        // Get direct dependencies
+        List<String> directDeps = FUNCTIONS_USED_BY.get(name);
+        if (directDeps == null || directDeps.isEmpty()) {
+            return;
+        }
+
+        // Process each dependency
+        for (String funcName : directDeps) {
+            // Add to result if not already present
+            if (!visited.contains(funcName)) {
+                visited.add(funcName);
+                result.add(funcName);
+                // Recursively process this function's dependencies
+                collectFunctionsRecursive(funcName, result, visited);
+            }
+        }
     }
 
 }

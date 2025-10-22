@@ -59,6 +59,11 @@
     -fx-border-color: -color-primary;
     -fx-border-width: 3;
 }
+.card.highlighted {
+    -fx-background-color: #ffe6e6;
+    -fx-border-color: -color-danger;
+    -fx-border-width: 2;
+}
 .card-subtle {
     -fx-border-color: -color-border-subtle;
     -fx-border-width: 1;

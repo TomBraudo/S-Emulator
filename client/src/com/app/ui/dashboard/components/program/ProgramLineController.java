@@ -61,4 +61,16 @@ public class ProgramLineController {
     public boolean isSelected() {
         return isSelected;
     }
+    
+    public void setHighlighted(boolean highlighted) {
+        if (highlighted) {
+            root.getStyleClass().add("highlighted");
+        } else {
+            root.getStyleClass().remove("highlighted");
+        }
+    }
+    
+    public String getName() {
+        return nameLabel.getText();
+    }
 }

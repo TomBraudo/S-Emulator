@@ -88,6 +88,14 @@ public abstract class BaseCommand implements Serializable {
         return history;
     }
     public abstract String getArchitecture();
+    
+    /**
+     * Returns the name of the function called by this command, or null if this command doesn't call a function.
+     * Default implementation returns null; override in Quotation and JumpEqualFunction.
+     */
+    public String getCalledFunctionName() {
+        return null;
+    }
 
 
 }

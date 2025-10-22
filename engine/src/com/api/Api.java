@@ -106,10 +106,10 @@ public class Api {
         // Charge cycles consumed
         credits -= res.getCycles();
         usedCredits += res.getCycles();
-        // Save statistics and global averages (overhead + cycles)
+        // Save statistics and global averages (cycles only, not overhead)
         boolean isFunction = FunctionRegistry.isFunction(p.getName());
         Statistic.saveRunDetails(userId, p.getName(), isFunction, expansionLevel, architecture, input, res.getResult(), res.getCycles(), res.getVariableToValue());
-        FunctionRegistry.recordRunCost(p.getName(), overhead + res.getCycles());
+        FunctionRegistry.recordRunCost(p.getName(), res.getCycles());
         programsRanCount += 1;
         return res;
     }
@@ -314,7 +314,7 @@ public class Api {
             // finished immediately
             boolean isFunction = FunctionRegistry.isFunction(p.getName());
             Statistic.saveRunDetails(userId, p.getName(), isFunction, expansionLevel, architecture, input, wrappedRes.getResult(), wrappedRes.getCycles(), wrappedRes.getVariableToValue());
-            FunctionRegistry.recordRunCost(p.getName(), overhead + wrappedRes.getCycles());
+            FunctionRegistry.recordRunCost(p.getName(), wrappedRes.getCycles());
             programsRanCount += 1;
         } else {
             debugProgram = p;
@@ -348,7 +348,7 @@ public class Api {
         if(!wrappedRes.isDebug()){
             boolean isFunction = FunctionRegistry.isFunction(p.getName());
             Statistic.saveRunDetails(userId, p.getName(), isFunction, debugExpansionLevel, currentRunArchitecture, debugInput, wrappedRes.getResult(), wrappedRes.getCycles(), wrappedRes.getVariableToValue());
-            FunctionRegistry.recordRunCost(p.getName(), currentRunOverhead + wrappedRes.getCycles());
+            FunctionRegistry.recordRunCost(p.getName(), wrappedRes.getCycles());
             programsRanCount += 1;
             debugProgram = null;
             debugInput = null;
@@ -405,7 +405,7 @@ public class Api {
         if(!wrappedRes.isDebug()){
             boolean isFunction = FunctionRegistry.isFunction(p.getName());
             Statistic.saveRunDetails(userId, p.getName(), isFunction, debugExpansionLevel, currentRunArchitecture, debugInput, wrappedRes.getResult(), wrappedRes.getCycles(), wrappedRes.getVariableToValue());
-            FunctionRegistry.recordRunCost(p.getName(), currentRunOverhead + wrappedRes.getCycles());
+            FunctionRegistry.recordRunCost(p.getName(), wrappedRes.getCycles());
             programsRanCount += 1;
             debugProgram = null;
             debugInput = null;
@@ -562,6 +562,14 @@ public class Api {
 
     public static List<String> getFunctionNames(){
         return FunctionRegistry.getFunctionNames();
+    }
+
+    public static List<String> getAllFunctionsInChain(String name){
+        return FunctionRegistry.getAllFunctionsInChain(name);
+    }
+
+    public static List<String> getProgramsUsing(String functionName){
+        return FunctionRegistry.getProgramsUsing(functionName);
     }
 
     public static ProgramInfo getProgramInformation(String programName){

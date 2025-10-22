@@ -25,13 +25,17 @@ import javafx.application.Platform;
 
 import com.app.http.ApiClient;
 import com.app.http.ApiException;
+import com.app.ui.dashboard.components.errorComponents.ErrorMessageController;
+import com.app.ui.dashboard.components.errorComponents.SuccessMessageController;
 import com.app.ui.utils.Response;
 import com.app.ui.utils.UiTicker;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 public class DashboardController {
@@ -72,6 +76,10 @@ public class DashboardController {
 
     private String contextProgram = null;
     private String contextFunction = null;
+    
+    // Track which items should be highlighted (for persistence across refreshes)
+    private Set<String> highlightedPrograms = new HashSet<>();
+    private Set<String> highlightedFunctions = new HashSet<>();
 
     @FXML
     private void initialize() {
@@ -173,21 +181,41 @@ public class DashboardController {
                     String.valueOf(info.getAverageCost())
             );
             controller.setOnPressAction(() -> {
-                // Unselect all other program lines
+                // Unselect and unhighlight all program lines
                 for (Node node : programsContainer.getChildren()) {
                     if (node.getUserData() instanceof ProgramLineController) {
-                        ((ProgramLineController) node.getUserData()).setSelected(false);
+                        ProgramLineController c = (ProgramLineController) node.getUserData();
+                        c.setSelected(false);
+                        c.setHighlighted(false);
+                    }
+                }
+                
+                // Unselect and unhighlight all function lines
+                for (Node node : functionsContainer.getChildren()) {
+                    if (node.getUserData() instanceof FunctionLineController) {
+                        FunctionLineController c = (FunctionLineController) node.getUserData();
+                        c.setSelected(false);
+                        c.setHighlighted(false);
                     }
                 }
 
-                // Select this program line
+                // Select this program line and clear function context
                 controller.setSelected(true);
                 contextProgram = info.getName();
+                contextFunction = null;
+                
+                // Highlight dependency functions
+                highlightProgramDependencies(info.getName());
             });
 
             // Restore highlighting if this program was previously selected
             if (contextProgram != null && contextProgram.equals(info.getName())) {
                 controller.setSelected(true);
+            }
+            
+            // Restore highlighting if this program is in the highlighted set
+            if (highlightedPrograms.contains(info.getName())) {
+                controller.setHighlighted(true);
             }
 
             // Store controller reference for easy access
@@ -213,26 +241,119 @@ public class DashboardController {
                     String.valueOf(info.getMaxLevel())
             );
             controller.setOnPressAction(() -> {
-                // Unselect all other function lines
+                // Unselect and unhighlight all function lines
                 for (Node node : functionsContainer.getChildren()) {
                     if (node.getUserData() instanceof FunctionLineController) {
-                        ((FunctionLineController) node.getUserData()).setSelected(false);
+                        FunctionLineController c = (FunctionLineController) node.getUserData();
+                        c.setSelected(false);
+                        c.setHighlighted(false);
+                    }
+                }
+                
+                // Unselect and unhighlight all program lines
+                for (Node node : programsContainer.getChildren()) {
+                    if (node.getUserData() instanceof ProgramLineController) {
+                        ProgramLineController c = (ProgramLineController) node.getUserData();
+                        c.setSelected(false);
+                        c.setHighlighted(false);
                     }
                 }
 
-                // Select this function line
+                // Select this function line and clear program context
                 controller.setSelected(true);
                 contextFunction = info.getName();
+                contextProgram = null;
+                
+                // Highlight dependency functions and programs that use this function
+                highlightFunctionDependencies(info.getName());
             });
 
             // Restore highlighting if this function was previously selected
             if (contextFunction != null && contextFunction.equals(info.getName())) {
                 controller.setSelected(true);
             }
+            
+            // Restore highlighting if this function is in the highlighted set
+            if (highlightedFunctions.contains(info.getName())) {
+                controller.setHighlighted(true);
+            }
 
             // Store controller reference for easy access
             functionLineNode.setUserData(controller);
             functionsContainer.getChildren().add(functionLineNode);
+        }
+    }
+
+    private void highlightProgramDependencies(String programName) {
+        try {
+            ApiClient api = new ApiClient();
+            Response<List<String>> resp = api.getListResponse("/dependencies", 
+                new HashMap<>() {{ put("name", programName); }}, String.class);
+            
+            List<String> dependencies = resp.getData();
+            
+            // Save highlighted state for persistence across refreshes
+            highlightedFunctions.clear();
+            highlightedFunctions.addAll(dependencies);
+            highlightedPrograms.clear();
+            
+            // Highlight all dependency functions in red
+            for (Node node : functionsContainer.getChildren()) {
+                if (node.getUserData() instanceof FunctionLineController) {
+                    FunctionLineController controller = (FunctionLineController) node.getUserData();
+                    if (dependencies.contains(controller.getName())) {
+                        controller.setHighlighted(true);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // Silently fail - highlighting is not critical
+            e.printStackTrace();
+        }
+    }
+
+    private void highlightFunctionDependencies(String functionName) {
+        try {
+            ApiClient api = new ApiClient();
+            
+            // Get function dependencies
+            Response<List<String>> depsResp = api.getListResponse("/dependencies", 
+                new HashMap<>() {{ put("name", functionName); }}, String.class);
+            List<String> dependencies = depsResp.getData();
+            
+            // Get programs that use this function
+            Response<List<String>> usersResp = api.getListResponse("/function/used-by", 
+                new HashMap<>() {{ put("name", functionName); }}, String.class);
+            List<String> programsUsing = usersResp.getData();
+            
+            // Save highlighted state for persistence across refreshes
+            highlightedFunctions.clear();
+            highlightedFunctions.addAll(dependencies);
+            highlightedPrograms.clear();
+            highlightedPrograms.addAll(programsUsing);
+            
+            // Highlight all dependency functions in red
+            for (Node node : functionsContainer.getChildren()) {
+                if (node.getUserData() instanceof FunctionLineController) {
+                    FunctionLineController controller = (FunctionLineController) node.getUserData();
+                    if (dependencies.contains(controller.getName())) {
+                        controller.setHighlighted(true);
+                    }
+                }
+            }
+            
+            // Highlight all programs that use this function in red
+            for (Node node : programsContainer.getChildren()) {
+                if (node.getUserData() instanceof ProgramLineController) {
+                    ProgramLineController controller = (ProgramLineController) node.getUserData();
+                    if (programsUsing.contains(controller.getName())) {
+                        controller.setHighlighted(true);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // Silently fail - highlighting is not critical
+            e.printStackTrace();
         }
     }
 
@@ -253,13 +374,29 @@ public class DashboardController {
             try {
                 Response<Void> resp = api.postMultipartFileResponse("/program/upload", "file", file, "application/xml", null, Void.class);
                 if (resp != null && resp.isSuccess()) {
-                    Platform.runLater(() -> loadedFilePathLabel.setText(file.getAbsolutePath()));
+                    Platform.runLater(() -> {
+                        loadedFilePathLabel.setText(file.getAbsolutePath());
+                        SuccessMessageController.showSuccess("Program uploaded successfully!");
+                        // Refresh program and function lists
+                        try {
+                            populateProgramContainer();
+                            populateFunctionContainer();
+                        } catch (IOException e) {
+                            ErrorMessageController.showError("Failed to refresh program list: " + e.getMessage());
+                        }
+                    });
                 } else {
                     String msg = resp == null ? "Unknown error" : resp.getMessage();
-                    Platform.runLater(() -> loadedFilePathLabel.setText("Upload failed: " + msg));
+                    Platform.runLater(() -> {
+                        loadedFilePathLabel.setText("Upload failed: " + msg);
+                        ErrorMessageController.showError("Upload failed: " + msg);
+                    });
                 }
             } catch (ApiException | IOException ex) {
-                Platform.runLater(() -> loadedFilePathLabel.setText("Upload failed: " + ex.getMessage()));
+                Platform.runLater(() -> {
+                    loadedFilePathLabel.setText("Upload failed: " + ex.getMessage());
+                    ErrorMessageController.showError("Upload failed: " + ex.getMessage());
+                });
             }
         });
     }

@@ -186,4 +186,9 @@ class Quotation extends BaseCommand{
     public String getArchitecture() {
         return "IV";
     }
+    
+    @Override
+    public String getCalledFunctionName() {
+        return p != null ? p.getName() : null;
+    }
 }

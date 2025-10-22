@@ -40,10 +40,8 @@ public class ExecuteServlet extends HttpServlet {
 
         try{
             ProgramResult result = api.executeProgram(dto.input, dto.expansionLevel, dto.architecture);
-            if(result.getHaltReason().equals(ProgramResult.HaltReason.INSUFFICIENT_CREDITS)){
-                ResponseHelper.error(resp, 402, "Insufficient credits to execute program");
-                return;
-            }
+            // Always return the result, even if halted due to insufficient credits
+            // Let the client handle the halt reason and display appropriate warnings
             ResponseHelper.success(resp, "Program executed successfully", result);
         }
         catch (Exception e){
