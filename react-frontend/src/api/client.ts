@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { ApiResponse, ApiError } from '../types/api';
 
 export class ApiClient {
@@ -6,7 +6,7 @@ export class ApiClient {
   private baseURL: string;
   private userId: string | null = null;
 
-  constructor(baseURL: string = 'http://localhost:8080') {
+  constructor(baseURL: string = '') {
     this.baseURL = baseURL;
     this.client = axios.create({
       baseURL,

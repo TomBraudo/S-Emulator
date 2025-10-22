@@ -1,5 +1,5 @@
 import { apiClient } from '../client';
-import { UserInfo, Statistic, AddCreditsRequest, ApiResponse } from '../../types/api';
+import { UserInfo, Statistic, ApiResponse } from '../../types/api';
 
 export class UserService {
   // Register user

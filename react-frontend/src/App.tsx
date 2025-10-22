@@ -1,17 +1,19 @@
 import React from 'react';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import LoginPage from './components/LoginPage';
+import Dashboard from './components/Dashboard';
 import './App.css';
+
+function AppContent() {
+  const { isAuthenticated } = useAuth();
+
+  return isAuthenticated ? <Dashboard /> : <LoginPage />;
+}
 
 function App() {
   return (
     <AuthProvider>
-      <div className="App">
-        <header className="App-header">
-          <h1>S-Emulator React Frontend</h1>
-          <p>API Layer Infrastructure Ready</p>
-          <p>Check src/examples/apiUsage.ts for usage examples</p>
-        </header>
-      </div>
+      <AppContent />
     </AuthProvider>
   );
 }
