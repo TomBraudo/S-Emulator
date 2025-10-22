@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+
+<HBox xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" 
+      fx:controller="com.app.ui.chat.components.MessageLineController"
+      fx:id="messageRoot" prefHeight="80.0" prefWidth="520.0" styleClass="message-container" stylesheets="../../app.css">
+   <children>
+      <VBox fx:id="messageBox" prefWidth="400.0" spacing="4.0" styleClass="message-box">
+         <children>
+            <Label fx:id="senderLabel" styleClass="label-strong message-sender" text="Sender Name" wrapText="true" />
+            <Label fx:id="contentLabel" styleClass="command-label message-content" text="Message content goes here..." wrapText="true" />
+            <HBox alignment="BOTTOM_RIGHT">
+               <children>
+                  <Label fx:id="timestampLabel" styleClass="message-timestamp" text="12:34" />
+               </children>
+            </HBox>
+         </children>
+         <padding>
+            <Insets bottom="8.0" left="12.0" right="12.0" top="8.0" />
+         </padding>
+      </VBox>
+   </children>
+</HBox>
+

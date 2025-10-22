@@ -24,4 +24,6 @@ module client {
     opens com.app.ui.main to javafx.graphics;
     opens com.app.ui.login to javafx.fxml;
     opens com.app.ui.utils to com.google.gson;
+    opens com.app.ui.chat to javafx.fxml;
+    opens com.app.ui.chat.components to javafx.fxml;
 }

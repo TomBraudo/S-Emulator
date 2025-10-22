@@ -203,4 +203,37 @@
     -fx-background-color: -color-surface;
 }
 
+/* Chat message styles (WhatsApp-like) */
+.message-container {
+    -fx-padding: 4;
+}
+.message-box {
+    -fx-background-radius: 12;
+    -fx-border-radius: 12;
+    -fx-max-width: 400;
+}
+.message-box-sent {
+    -fx-background-color: #dcf8c6; /* Light green for sent messages */
+    -fx-border-color: -color-primary;
+    -fx-border-width: 1;
+}
+.message-box-received {
+    -fx-background-color: white; /* White for received messages */
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1;
+}
+.message-sender {
+    -fx-font-size: 12px;
+    -fx-text-fill: -color-primary;
+}
+.message-content {
+    -fx-font-size: 14px;
+    -fx-text-fill: -color-text;
+}
+.message-timestamp {
+    -fx-font-size: 10px;
+    -fx-text-fill: -color-muted;
+    -fx-padding: 2 0 0 0;
+}
+
 

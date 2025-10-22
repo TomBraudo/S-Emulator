@@ -27,14 +27,18 @@ import com.app.http.ApiClient;
 import com.app.http.ApiException;
 import com.app.ui.dashboard.components.errorComponents.ErrorMessageController;
 import com.app.ui.dashboard.components.errorComponents.SuccessMessageController;
+import com.app.ui.dashboard.components.errorComponents.WarningMessageController;
 import com.app.ui.utils.Response;
+import com.dto.api.ProgramResult;
 import com.app.ui.utils.UiTicker;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
@@ -51,6 +55,7 @@ public class DashboardController {
     @FXML private Label usernameLabel;
     @FXML private Label dashboardTitleLabel;
     @FXML private Label creditsTitleLabel;
+    @FXML private Button chatButton;
 
     // Users section
     @FXML private BorderPane usersPane;
@@ -76,6 +81,7 @@ public class DashboardController {
 
     private String contextProgram = null;
     private String contextFunction = null;
+    private String selectedUserId = null; // Track currently selected user for statistics
     
     // Track which items should be highlighted (for persistence across refreshes)
     private Set<String> highlightedPrograms = new HashSet<>();
@@ -121,6 +127,17 @@ public class DashboardController {
                 }
             });
         }
+        
+        // Populate statistics with current user's history on dashboard open
+        if(statisticsContainer != null){
+            try {
+                String currentUserId = UserContext.getUserId();
+                selectedUserId = currentUserId; // Initialize selected user
+                populateStatisticsContainer(currentUserId);
+            } catch (IOException e) {
+                // Silently fail - statistics will be updated when user is selected
+            }
+        }
     }
 
     private void updateUserStats() throws IOException {
@@ -151,6 +168,7 @@ public class DashboardController {
     }
 
     private void populateStatisticsContainer(String userId) throws IOException {
+        selectedUserId = userId; // Track the currently selected user
         statisticsContainer.getChildren().clear();
         ApiClient api = new ApiClient();
         Response<List<Statistic>> resp = api.getListResponse("/user/statistics", new HashMap<>(){{ put("user", userId); }}, Statistic.class);
@@ -159,6 +177,7 @@ public class DashboardController {
             Parent runDetailsNode = loader.load();
             RunDetailsController controller = loader.getController();
             controller.setStatistic(stat);
+            controller.setOnExecuteVariables(variables -> executeWithHistoricalVariables(stat, variables));
             statisticsContainer.getChildren().add(runDetailsNode);
         }
     }
@@ -461,6 +480,26 @@ public class DashboardController {
         openExecutePage(null, contextFunction);
     }
     
+    @FXML
+    private void onOpenChat(ActionEvent event) {
+        try {
+            // Load chat page
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/app/ui/chat/chat.fxml"));
+            Parent root = loader.load();
+            
+            // Switch scene
+            Stage stage = (Stage) dashboardRoot.getScene().getWindow();
+            Scene scene = new Scene(root);
+            scene.getStylesheets().add(getClass().getResource("/com/app/ui/app.css").toExternalForm());
+            stage.setScene(scene);
+            stage.setTitle("S-Emulator - Chat");
+            stage.show();
+        } catch (IOException e) {
+            e.printStackTrace();
+            com.app.ui.dashboard.components.errorComponents.ErrorMessageController.showError("Failed to open chat:\n" + e.getMessage());
+        }
+    }
+    
     private void openExecutePage(String programName, String functionName) {
         try {
             // Get current credits from label
@@ -507,6 +546,124 @@ public class DashboardController {
         } catch (NumberFormatException e) {
             // If parsing fails, just set the new amount
             creditsLabel.setText(String.valueOf(creditsToAdd));
+        }
+    }
+    
+    private void executeWithHistoricalVariables(Statistic statistic, List<ProgramResult.VariableToValue> variables) {
+        ApiClient api = new ApiClient();
+        try {
+            // Step 1: Set the current program on the server
+            String programName = statistic.getProgramName();
+            api.postResponse("/program/set", null, new HashMap<>(){{put("programName", programName);}}, Void.class);
+            
+            // Step 2: Extract x variables from historical data
+            List<Integer> input = extractXVariables(variables);
+            
+            // Step 3: Parse architecture string to integer
+            int architecture = parseArchitecture(statistic.getArchitecture());
+            
+            // Step 4: Perform runnability check
+            api.getResponse("/program/runnability", 
+                new HashMap<>(){{
+                    put("expansionLevel", String.valueOf(statistic.getExpansionLevel()));
+                    put("architecture", architectureCode(architecture));
+                }}, 
+                Void.class);
+            
+            // Step 5: Execute with historical parameters
+            Response<ProgramResult> resp = api.postResponse("/program/execute",
+                new HashMap<>() {{
+                    put("expansionLevel", statistic.getExpansionLevel());
+                    put("architecture", architectureCode(architecture));
+                    put("input", input);
+                }},
+                null,
+                ProgramResult.class);
+            
+            ProgramResult result = resp.getData();
+            
+            // Step 6: Handle insufficient credits warning (no UI updates needed)
+            if(result.getHaltReason() == ProgramResult.HaltReason.INSUFFICIENT_CREDITS){
+                WarningMessageController.showWarning("Program execution halted due to insufficient credits");
+            }
+            
+            // Step 7: Update credits display with current credits from server
+            updateCreditsFromServer();
+            
+            // Step 8: Repopulate statistics if currently selected user is the logged-in user
+            if (selectedUserId != null && selectedUserId.equals(UserContext.getUserId())) {
+                try {
+                    populateStatisticsContainer(selectedUserId);
+                } catch (IOException e) {
+                    // Silently fail - statistics will be updated on next refresh
+                }
+            }
+            
+        } catch (Exception e) {
+            ErrorMessageController.showError("Failed to execute with historical variables: " + e.getMessage());
+        }
+    }
+    
+    private void updateCreditsFromServer() {
+        try {
+            ApiClient api = new ApiClient();
+            Response<List<UserInfo>> resp = api.getListResponse("/user/all", null, UserInfo.class);
+            
+            // Find current user's credits
+            String currentUserId = UserContext.getUserId();
+            for (UserInfo user : resp.getData()) {
+                if (user.getName().equals(currentUserId)) {
+                    creditsLabel.setText(String.valueOf(user.getCredits()));
+                    UserContext.setCredits(user.getCredits());
+                    break;
+                }
+            }
+        } catch (Exception e) {
+            // Silently fail - credits will be updated on next dashboard refresh
+        }
+    }
+    
+    private List<Integer> extractXVariables(List<ProgramResult.VariableToValue> variables) {
+        Map<Integer, Integer> indexToValue = new HashMap<>();
+        int maxIndex = 0;
+        
+        for (ProgramResult.VariableToValue v : variables) {
+            String name = v.variable();
+            if (name != null && name.startsWith("x")) {
+                try {
+                    int idx = Integer.parseInt(name.substring(1));
+                    maxIndex = Math.max(maxIndex, idx);
+                    indexToValue.put(idx, v.value());
+                } catch (NumberFormatException ignored) { }
+            }
+        }
+        
+        List<Integer> input = new ArrayList<>();
+        for (int i = 1; i <= maxIndex; i++) {
+            input.add(indexToValue.getOrDefault(i, 0));
+        }
+        
+        return input;
+    }
+    
+    private int parseArchitecture(String arch) {
+        if (arch == null || arch.isEmpty()) return 1;
+        switch (arch.trim()) {
+            case "I": return 1;
+            case "II": return 2;
+            case "III": return 3;
+            case "IV": return 4;
+            default: return 1;
+        }
+    }
+    
+    private String architectureCode(int selected) {
+        switch (selected) {
+            case 1: return "I";
+            case 2: return "II";
+            case 3: return "III";
+            case 4: return "IV";
+            default: return "I";
         }
     }
 }
