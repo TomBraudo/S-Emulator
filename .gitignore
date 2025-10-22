@@ -29,3 +29,20 @@ bin/
 ### Mac OS ###
 .DS_Store
 
+### React Frontend ###
+react-frontend/node_modules/
+react-frontend/build/
+react-frontend/dist/
+react-frontend/.env
+react-frontend/.env.local
+react-frontend/.env.development.local
+react-frontend/.env.test.local
+react-frontend/.env.production.local
+react-frontend/npm-debug.log*
+react-frontend/yarn-debug.log*
+react-frontend/yarn-error.log*
+react-frontend/.eslintcache
+react-frontend/coverage/
+react-frontend/.nyc_output
+react-frontend/.cache/
+
