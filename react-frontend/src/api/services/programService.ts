@@ -42,7 +42,7 @@ export class ProgramService {
 
   // Set current program
   async setProgram(programName: string): Promise<ApiResponse<void>> {
-    return apiClient.post<void>('/program/set', null, { programName });
+    return apiClient.postFormData<void>('/program/set', { programName });
   }
 
   // Execute program

@@ -24,7 +24,7 @@ export class UserService {
 
   // Add credits to user
   async addCredits(credits: number): Promise<ApiResponse<void>> {
-    return apiClient.post<void>('/user/credits', null, { credits });
+    return apiClient.postFormData<void>('/user/credits', { credits });
   }
 }
 
