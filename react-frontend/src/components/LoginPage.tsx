@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { userService, apiClient } from '../api';
 import { validators } from '../utils/validation';
 import { ErrorHandler } from '../utils/errorHandler';
 
 const LoginPage: React.FC = () => {
+  const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -31,8 +33,9 @@ const LoginPage: React.FC = () => {
       // Attempt registration
       await userService.registerUser();
       
-      // If successful, login the user
+      // If successful, login the user and navigate to dashboard
       login(validatedUsername);
+      navigate('/dashboard');
       
     } catch (err) {
       console.error('Registration error:', err);

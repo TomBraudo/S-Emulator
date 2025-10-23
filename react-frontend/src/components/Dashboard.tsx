@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { userService } from '../api/services/userService';
 import { programService } from '../api/services/programService';
@@ -456,6 +457,7 @@ const VariablesViewer: React.FC<VariablesViewerProps> = ({ isOpen, onClose, stat
 };
 
 const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
   const { userId, logout } = useAuth();
   
   // State management
@@ -729,6 +731,22 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const handleExecuteProgram = () => {
+    if (!selectedProgram) {
+      alert('Please select a program to execute');
+      return;
+    }
+    navigate(`/execute/program/${encodeURIComponent(selectedProgram)}`);
+  };
+
+  const handleExecuteFunction = () => {
+    if (!selectedFunction) {
+      alert('Please select a function to execute');
+      return;
+    }
+    navigate(`/execute/function/${encodeURIComponent(selectedFunction)}`);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -823,7 +841,16 @@ const Dashboard: React.FC = () => {
             <div className="space-y-6">
               {/* Programs Section */}
               <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Programs</h2>
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-lg font-semibold text-gray-900">Programs</h2>
+                  <button
+                    onClick={handleExecuteProgram}
+                    disabled={!selectedProgram}
+                    className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-sm font-medium rounded-md transition-colors duration-200"
+                  >
+                    Execute Program
+                  </button>
+                </div>
                 <div className="space-y-3 max-h-64 overflow-y-auto">
                   {programs.map((program) => (
                     <ProgramCard
@@ -839,7 +866,16 @@ const Dashboard: React.FC = () => {
 
               {/* Functions Section */}
               <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Functions</h2>
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-lg font-semibold text-gray-900">Functions</h2>
+                  <button
+                    onClick={handleExecuteFunction}
+                    disabled={!selectedFunction}
+                    className="px-4 py-2 bg-green-500 hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-sm font-medium rounded-md transition-colors duration-200"
+                  >
+                    Execute Function
+                  </button>
+                </div>
                 <div className="space-y-3 max-h-64 overflow-y-auto">
                   {functions.map((func) => (
                     <FunctionCard
