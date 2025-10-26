@@ -704,6 +704,7 @@ public class ExecuteController {
     
     private void handleDebugStepResult(ProgramResult result) {
         // 1. Update credits from sessionCycles
+        // Note: sessionCycles is negative when stepping back (refund), positive when stepping forward (charge)
         int newCredits = ExecuteContext.getCredits() - result.getSessionCycles();
         ExecuteContext.setCredits(newCredits);
         setCredits(newCredits);

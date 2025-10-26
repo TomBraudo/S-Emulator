@@ -368,14 +368,16 @@ public class Api {
         }
         int previousCycles = chargedDebugCycles;
         ProgramResult res = p.stepBack();
-        // Calculate delta (cycles decreased, but we still CHARGE for stepping back)
-        int delta = Math.abs(res.getCycles() - previousCycles);
-        // CHARGE credits for stepping back (not refund)
-        credits -= delta;
-        usedCredits += delta;
+        // Calculate delta (cycles decreased, refund credits for stepping back)
+        int delta = res.getCycles() - previousCycles;
+        // REFUND credits for stepping back (negative delta means cycles decreased)
+        if (delta < 0) {
+            credits -= delta;
+            usedCredits -= delta;
+        }
         chargedDebugCycles = res.getCycles();
         
-        // Wrap result with sessionCycles = delta
+        // Wrap result with sessionCycles = delta (negative when stepping back)
         HashMap<String, Integer> vars = new HashMap<>();
         for (ProgramResult.VariableToValue vtv : res.getVariableToValue()) {
             vars.put(vtv.variable(), vtv.value());

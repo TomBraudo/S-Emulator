@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { programService } from '../api/services/programService';
 import { userService } from '../api/services/userService';
+import { ProgramCommands, ProgramSummary, ProgramResult, VariableToValue } from '../types/api';
 
 const ExecutionPage: React.FC = () => {
   const { programName, functionName } = useParams<{
@@ -13,44 +14,99 @@ const ExecutionPage: React.FC = () => {
   const { userId } = useAuth();
   const [credits, setCredits] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
-  const [executionMode, setExecutionMode] = useState<'execute' | 'debug'>('execute');
   const [selectedArchitecture, setSelectedArchitecture] = useState<number>(1);
   const [expansionLevel, setExpansionLevel] = useState<number>(0);
+  const [maxExpansionLevel, setMaxExpansionLevel] = useState<number>(0);
+  const [programCommands, setProgramCommands] = useState<ProgramCommands | null>(null);
+  const [programSummary, setProgramSummary] = useState<ProgramSummary | null>(null);
+  const [inputVariables, setInputVariables] = useState<string[]>([]);
+  const [inputValues, setInputValues] = useState<Map<string, number>>(new Map());
+  const [customInputVariables, setCustomInputVariables] = useState<string[]>([]);
+  const [customInputValues, setCustomInputValues] = useState<Map<string, number>>(new Map());
+  const [executionResult, setExecutionResult] = useState<ProgramResult | null>(null);
+  const [isExecuting, setIsExecuting] = useState<boolean>(false);
+  const [showInputForm, setShowInputForm] = useState<boolean>(false);
 
   // Load initial data
   useEffect(() => {
     const loadInitialData = async () => {
       try {
         if (userId) {
-          const response = await userService.getCredits();
-          if (response.success) {
-            setCredits(response.data);
+          // Load credits
+          const creditsResponse = await userService.getCredits();
+          if (creditsResponse.success) {
+            setCredits(creditsResponse.data);
           }
+
+          // Set the program/function
+          const programToSet = programName || functionName;
+          if (programToSet) {
+            const setProgramResponse = await programService.setProgram(programToSet);
+            if (!setProgramResponse.success) {
+              throw new Error(`Failed to set program: ${setProgramResponse.message}`);
+            }
+          }
+
+          // Load max expansion level
+          const maxLevelResponse = await programService.getMaxLevel();
+          if (maxLevelResponse.success) {
+            setMaxExpansionLevel(maxLevelResponse.data);
+          }
+
+          // Load initial data for expansion level 0
+          await loadProgramData(0);
         }
       } catch (error: any) {
-        console.error('Failed to load credits:', error);
+        console.error('Failed to load initial data:', error);
+        alert(`Failed to load execution page: ${error.message}`);
       } finally {
         setLoading(false);
       }
     };
 
     loadInitialData();
-  }, [userId]);
+  }, [userId, programName, functionName]);
 
-  const handleExecuteProgram = async () => {
-    if (!programName) {
-      alert('No program selected for execution');
-      return;
-    }
-
+  // Load program data for specific expansion level
+  const loadProgramData = async (level: number) => {
     try {
-      // Set the program on the server
-      const setProgramResponse = await programService.setProgram(programName);
-      if (!setProgramResponse.success) {
-        throw new Error(`Failed to set program: ${setProgramResponse.message}`);
+      // Load program commands
+      const commandsResponse = await programService.getProgramCommands(level);
+      if (commandsResponse.success) {
+        setProgramCommands(commandsResponse.data);
       }
 
-      // Check runnability
+      // Load program summary
+      const summaryResponse = await programService.getProgramSummary(level);
+      if (summaryResponse.success) {
+        setProgramSummary(summaryResponse.data);
+      }
+
+      // Load input variables
+      const inputResponse = await programService.getInputVariables();
+      if (inputResponse.success) {
+        setInputVariables(inputResponse.data);
+      }
+    } catch (error: any) {
+      console.error('Failed to load program data:', error);
+    }
+  };
+
+  // Handle expansion level change
+  const handleExpansionLevelChange = async (level: number) => {
+    setExpansionLevel(level);
+    await loadProgramData(level);
+  };
+
+  // Handle architecture change
+  const handleArchitectureChange = (arch: number) => {
+    setSelectedArchitecture(arch);
+  };
+
+  // Start execution process
+  const handleStartExecution = async () => {
+    try {
+      // Check runnability first
       const runnabilityResponse = await programService.checkRunnability(
         expansionLevel,
         architectureCode(selectedArchitecture)
@@ -60,45 +116,147 @@ const ExecutionPage: React.FC = () => {
         throw new Error(`Program cannot run: ${runnabilityResponse.message}`);
       }
 
-      // For now, just show a placeholder message
-      alert(`Execute Program: ${programName}\nArchitecture: ${architectureCode(selectedArchitecture)}\nExpansion Level: ${expansionLevel}\n\nExecution interface will be implemented here.`);
+      // Reset custom variables when opening form
+      setCustomInputVariables([]);
+      setCustomInputValues(new Map());
+      setInputValues(new Map());
+
+      // Show input form
+      setShowInputForm(true);
     } catch (error: any) {
-      console.error('Failed to execute program:', error);
-      const errorMessage = error.message || error.toString();
-      alert(`Failed to execute program: ${errorMessage}`);
+      console.error('Failed to start execution:', error);
+      alert(`Failed to start execution: ${error.message}`);
     }
   };
 
-  const handleExecuteFunction = async () => {
-    if (!functionName) {
-      alert('No function selected for execution');
-      return;
-    }
-
+  // Execute program with input values
+  const handleExecuteWithInput = async (requiredInputMap: Map<string, number>, customInputMap: Map<string, number>) => {
+    setIsExecuting(true);
+    setShowInputForm(false);
+    
     try {
-      // Set the function on the server (functions are also programs)
-      const setProgramResponse = await programService.setProgram(functionName);
-      if (!setProgramResponse.success) {
-        throw new Error(`Failed to set function: ${setProgramResponse.message}`);
-      }
-
-      // Check runnability
-      const runnabilityResponse = await programService.checkRunnability(
+      // Combine required and custom inputs, padding missing indices with zeroes
+      const allInputs = new Map<string, number>();
+      
+      // Add required inputs
+      requiredInputMap.forEach((value, key) => {
+        allInputs.set(key, value);
+      });
+      
+      // Add custom inputs
+      customInputMap.forEach((value, key) => {
+        allInputs.set(key, value);
+      });
+      
+      // Convert to array, padding missing indices with zeroes
+      const inputArray = createPaddedInputArray(allInputs);
+      
+      const executeResponse = await programService.executeProgram({
         expansionLevel,
-        architectureCode(selectedArchitecture)
-      );
+        architecture: architectureCode(selectedArchitecture),
+        input: inputArray
+      });
 
-      if (!runnabilityResponse.success) {
-        throw new Error(`Function cannot run: ${runnabilityResponse.message}`);
+      if (executeResponse.success) {
+        setExecutionResult(executeResponse.data);
+        
+        // Update credits
+        const newCredits = credits - (executeResponse.data.cycles + architectureToCost(selectedArchitecture));
+        setCredits(newCredits);
+        
+        // Show warning if insufficient credits
+        if (executeResponse.data.haltReason === 'INSUFFICIENT_CREDITS') {
+          alert('Program execution halted due to insufficient credits, and did not execute completely');
+        }
+      } else {
+        throw new Error(executeResponse.message);
       }
-
-      // For now, just show a placeholder message
-      alert(`Execute Function: ${functionName}\nArchitecture: ${architectureCode(selectedArchitecture)}\nExpansion Level: ${expansionLevel}\n\nExecution interface will be implemented here.`);
     } catch (error: any) {
-      console.error('Failed to execute function:', error);
-      const errorMessage = error.message || error.toString();
-      alert(`Failed to execute function: ${errorMessage}`);
+      console.error('Failed to execute program:', error);
+      alert(`Failed to execute program: ${error.message}`);
+    } finally {
+      setIsExecuting(false);
     }
+  };
+
+  // Cancel input form
+  const handleCancelInput = () => {
+    setShowInputForm(false);
+  };
+
+  // Create padded input array from variable map
+  const createPaddedInputArray = (inputMap: Map<string, number>): number[] => {
+    const maxIndex = Math.max(
+      ...Array.from(inputMap.keys()).map(key => {
+        const match = key.match(/^x(\d+)$/);
+        return match ? parseInt(match[1]) : 0;
+      }),
+      -1
+    );
+    
+    const result: number[] = [];
+    for (let i = 1; i <= maxIndex; i++) {
+      const xKey = `x${i}`;
+      const xValue = inputMap.get(xKey);
+      
+      // Add x value if exists, otherwise 0
+      result.push(xValue !== undefined ? xValue : 0);
+    }
+    
+    return result;
+  };
+
+  // Add custom input variable
+  const addCustomInputVariable = () => {
+    const allVariables = [...customInputVariables, ...inputVariables];
+    const maxIndex = Math.max(
+      ...allVariables.map(key => {
+        const match = key.match(/^x(\d+)$/);
+        return match ? parseInt(match[1]) : 0;
+      }),
+      0
+    );
+    
+    const nextIndex = maxIndex + 1;
+    const newVariable = `x${nextIndex}`;
+    
+    setCustomInputVariables(prev => [...prev, newVariable]);
+    setCustomInputValues(prev => {
+      const newMap = new Map(prev);
+      newMap.set(newVariable, 0);
+      return newMap;
+    });
+  };
+
+  // Remove any input variable (required or custom)
+  const removeInputVariable = (variable: string) => {
+    // Check if it's a required variable
+    if (inputVariables.includes(variable)) {
+      // Remove from required variables
+      setInputVariables(prev => prev.filter(v => v !== variable));
+      setInputValues(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(variable);
+        return newMap;
+      });
+    } else {
+      // Remove from custom variables
+      setCustomInputVariables(prev => prev.filter(v => v !== variable));
+      setCustomInputValues(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(variable);
+        return newMap;
+      });
+    }
+  };
+
+  // Update custom input value
+  const updateCustomInputValue = (variable: string, value: number) => {
+    setCustomInputValues(prev => {
+      const newMap = new Map(prev);
+      newMap.set(variable, value);
+      return newMap;
+    });
   };
 
   const architectureCode = (arch: number): string => {
@@ -108,6 +266,27 @@ const ExecutionPage: React.FC = () => {
       case 3: return 'III';
       case 4: return 'IV';
       default: return 'I';
+    }
+  };
+
+  const architectureToCost = (arch: number): number => {
+    switch (arch) {
+      case 1: return 5;
+      case 2: return 100;
+      case 3: return 500;
+      case 4: return 1000;
+      default: return 0;
+    }
+  };
+
+  const parseArchitecture = (arch: string): number => {
+    if (!arch || arch.trim() === '') return 1;
+    switch (arch.trim()) {
+      case 'I': return 1;
+      case 'II': return 2;
+      case 'III': return 3;
+      case 'IV': return 4;
+      default: return 1;
     }
   };
 
@@ -154,61 +333,36 @@ const ExecutionPage: React.FC = () => {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           
-          {/* Left Panel - Program/Function Info */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                {programName ? 'Program Information' : 'Function Information'}
-              </h2>
-              
-              <div className="space-y-4">
+          {/* Left Panel - Program Commands and Summary */}
+          <div className="space-y-6">
+            {/* Program Commands */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="p-4 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold text-gray-900">Program Commands</h2>
+                  <div className="flex items-center space-x-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Name
-                  </label>
-                  <div className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">
-                    {programName || functionName}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Type
-                  </label>
-                  <div className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">
-                    {programName ? 'Program' : 'Helper Function'}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Expansion Level
-                  </label>
+                      <label className="block text-xs text-gray-500 mb-1">Expansion Level</label>
                   <select
                     value={expansionLevel}
-                    onChange={(e) => setExpansionLevel(parseInt(e.target.value))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value={0}>Level 0</option>
-                    <option value={1}>Level 1</option>
-                    <option value={2}>Level 2</option>
-                    <option value={3}>Level 3</option>
-                    <option value={4}>Level 4</option>
+                        onChange={(e) => handleExpansionLevelChange(parseInt(e.target.value))}
+                        className="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        {Array.from({ length: maxExpansionLevel + 1 }, (_, i) => (
+                          <option key={i} value={i}>Level {i}</option>
+                        ))}
                   </select>
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Architecture
-                  </label>
-                  <div className="grid grid-cols-4 gap-2">
+                      <label className="block text-xs text-gray-500 mb-1">Architecture</label>
+                      <div className="flex space-x-1">
                     {[1, 2, 3, 4].map((arch) => (
                       <button
                         key={arch}
-                        onClick={() => setSelectedArchitecture(arch)}
-                        className={`px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+                            onClick={() => handleArchitectureChange(arch)}
+                            className={`px-2 py-1 text-xs font-medium rounded transition-colors duration-200 ${
                           selectedArchitecture === arch
                             ? 'bg-blue-500 text-white'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -223,93 +377,254 @@ const ExecutionPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Right Panel - Execution Controls */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-6">
-                Execution Controls
-              </h2>
-
-              {/* Mode Selection */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Execution Mode
-                </label>
-                <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
-                  <button
-                    onClick={() => setExecutionMode('execute')}
-                    className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
-                      executionMode === 'execute'
-                        ? 'bg-white text-blue-600 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Execute
-                  </button>
-                  <button
-                    onClick={() => setExecutionMode('debug')}
-                    className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
-                      executionMode === 'debug'
-                        ? 'bg-white text-blue-600 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Debug
-                  </button>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="space-y-4">
-                {executionMode === 'execute' ? (
-                  <div className="text-center">
-                    <button
-                      onClick={programName ? handleExecuteProgram : handleExecuteFunction}
-                      className="px-8 py-3 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition-colors duration-200 shadow-sm"
-                    >
-                      {programName ? 'Execute Program' : 'Execute Function'}
-                    </button>
+              <div className="p-4 max-h-96 overflow-y-auto">
+                {programCommands ? (
+                  <div className="space-y-2">
+                    {programCommands.commands.map((command, index) => {
+                      const commandArch = parseArchitecture(programCommands.architectures[index]);
+                      const isHighlighted = commandArch <= selectedArchitecture;
+                      
+                      return (
+                        <div
+                          key={index}
+                          className={`p-2 rounded text-sm font-mono ${
+                            isHighlighted
+                              ? 'bg-blue-50 border-l-4 border-blue-500'
+                              : 'bg-gray-50 border-l-4 border-gray-200'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-600 text-xs w-8">{index}</span>
+                            <span className="flex-1 ml-2">{command}</span>
+                            <span className="text-xs text-gray-500 ml-2">
+                              {programCommands.architectures[index]}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 ) : (
-                  <div className="text-center">
-                    <button
-                      onClick={programName ? handleExecuteProgram : handleExecuteFunction}
-                      className="px-8 py-3 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg transition-colors duration-200 shadow-sm"
-                    >
-                      {programName ? 'Start Debugging Program' : 'Start Debugging Function'}
-                    </button>
+                  <div className="text-center text-gray-500 py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+                    Loading commands...
                   </div>
                 )}
               </div>
+            </div>
 
-              {/* Execution Interface Placeholder */}
-              <div className="mt-8 p-6 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                <div className="text-center">
-                  <div className="text-gray-400 mb-4">
-                    <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
+            {/* Program Summary */}
+            {programSummary && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <h3 className="text-md font-semibold text-gray-900 mb-3">Program Summary</h3>
+                <div className="grid grid-cols-4 gap-4 text-sm">
+                  <div className="text-center">
+                    <div className="font-medium text-gray-900">I</div>
+                    <div className="text-gray-600">{programSummary.architectureCommandsCount[0] || 0}</div>
                   </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    Execution Interface
-                  </h3>
-                  <p className="text-gray-600 mb-4">
-                    The execution interface will be implemented here. This will include:
-                  </p>
-                  <ul className="text-sm text-gray-600 text-left space-y-1 max-w-md mx-auto">
-                    <li>• Program/Function command display</li>
-                    <li>• Input variable configuration</li>
-                    <li>• Execution progress tracking</li>
-                    <li>• Variable state visualization</li>
-                    <li>• Debug controls (step over, continue, etc.)</li>
-                    <li>• Results and output display</li>
-                  </ul>
+                  <div className="text-center">
+                    <div className="font-medium text-gray-900">II</div>
+                    <div className="text-gray-600">{programSummary.architectureCommandsCount[1] || 0}</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="font-medium text-gray-900">III</div>
+                    <div className="text-gray-600">{programSummary.architectureCommandsCount[2] || 0}</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="font-medium text-gray-900">IV</div>
+                    <div className="text-gray-600">{programSummary.architectureCommandsCount[3] || 0}</div>
+                  </div>
                 </div>
+              </div>
+            )}
+          </div>
+
+          {/* Right Panel - Execution Controls and Results */}
+          <div className="space-y-6">
+            {/* Execution Controls */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Execution Controls</h2>
+              
+              <div className="text-center">
+                  <button
+                  onClick={handleStartExecution}
+                  disabled={isExecuting}
+                  className="px-8 py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white font-medium rounded-lg transition-colors duration-200 shadow-sm"
+                >
+                  {isExecuting ? 'Executing...' : 'Start Execution'}
+                  </button>
+              </div>
+            </div>
+
+            {/* Input Variables Display */}
+            {inputVariables.length > 0 && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <h3 className="text-md font-semibold text-gray-900 mb-3">Input Variables</h3>
+                <div className="text-sm text-gray-600">
+                  Required variables: {inputVariables.join(', ')}
+                </div>
+              </div>
+            )}
+
+            {/* Execution Results */}
+            {executionResult && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Execution Results</h3>
+                
+              <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-sm font-medium text-gray-700">Cycles</div>
+                      <div className="text-lg font-semibold text-blue-600">{executionResult.cycles}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-gray-700">Result</div>
+                      <div className="text-lg font-semibold text-green-600">{executionResult.result}</div>
+                    </div>
+                  </div>
+
+                  {executionResult.variableToValue && executionResult.variableToValue.length > 0 && (
+                    <div>
+                      <div className="text-sm font-medium text-gray-700 mb-2">Variables</div>
+                      <div className="space-y-1">
+                        {executionResult.variableToValue.map((variable, index) => (
+                          <div key={index} className="flex justify-between text-sm">
+                            <span className="font-mono">{variable.variable}</span>
+                            <span className="font-semibold">{variable.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {executionResult.haltReason && executionResult.haltReason !== 'FINISHED' && (
+                    <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                      <div className="text-sm text-yellow-800">
+                        <strong>Halt Reason:</strong> {executionResult.haltReason.replace('_', ' ').toLowerCase()}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Input Form Modal */}
+      {showInputForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Input Variables</h3>
+              
+              <div className="mb-6">
+                <div className="text-sm text-gray-600 mb-4">
+                  Required variables: {inputVariables.length > 0 ? inputVariables.join(', ') : 'None'}
+                </div>
+                
+                {/* Input Array Preview */}
+                <div className="mb-4 p-3 bg-gray-50 rounded-md">
+                  <div className="text-sm font-medium text-gray-700 mb-2">Input Array Preview:</div>
+                  <div className="text-xs font-mono text-gray-600">
+                    [{createPaddedInputArray(new Map([...Array.from(inputValues.entries()), ...Array.from(customInputValues.entries())])).join(', ')}]
+                  </div>
+                </div>
+                
+                {/* All Input Variables */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-md font-medium text-gray-800">Input Variables</h4>
+                    <button
+                      onClick={addCustomInputVariable}
+                      className="px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-sm rounded-md transition-colors duration-200 flex items-center space-x-1"
+                    >
+                      <span>+</span>
+                      <span>Add Variable</span>
+                    </button>
+                  </div>
+                  
+                  {inputVariables.length === 0 && customInputVariables.length === 0 && (
+                    <div className="text-sm text-gray-500 italic text-center py-4">
+                      No variables added. Click "Add Variable" to add more.
+                    </div>
+                  )}
+                  
+                  {/* Required Variables */}
+                  {inputVariables.map((variable) => (
+                    <div key={variable} className="flex items-center space-x-2">
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          {variable} <span className="text-xs text-gray-500">(required)</span>
+                        </label>
+                        <input
+                          type="number"
+                          value={inputValues.get(variable) || ''}
+                          onChange={(e) => {
+                            const newValues = new Map(inputValues);
+                            newValues.set(variable, parseInt(e.target.value) || 0);
+                            setInputValues(newValues);
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Enter value"
+                        />
+                      </div>
+                      <button
+                        onClick={() => removeInputVariable(variable)}
+                        className="px-2 py-2 bg-red-500 hover:bg-red-600 text-white text-sm rounded-md transition-colors duration-200 flex items-center justify-center w-8 h-8"
+                        title="Remove variable"
+                      >
+                        −
+                      </button>
+                    </div>
+                  ))}
+                  
+                  {/* Custom Variables */}
+                  {customInputVariables.map((variable) => (
+                    <div key={variable} className="flex items-center space-x-2">
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          {variable}
+                        </label>
+                        <input
+                          type="number"
+                          value={customInputValues.get(variable) || ''}
+                          onChange={(e) => updateCustomInputValue(variable, parseInt(e.target.value) || 0)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Enter value"
+                        />
+                      </div>
+                      <button
+                        onClick={() => removeInputVariable(variable)}
+                        className="px-2 py-2 bg-red-500 hover:bg-red-600 text-white text-sm rounded-md transition-colors duration-200 flex items-center justify-center w-8 h-8"
+                        title="Remove variable"
+                      >
+                        −
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="flex space-x-3">
+                <button
+                  onClick={handleCancelInput}
+                  className="flex-1 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-md transition-colors duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleExecuteWithInput(inputValues, customInputValues)}
+                  disabled={isExecuting}
+                  className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white rounded-md transition-colors duration-200"
+                >
+                  {isExecuting ? 'Executing...' : 'Execute'}
+                </button>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
