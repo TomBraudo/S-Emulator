@@ -1,7 +1,7 @@
 package com.commands;
 
 import com.api.Api;
-import com.api.ProgramResult;
+import com.dto.api.ProgramResult;
 import com.program.Program;
 
 import java.util.ArrayList;
@@ -43,6 +43,5 @@ public class Main {
         Increase incY1 = new Increase("y", BaseCommand.NO_LABEL, 1,null);
         Program p = new Program("p", List.of(jef, incY1));
         System.out.println(p);
-        System.out.println(p.execute(List.of(1, 2, 4)).getResult());
     }
 }

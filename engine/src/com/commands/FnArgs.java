@@ -1,16 +1,13 @@
 package com.commands;
 
-import com.XMLHandlerV2.SFunction;
 import com.XMLHandlerV2.SFunctions;
-import com.XMLHandlerV2.SInstruction;
+import com.program.FunctionRegistry;
 import com.program.Program;
 import com.program.ProgramState;
-import com.api.ProgramResult;
+import com.dto.api.ProgramResult;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Handles function arguments:
@@ -30,146 +27,63 @@ public final class FnArgs {
 
     private FnArgs() {}
 
-    // Function name -> raw instructions (definitions)
-    private static final Map<String, List<SInstruction>> DEFINITIONS = new HashMap<>();
-    // Function name -> compiled Program cache
-    private static final Map<String, Program> PROGRAM_CACHE = new HashMap<>();
-    // Function name -> arity (number of expected input arguments)
-    private static final Map<String, Integer> FUNCTION_ARITY = new HashMap<>();
-    // Guard set to detect recursive/self references during program build
-    private static final java.util.Set<String> BUILDING = new java.util.HashSet<>();
+    // Registry state moved to FunctionRegistry; this class focuses on parsing/evaluation and delegates lookups/registrations.
+
+    // ---- Registration APIs (additive; no clearing) ----
+    public static void registerFunctions(String userId, SFunctions functions, String programName) {
+        FunctionRegistry.registerFunctions(userId, functions, programName);
+    }
 
     /**
-     * Register functions into the internal registry. Existing entries are cleared.
+     * Pre-validate a program name for uniqueness without mutating state.
+     * Throws if the program name is owned by another user.
      */
-    public static void registerFunctions(SFunctions functions) {
-        DEFINITIONS.clear();
-        PROGRAM_CACHE.clear();
-        FUNCTION_ARITY.clear();
-        BUILDING.clear();
-        if (functions == null) return;
-        for (SFunction f : functions.getSFunction()) {
-            List<SInstruction> instructions = f.getSInstructions().getSInstruction();
-            DEFINITIONS.put(f.getName(), instructions);
-            
-            // Calculate and store the arity (max x-variable index)
-            int arity = calculateArity(instructions);
-            FUNCTION_ARITY.put(f.getName(), arity);
-        }
-        // Note: Programs are built lazily on first use via getProgramByName()
-        // If you prefer eager build, iterate names and call getProgramByName(name) here.
+    public static void assertProgramNameAvailable(String userId, String programName) {
+        FunctionRegistry.assertProgramNameAvailable(userId, programName);
     }
 
     /**
      * Retrieve a Program instance by function name using the registered function body.
      */
     public static Program getProgramByName(String functionName) {
-        Program cached = PROGRAM_CACHE.get(functionName);
-        if (cached != null) return cached;
-
-        List<SInstruction> functionInstructions = DEFINITIONS.get(functionName);
-        if (functionInstructions == null) {
-            throw new IllegalArgumentException("Function not found: " + functionName);
-        }
-
-        // Guard against recursive/self references
-        if (!BUILDING.add(functionName)) {
-            throw new IllegalStateException("Recursive function reference detected: " + functionName);
-        }
-        try {
-            Program program = Program.createProgram(functionName, functionInstructions);
-            PROGRAM_CACHE.put(functionName, program);
-            return program;
-        } finally {
-            BUILDING.remove(functionName);
-        }
+        return FunctionRegistry.getProgramByName(functionName);
     }
 
-    public static void registerProgram(String functionName, Program p) {
-        PROGRAM_CACHE.put(functionName, p);
+    /**
+     * Register a compiled Program as a function implementation for the given user.
+     * If the function name is owned by another user, throws.
+     */
+    public static void registerProgramAsFunction(String userId, String functionName, Program p) {
+        FunctionRegistry.registerProgramAsFunction(userId, functionName, p);
+    }
+
+
+    /**
+     * Register a compiled Program as a user program (not a function), enforcing global name uniqueness.
+     */
+    public static void registerProgram(String userId, Program p) {
+        FunctionRegistry.registerProgram(userId, p);
     }
 
     /**
      * Calculate the arity of a function by finding the highest x-variable index.
      * For example, if the function uses x1, x5, x11, the arity is 11.
      */
-    private static int calculateArity(List<SInstruction> instructions) {
-        int maxXIndex = 0;
-        
-        for (SInstruction instruction : instructions) {
-            // Check the main variable
-            String variable = instruction.getSVariable();
-            if (variable != null) {
-                maxXIndex = Math.max(maxXIndex, extractXIndex(variable));
-            }
-            
-            // Check arguments for variable references
-            if (instruction.getSInstructionArguments() != null) {
-                for (com.XMLHandlerV2.SInstructionArgument arg : instruction.getSInstructionArguments().getSInstructionArgument()) {
-                    String value = arg.getValue();
-                    if (value != null) {
-                        maxXIndex = Math.max(maxXIndex, findMaxXIndexInString(value));
-                    }
-                }
-            }
-        }
-        
-        return maxXIndex;
-    }
+    // Arity calculation moved to FunctionRegistry
 
-    public static void clearFunctions(){
-        DEFINITIONS.clear();
-        PROGRAM_CACHE.clear();
-        FUNCTION_ARITY.clear();
-        BUILDING.clear();
-    }
+    public static void clearFunctions(){ }
 
     /**
      * Extract the index from an x-variable (e.g., "x1" -> 1, "x11" -> 11)
      * Returns 0 if not an x-variable.
      */
-    private static int extractXIndex(String variable) {
-        if (variable != null && variable.startsWith("x") && variable.length() > 1) {
-            try {
-                return Integer.parseInt(variable.substring(1));
-            } catch (NumberFormatException e) {
-                // Not a valid x-variable format
-            }
-        }
-        return 0;
-    }
-
-    /**
-     * Find the maximum x-variable index in a string that might contain function arguments.
-     * For example, "(g, x1, x5)" would return 5.
-     */
-    private static int findMaxXIndexInString(String str) {
-        int maxIndex = 0;
-        // Simple regex to find x-variables in the string
-        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\bx(\\d+)\\b");
-        java.util.regex.Matcher matcher = pattern.matcher(str);
-        
-        while (matcher.find()) {
-            try {
-                int index = Integer.parseInt(matcher.group(1));
-                maxIndex = Math.max(maxIndex, index);
-            } catch (NumberFormatException e) {
-                // Skip invalid numbers
-            }
-        }
-        
-        return maxIndex;
-    }
+    // Regex helpers moved to FunctionRegistry
 
     /**
      * Get the arity (expected number of input arguments) for a function.
      */
     public static int getFunctionArity(String functionName) {
-        Integer arity = FUNCTION_ARITY.get(functionName);
-        if (arity == null) {
-            throw new IllegalArgumentException("Function not found: " + functionName);
-        }
-        return arity;
+        return FunctionRegistry.getFunctionArity(functionName);
     }
 
     /**
@@ -256,7 +170,7 @@ public final class FnArgs {
             inner.add(evalArg(state, sub));
         }
         Program nested = getProgramByName(call.name());
-        ProgramResult r = nested.execute(inner);
+        ProgramResult r = nested.executeWithBudget(inner, Integer.MAX_VALUE);
         return r.getResult();
     }
 
@@ -430,7 +344,32 @@ public final class FnArgs {
     }
 
     public static List<String> getFunctionNames() {
-        return new ArrayList<>(DEFINITIONS.keySet());
+        return FunctionRegistry.getFunctionNames();
+    }
+
+    public static List<String> getFunctionNames(String userId) {
+        return FunctionRegistry.getFunctionNames(userId);
+    }
+
+    public static List<String> getProgramNames(String userId) {
+        return FunctionRegistry.getProgramNames(userId);
+    }
+
+    // -------- Tuple-returning listings (userId, name) --------
+    public static List<java.util.Map.Entry<String, String>> getFunctionEntries() {
+        return FunctionRegistry.getFunctionEntries();
+    }
+
+    public static List<java.util.Map.Entry<String, String>> getFunctionEntries(String userId) {
+        return FunctionRegistry.getFunctionEntries(userId);
+    }
+
+    public static List<java.util.Map.Entry<String, String>> getProgramEntries(String userId) {
+        return FunctionRegistry.getProgramEntries(userId);
+    }
+
+    public static List<java.util.Map.Entry<String, String>> getProgramEntries() {
+        return FunctionRegistry.getProgramEntries();
     }
 
     public static List<String> getFunctionCommands(String functionName){

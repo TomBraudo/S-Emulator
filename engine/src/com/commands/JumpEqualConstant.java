@@ -54,7 +54,7 @@ class JumpEqualConstant extends BaseCommand {
 
     @Override
     public String toStringBase() {
-        return String.format("#%d (S) [ %s ] IF %s = %d GOTO %s (%d)", index+1, displayLabel(), variableName, value, targetLabel, cycles);
+        return String.format("#%d (S) [ %s ] IF %s = %d GOTO %s (%d) | %s", index+1, displayLabel(), variableName, value, targetLabel, cycles, getArchitecture());
     }
 
     @Override
@@ -128,5 +128,10 @@ class JumpEqualConstant extends BaseCommand {
         args.getSInstructionArgument().add(a2);
         ins.setSInstructionArguments(args);
         return ins;
+    }
+
+    @Override
+    public String getArchitecture() {
+        return "III";
     }
 }

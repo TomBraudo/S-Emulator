@@ -53,7 +53,7 @@ class JumpEqualVariable extends BaseCommand {
 
     @Override
     public String toStringBase() {
-        return String.format("#%d (S) [ %s ] IF %s = %s GOTO %s (%d)", index+1, displayLabel(), variableName, otherVariableName, targetLabel, cycles);
+        return String.format("#%d (S) [ %s ] IF %s = %s GOTO %s (%d) | %s", index+1, displayLabel(), variableName, otherVariableName, targetLabel, cycles, getArchitecture());
     }
 
     @Override
@@ -133,5 +133,10 @@ class JumpEqualVariable extends BaseCommand {
         args.getSInstructionArgument().add(a2);
         ins.setSInstructionArguments(args);
         return ins;
+    }
+
+    @Override
+    public String getArchitecture() {
+        return "III";
     }
 }

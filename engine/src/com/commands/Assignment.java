@@ -82,7 +82,7 @@ class Assignment extends BaseCommand {
 
     @Override
     protected String toStringBase() {
-        return String.format("#%d (S) [ %s ] %s <- %s (%d)", index + 1, displayLabel(), variableName, otherVariableName, cycles);
+        return String.format("#%d (S) [ %s ] %s <- %s (%d) | %s", index + 1, displayLabel(), variableName, otherVariableName, cycles, getArchitecture());
     }
 
     @Override
@@ -120,5 +120,10 @@ class Assignment extends BaseCommand {
         ins.setSInstructionArguments(args);
         return ins;
     }
-    
+
+    @Override
+    public String getArchitecture() {
+        return "III";
+    }
+
 }

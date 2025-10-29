@@ -1,7 +1,7 @@
 package com.commands;
 
 import com.XMLHandlerV2.SInstruction;
-import com.api.ProgramResult;
+import com.dto.api.ProgramResult;
 import com.program.Program;
 import com.program.ProgramState;
 import com.program.SingleStepChanges;
@@ -36,7 +36,7 @@ class Quotation extends BaseCommand{
     @Override
     public void execute(ProgramState programState) {
         List<Integer> evaluated = FnArgs.evaluateArgs(programState, input);
-        ProgramResult res = p.execute(evaluated);
+        ProgramResult res = p.executeWithBudget(evaluated, Integer.MAX_VALUE);
         SingleStepChanges.SingleVariableChange variableChange = new SingleStepChanges.SingleVariableChange(variableName, programState.variables.get(variableName).getValue(), res.getResult());
         SingleStepChanges.IndexChange indexChange = new SingleStepChanges.IndexChange(programState.currentCommandIndex, programState.currentCommandIndex + 1);
         SingleStepChanges.CyclesChange cyclesChange = new SingleStepChanges.CyclesChange(programState.cyclesCount, programState.cyclesCount + res.getCycles() + 5);
@@ -55,7 +55,7 @@ class Quotation extends BaseCommand{
     protected String toStringBase() {
         List<String> parts = FnArgs.renderArgList(input);
         return String.format("#%d (S) [ %s ] %s <- (%s,", index + 1, displayLabel(), variableName, p.getName()) +
-                String.join(",", parts) + ")" + " (X + 5)";
+                String.join(",", parts) + ")" + " (X + 5) | " + getArchitecture();
     }
 
     @Override
@@ -180,5 +180,50 @@ class Quotation extends BaseCommand{
     @Override
     public String getTargetLabel() {
         return NO_LABEL;
+    }
+
+    @Override
+    public String getArchitecture() {
+        return "IV";
+    }
+    
+    @Override
+    public java.util.List<String> getCalledFunctionNames() {
+        if (p == null) {
+            return java.util.Collections.emptyList();
+        }
+        
+        java.util.List<String> result = new java.util.ArrayList<>();
+        java.util.Set<String> visited = new java.util.HashSet<>();
+        
+        // Add the main function name
+        if (!visited.contains(p.getName())) {
+            visited.add(p.getName());
+            result.add(p.getName());
+        }
+        
+        // Extract nested function calls from the input arguments
+        if (input != null) {
+            extractFromArgs(input, result, visited);
+        }
+        
+        return result;
+    }
+    
+    private void extractFromArgs(java.util.List<Object> args, java.util.List<String> result, java.util.Set<String> visited) {
+        for (Object arg : args) {
+            if (arg instanceof ArgExpr.ArgCall) {
+                ArgExpr.ArgCall call = (ArgExpr.ArgCall) arg;
+                String funcName = call.name();
+                if (!visited.contains(funcName)) {
+                    visited.add(funcName);
+                    result.add(funcName);
+                }
+                // Recursively process nested arguments
+                if (call.args() != null) {
+                    extractFromArgs(call.args(), result, visited);
+                }
+            }
+        }
     }
 }

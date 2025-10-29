@@ -67,7 +67,7 @@ class ConstantAssignment extends BaseCommand {
 
     @Override
     protected String toStringBase() {
-        return String.format("#%d (S) [ %s ] %s <- %d (%d)", index+1, displayLabel(), variableName, value, cycles);
+        return String.format("#%d (S) [ %s ] %s <- %d (%d) | %s", index+1, displayLabel(), variableName, value, cycles, getArchitecture());
     }
 
     @Override
@@ -104,5 +104,10 @@ class ConstantAssignment extends BaseCommand {
         args.getSInstructionArgument().add(arg);
         ins.setSInstructionArguments(args);
         return ins;
+    }
+
+    @Override
+    public String getArchitecture() {
+        return "II";
     }
 }

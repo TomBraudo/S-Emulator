@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane prefHeight="220.0" prefWidth="420.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.app.ui.login.LoginController">
+  <center>
+    <VBox alignment="CENTER" spacing="10.0" styleClass="content-pad">
+      <children>
+        <Label fx:id="titleLabel" text="Login" styleClass="label-section" />
+        <TextField fx:id="usernameField" promptText="Enter username" />
+        <Label fx:id="errorLabel" textFill="red" visible="false" />
+        <Button fx:id="loginButton" text="Login" styleClass="btn btn-primary" onAction="#onLogin" />
+      </children>
+    </VBox>
+  </center>
+</BorderPane>
+

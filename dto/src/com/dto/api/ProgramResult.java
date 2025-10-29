@@ -1,17 +1,40 @@
-package com.api;
+package com.dto.api;
 import java.util.*;
 
 public class ProgramResult{
     private final int cycles;
+    private final int sessionCycles;
     private int result;
     public record VariableToValue(String variable, int value){}
     private List<VariableToValue> variableToValue;
     private int debugIndex;
     private boolean isDebug;
+    public enum HaltReason { FINISHED, STOPPED_MANUALLY, INSUFFICIENT_CREDITS }
+    private final HaltReason haltReason;
     public ProgramResult(int cycles, HashMap<String, Integer> variables, int debugIndex, boolean isDebug){
         this.cycles = cycles;
+        this.sessionCycles = cycles; // For non-debug, session cycles equals total cycles
         this.debugIndex = debugIndex;
         this.isDebug = isDebug;
+        this.haltReason = isDebug ? HaltReason.STOPPED_MANUALLY : HaltReason.FINISHED;
+        UnpackVariables(variables);
+    }
+
+    public ProgramResult(int cycles, HashMap<String, Integer> variables, int debugIndex, boolean isDebug, HaltReason haltReason){
+        this.cycles = cycles;
+        this.sessionCycles = cycles; // For non-debug, session cycles equals total cycles
+        this.debugIndex = debugIndex;
+        this.isDebug = isDebug;
+        this.haltReason = haltReason;
+        UnpackVariables(variables);
+    }
+
+    public ProgramResult(int cycles, int sessionCycles, HashMap<String, Integer> variables, int debugIndex, boolean isDebug, HaltReason haltReason){
+        this.cycles = cycles;
+        this.sessionCycles = sessionCycles;
+        this.debugIndex = debugIndex;
+        this.isDebug = isDebug;
+        this.haltReason = haltReason;
         UnpackVariables(variables);
     }
 
@@ -26,14 +49,17 @@ public class ProgramResult{
             }
         }
         variableToValue.sort(Comparator
-                .<VariableToValue, Character>comparing(v -> v.variable().charAt(0)) // first by prefix
-                .thenComparingInt(v -> Integer.parseInt(v.variable().substring(1))) // then by number
+                .<VariableToValue, Character>comparing(v -> v.variable().charAt(0))
+                .thenComparingInt(v -> Integer.parseInt(v.variable().substring(1)))
         );
         variableToValue.addFirst(new VariableToValue("y", variables.get("y")));
     }
 
     public int getCycles() {
         return cycles;
+    }
+    public int getSessionCycles() {
+        return sessionCycles;
     }
     public int getResult() {
         return result;
@@ -48,4 +74,10 @@ public class ProgramResult{
         return isDebug;
     }
 
+    public HaltReason getHaltReason(){
+        return haltReason;
+    }
+
 }
+
+

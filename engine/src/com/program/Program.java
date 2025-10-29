@@ -1,8 +1,8 @@
 package com.program;
 
 import com.XMLHandlerV2.SInstruction;
-import com.api.ProgramResult;
-import com.api.ProgramSummary;
+import com.dto.api.ProgramResult;
+import com.dto.api.ProgramSummary;
 import com.commands.BaseCommand;
 import com.commands.CommandFactory;
 import com.commands.Variable;
@@ -45,8 +45,16 @@ public class Program implements Serializable {
     }
 
     private void createSummary(List<com.commands.BaseCommand> commands){
-        int baseCommands = Math.toIntExact(commands.stream().filter(BaseCommand::isBaseCommand).count());
-        summary = new ProgramSummary(baseCommands, commands.size() - baseCommands);
+        List<Integer> architectureCommandsCount = new ArrayList<>(List.of(0, 0, 0, 0));
+        for(BaseCommand command : commands){
+            switch (command.getArchitecture()){
+                case "I" -> architectureCommandsCount.set(0, architectureCommandsCount.get(0) + 1);
+                case "II" -> architectureCommandsCount.set(1, architectureCommandsCount.get(1) + 1);
+                case "III" -> architectureCommandsCount.set(2, architectureCommandsCount.get(2) + 1);
+                case "IV" -> architectureCommandsCount.set(3, architectureCommandsCount.get(3) + 1);
+            }
+        }
+        summary = new ProgramSummary(architectureCommandsCount);
     }
 
     public ProgramSummary getSummary(){
@@ -66,42 +74,92 @@ public class Program implements Serializable {
         Cycles count at programState.cyclesCount
      */
     public String getName() {return name;}
-    public ProgramResult execute(List<Integer> input){
+
+    // Legacy execute/debug methods removed in favor of budget-only APIs
+
+    // ===== Budget-only execution APIs =====
+    public ProgramResult executeWithBudget(List<Integer> input, int maxCycles){
         ProgramState programState = new ProgramState(input, presentVariables, commands, labelToIndex);
         while (!programState.done && programState.currentCommandIndex < commands.size()){
-            com.commands.BaseCommand command = commands.get(programState.currentCommandIndex);
+            BaseCommand command = commands.get(programState.currentCommandIndex);
             command.execute(programState);
+            if (programState.cyclesCount > maxCycles){
+                rollbackLastStep(programState);
+                return new ProgramResult(programState.cyclesCount, variableToValue(programState), programState.currentCommandIndex, false, com.dto.api.ProgramResult.HaltReason.INSUFFICIENT_CREDITS);
+            }
         }
-        return new ProgramResult(programState.cyclesCount, variableToValue(programState), programState.currentCommandIndex, false);
+        return new ProgramResult(programState.cyclesCount, variableToValue(programState), programState.currentCommandIndex, false, com.dto.api.ProgramResult.HaltReason.FINISHED);
     }
 
-    public ProgramResult startDebug(List<Integer> input, List<Integer> breakpoints){
+    // Legacy startDebug removed; use startDebugWithBudget
+
+    public ProgramResult startDebugWithBudget(List<Integer> input, List<Integer> breakpoints, int maxCycles){
+        // Initialize and run to first breakpoint (or end)
         ProgramState programState = new ProgramState(input, presentVariables, commands, labelToIndex);
         programState.initialBreakpoints(breakpoints);
-        return runToBreakpoint(programState);
+        ProgramResult res = runToBreakpoint(programState);
+        // If exceeded budget, revert one step and report insufficient credits
+        if (debugState != null && debugState.cyclesCount > maxCycles){
+            rollbackLastStep(debugState);
+            return new ProgramResult(debugState.cyclesCount, variableToValue(debugState), debugState.currentCommandIndex, true, com.dto.api.ProgramResult.HaltReason.INSUFFICIENT_CREDITS);
+        }
+        if (!res.isDebug()){
+            // Finished normally within budget
+            return new ProgramResult(res.getCycles(), (HashMap<String,Integer>) res.getVariableToValue().stream().collect(java.util.stream.Collectors.toMap(com.dto.api.ProgramResult.VariableToValue::variable, com.dto.api.ProgramResult.VariableToValue::value, (a,b)->a, java.util.HashMap::new)), res.getDebugIndex(), false, com.dto.api.ProgramResult.HaltReason.FINISHED);
+        }
+        // Still debugging and within budget
+        return new ProgramResult(res.getCycles(), (HashMap<String,Integer>) res.getVariableToValue().stream().collect(java.util.stream.Collectors.toMap(com.dto.api.ProgramResult.VariableToValue::variable, com.dto.api.ProgramResult.VariableToValue::value, (a,b)->a, java.util.HashMap::new)), res.getDebugIndex(), true, com.dto.api.ProgramResult.HaltReason.STOPPED_MANUALLY);
     }
 
-    public ProgramResult stepOver(){
+    // Legacy stepOver removed; use stepOverWithBudget
+
+    public ProgramResult stepOverWithBudget(int maxCycles){
+        // Perform a single debug step
         ProgramState programState = debugState;
-        com.commands.BaseCommand command = commands.get(programState.currentCommandIndex);
+        BaseCommand command = commands.get(programState.currentCommandIndex);
         command.execute(programState);
-        boolean isDebug;
-        isDebug = !programState.done && programState.currentCommandIndex < commands.size();
+        boolean stillDebug = !programState.done && programState.currentCommandIndex < commands.size();
         debugState = programState;
-        return new ProgramResult(programState.cyclesCount, variableToValue(programState), programState.currentCommandIndex, isDebug);
+        ProgramResult res = new ProgramResult(programState.cyclesCount, variableToValue(programState), programState.currentCommandIndex, stillDebug);
+        if (debugState != null && debugState.cyclesCount > maxCycles){
+            rollbackLastStep(debugState);
+            return new ProgramResult(debugState.cyclesCount, variableToValue(debugState), debugState.currentCommandIndex, true, com.dto.api.ProgramResult.HaltReason.INSUFFICIENT_CREDITS);
+        }
+        if (!res.isDebug()){
+            return new ProgramResult(res.getCycles(), (HashMap<String,Integer>) res.getVariableToValue().stream().collect(java.util.stream.Collectors.toMap(com.dto.api.ProgramResult.VariableToValue::variable, com.dto.api.ProgramResult.VariableToValue::value, (a,b)->a, java.util.HashMap::new)), res.getDebugIndex(), false, com.dto.api.ProgramResult.HaltReason.FINISHED);
+        }
+        return new ProgramResult(res.getCycles(), (HashMap<String,Integer>) res.getVariableToValue().stream().collect(java.util.stream.Collectors.toMap(com.dto.api.ProgramResult.VariableToValue::variable, com.dto.api.ProgramResult.VariableToValue::value, (a,b)->a, java.util.HashMap::new)), res.getDebugIndex(), true, com.dto.api.ProgramResult.HaltReason.STOPPED_MANUALLY);
     }
 
-    public ProgramResult continueDebug(){
-        //Always perform at least 1 step, and then continue debugging
+    // Legacy continueDebug removed; use continueDebugWithBudget
+
+    public ProgramResult continueDebugWithBudget(int maxCycles){
+        //Always perform at least 1 step, and then continue debugging to next breakpoint or end
         ProgramState programState = debugState;
-        com.commands.BaseCommand command = commands.get(programState.currentCommandIndex);
+        BaseCommand command = commands.get(programState.currentCommandIndex);
         command.execute(programState);
         if(programState.done || programState.currentCommandIndex >= commands.size()){
             isMidDebug = false;
             debugState = null;
-            return new ProgramResult(programState.cyclesCount, variableToValue(programState), programState.currentCommandIndex, false);
+            ProgramResult res = new ProgramResult(programState.cyclesCount, variableToValue(programState), programState.currentCommandIndex, false);
+            // Budget check after finishing step
+            if (programState.cyclesCount > maxCycles){
+                rollbackLastStep(programState);
+                debugState = programState; // remain in debug mode since not finished due to budget
+                isMidDebug = true;
+                return new ProgramResult(debugState.cyclesCount, variableToValue(debugState), debugState.currentCommandIndex, true, com.dto.api.ProgramResult.HaltReason.INSUFFICIENT_CREDITS);
+            }
+            return new ProgramResult(res.getCycles(), (HashMap<String,Integer>) res.getVariableToValue().stream().collect(java.util.stream.Collectors.toMap(com.dto.api.ProgramResult.VariableToValue::variable, com.dto.api.ProgramResult.VariableToValue::value, (a,b)->a, java.util.HashMap::new)), res.getDebugIndex(), false, com.dto.api.ProgramResult.HaltReason.FINISHED);
         }
-        return runToBreakpoint(programState);
+        ProgramResult res = runToBreakpoint(programState);
+        if (debugState != null && debugState.cyclesCount > maxCycles){
+            rollbackLastStep(debugState);
+            return new ProgramResult(debugState.cyclesCount, variableToValue(debugState), debugState.currentCommandIndex, true, ProgramResult.HaltReason.INSUFFICIENT_CREDITS);
+        }
+        if (!res.isDebug()){
+            return new ProgramResult(res.getCycles(), (HashMap<String,Integer>) res.getVariableToValue().stream().collect(java.util.stream.Collectors.toMap(ProgramResult.VariableToValue::variable, ProgramResult.VariableToValue::value, (a,b)->a, java.util.HashMap::new)), res.getDebugIndex(), false, ProgramResult.HaltReason.FINISHED);
+        }
+        return new ProgramResult(res.getCycles(), (HashMap<String,Integer>) res.getVariableToValue().stream().collect(java.util.stream.Collectors.toMap(com.dto.api.ProgramResult.VariableToValue::variable, com.dto.api.ProgramResult.VariableToValue::value, (a,b)->a, java.util.HashMap::new)), res.getDebugIndex(), true, com.dto.api.ProgramResult.HaltReason.STOPPED_MANUALLY);
     }
 
     private ProgramResult runToBreakpoint(ProgramState programState) {
@@ -117,6 +175,17 @@ public class Program implements Serializable {
         isMidDebug = false;
         debugState = null;
         return new ProgramResult(programState.cyclesCount, variableToValue(programState), programState.currentCommandIndex, false);
+    }
+
+    // Helper to rollback the last single step (used by budget guard paths)
+    private static void rollbackLastStep(ProgramState programState){
+        if (programState == null || programState.singleStepChanges.isEmpty()){
+            return;
+        }
+        SingleStepChanges singleStepChanges = programState.singleStepChanges.pop();
+        programState.cyclesCount = singleStepChanges.getCyclesChange().oldValue();
+        programState.currentCommandIndex = singleStepChanges.getIndexChange().oldValue();
+        programState.variables.get(singleStepChanges.getVariableChanges().variable()).setValue(singleStepChanges.getVariableChanges().oldValue());
     }
 
     public void stopDebug(){
@@ -564,5 +633,19 @@ public class Program implements Serializable {
             throw new IndexOutOfBoundsException("Resolved child index out of span bounds");
         }
         return idx;
+    }
+
+    public String getMaxArchitecture(){
+        return commands.stream()
+                .map(com.commands.BaseCommand::getArchitecture)
+                .max(Comparator.comparingInt(a -> switch (a) {
+                    case "I" -> 1;
+                    case "II" -> 2;
+                    case "III" -> 3;
+                    case "IV" -> 4;
+                    default -> 0;
+                }))
+                .orElse("unknown");
+
     }
 }

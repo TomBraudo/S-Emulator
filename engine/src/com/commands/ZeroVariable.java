@@ -34,7 +34,7 @@ class ZeroVariable extends BaseCommand {
 
     @Override
     protected String toStringBase() {
-        return String.format("#%d (S) [ %s ] %s <- 0 (%d)", index+1, displayLabel(), variableName, cycles);
+        return String.format("#%d (S) [ %s ] %s <- 0 (%d) | %s", index+1, displayLabel(), variableName, cycles, getArchitecture());
     }
 
     @Override
@@ -92,5 +92,10 @@ class ZeroVariable extends BaseCommand {
         ins.setSVariable(variableName);
         if (!label.equals(NO_LABEL)) ins.setSLabel(label);
         return ins;
+    }
+
+    @Override
+    public String getArchitecture() {
+        return "II";
     }
 }

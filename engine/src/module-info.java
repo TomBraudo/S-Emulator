@@ -1,6 +1,7 @@
 module com.engine{
     requires jakarta.xml.bind;
     requires java.xml;
+    requires dto;
 
     exports com.api;
     exports com.dto;

@@ -1,7 +1,7 @@
 package com.commands;
 
 import com.XMLHandlerV2.SInstruction;
-import com.api.ProgramResult;
+import com.dto.api.ProgramResult;
 import com.program.Program;
 import com.program.ProgramState;
 import com.program.SingleStepChanges;
@@ -44,7 +44,7 @@ class JumpEqualFunction extends BaseCommand{
     @Override
     public void execute(ProgramState programState) {
         List<Integer> evaluated = FnArgs.evaluateArgs(programState, input);
-        ProgramResult res = p.execute(evaluated);
+        ProgramResult res = p.executeWithBudget(evaluated, Integer.MAX_VALUE);
         int targetIndex;
         if(programState.variables.get(variableName).getValue() == res.getResult()){
             if (targetLabel.equals(EXIT_LABEL)){
@@ -73,7 +73,7 @@ class JumpEqualFunction extends BaseCommand{
     protected String toStringBase() {
         List<String> parts = FnArgs.renderArgList(input);
         return String.format("#%d (S) [ %s ] IF %s = %s(", index + 1, displayLabel(), variableName, p.getName()) +
-                String.join(",", parts) + ")" + String.format(" GOTO %s (X + %d)", targetLabel, cycles);
+                String.join(",", parts) + ")" + String.format(" GOTO %s (X + %d) | %s", targetLabel, cycles, getArchitecture());
     }
 
     @Override
@@ -138,5 +138,48 @@ class JumpEqualFunction extends BaseCommand{
         return null;
     }
 
-    // Depth logic moved to ArgExpr; no helper needed here.
+    @Override
+    public String getArchitecture() {
+        return "IV";
+    }
+    
+    @Override
+    public java.util.List<String> getCalledFunctionNames() {
+        if (p == null) {
+            return java.util.Collections.emptyList();
+        }
+        
+        java.util.List<String> result = new java.util.ArrayList<>();
+        java.util.Set<String> visited = new java.util.HashSet<>();
+        
+        // Add the main function name
+        if (!visited.contains(p.getName())) {
+            visited.add(p.getName());
+            result.add(p.getName());
+        }
+        
+        // Extract nested function calls from the input arguments
+        if (input != null) {
+            extractFromArgs(input, result, visited);
+        }
+        
+        return result;
+    }
+    
+    private void extractFromArgs(java.util.List<Object> args, java.util.List<String> result, java.util.Set<String> visited) {
+        for (Object arg : args) {
+            if (arg instanceof ArgExpr.ArgCall) {
+                ArgExpr.ArgCall call = (ArgExpr.ArgCall) arg;
+                String funcName = call.name();
+                if (!visited.contains(funcName)) {
+                    visited.add(funcName);
+                    result.add(funcName);
+                }
+                // Recursively process nested arguments
+                if (call.args() != null) {
+                    extractFromArgs(call.args(), result, visited);
+                }
+            }
+        }
+    }
 }
