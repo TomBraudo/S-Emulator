@@ -69,13 +69,8 @@ public class Api {
         JAXBContext ctx = JAXBContext.newInstance(SProgram.class);
         Unmarshaller um = ctx.createUnmarshaller();
         SProgram sp = ((SProgram) um.unmarshal(xmlStream));
-        // Pre-validate program name uniqueness prior to any registration
-        FnArgs.assertProgramNameAvailable(this.userId, sp.getName());
-        // Phase 1: register function names/arity atomically; will throw without partial writes
-        CommandFactory.registerFunctions(this.userId, sp.getSFunctions(), sp.getName());
-        // Build and register program only after successful validation/registration
-        Program p = Program.createProgram(sp.getName(), sp.getSInstructions().getSInstruction());
-        FnArgs.registerProgram(this.userId, p);
+        // Delegate full transactional registration (all-or-nothing) to FunctionRegistry
+        com.program.FunctionRegistry.registerProgramBundle(this.userId, sp);
     }
     public void createEmptyProgram(String name){
         curProgram = Program.createProgram(name, Collections.emptyList());

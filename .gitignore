@@ -46,3 +46,7 @@ react-frontend/coverage/
 react-frontend/.nyc_output
 react-frontend/.cache/
 
+### Logs ###
+logs/
+*.log
+

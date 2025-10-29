@@ -3,6 +3,7 @@ package com.program;
 import com.XMLHandlerV2.SFunction;
 import com.XMLHandlerV2.SFunctions;
 import com.XMLHandlerV2.SInstruction;
+import com.XMLHandlerV2.SProgram;
 
 import java.util.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -42,6 +43,23 @@ public final class FunctionRegistry {
     private static final Map<String, List<String>> FUNCTIONS_USED_BY = new HashMap<>();
     // Key: function name; Value: list of program/function names that use it
     private static final Map<String, List<String>> PROGRAMS_USING_FUNCTION = new HashMap<>();
+
+    // ---- Transactional build context (thread-local) ----
+    private static final ThreadLocal<TxContext> TX = new ThreadLocal<>();
+
+    private static final class TxContext {
+        final String userId;
+        final String programName;
+        final Map<String, List<SInstruction>> tempFunctionDefsByName = new HashMap<>();
+        final Map<String, Program> tempCompiledFunctionsByName = new HashMap<>();
+        final Map<String, Integer> tempFunctionArityByName = new HashMap<>();
+        Program tempProgram;
+
+        TxContext(String userId, String programName) {
+            this.userId = userId;
+            this.programName = programName;
+        }
+    }
 
     // ---- Public registration APIs ----
     public static void registerFunctions(String userId, SFunctions functions, String programName) {
@@ -106,6 +124,116 @@ public final class FunctionRegistry {
         registerFunctions(userId, functions, "UNKNOWN");
     }
 
+    /**
+     * Transactionally register a full SProgram (program + its functions).
+     * If any step fails, nothing is committed to the global registries.
+     */
+    public static void registerProgramBundle(String userId, SProgram sp) {
+        if (sp == null) throw new IllegalArgumentException("SProgram is null");
+
+        // Pre-validate program name uniqueness under read lock first (fast-fail)
+        assertProgramNameAvailable(userId, sp.getName());
+
+        // Prepare transaction context
+        TxContext ctx = new TxContext(userId, sp.getName());
+        TX.set(ctx);
+        try {
+            // Phase A: pre-validate function names uniqueness (no mutations yet)
+            SFunctions sFunctions = sp.getSFunctions();
+            if (sFunctions != null) {
+                var read = REGISTRY_LOCK.readLock();
+                read.lock();
+                try {
+                    for (SFunction f : sFunctions.getSFunction()) {
+                        String name = f.getName();
+                        String owner = FUNCTION_OWNER_BY_NAME.get(name);
+                        if (owner != null && !owner.equals(userId)) {
+                            throw new IllegalStateException("Function name already registered by another user: " + name);
+                        }
+                    }
+                } finally {
+                    read.unlock();
+                }
+
+                // Stage temp function defs and arities
+                for (SFunction f : sFunctions.getSFunction()) {
+                    String name = f.getName();
+                    List<SInstruction> instructions = f.getSInstructions().getSInstruction();
+                    ctx.tempFunctionDefsByName.put(name, instructions);
+                    int arity = calculateArity(instructions);
+                    ctx.tempFunctionArityByName.put(name, arity);
+                }
+
+                // Eagerly compile functions into temp cache (using TX-aware lookups)
+                for (SFunction f : sFunctions.getSFunction()) {
+                    String name = f.getName();
+                    if (ctx.tempCompiledFunctionsByName.containsKey(name)) continue;
+                    List<SInstruction> instructions = ctx.tempFunctionDefsByName.get(name);
+                    if (!BUILDING.add(name)) {
+                        throw new IllegalStateException("Recursive function reference detected: " + name);
+                    }
+                    try {
+                        Program program = Program.createProgram(name, instructions);
+                        ctx.tempCompiledFunctionsByName.put(name, program);
+                        List<String> usedFunctions = extractFunctionNamesFromProgram(program);
+                        // track in global tracker map only after commit; keep local for now if needed
+                    } finally {
+                        BUILDING.remove(name);
+                    }
+                }
+            }
+
+            // Build the main program into temp
+            ctx.tempProgram = Program.createProgram(sp.getName(), sp.getSInstructions().getSInstruction());
+
+            // Commit: under write lock, insert everything atomically
+            var write = REGISTRY_LOCK.writeLock();
+            write.lock();
+            try {
+                // Re-assert program name availability just before commit
+                String existing = PROGRAM_OWNER_BY_NAME.get(sp.getName());
+                if (existing != null && !existing.equals(userId)) {
+                    throw new IllegalStateException("Program name already registered by another user: " + sp.getName());
+                }
+
+                // Commit functions
+                if (!ctx.tempFunctionDefsByName.isEmpty()) {
+                    Map<String, List<SInstruction>> defs = DEFINITIONS_BY_USER.computeIfAbsent(userId, k -> new HashMap<>());
+                    Map<String, Program> cache = FUNCTION_PROGRAM_CACHE_BY_USER.computeIfAbsent(userId, k -> new HashMap<>());
+                    for (Map.Entry<String, List<SInstruction>> e : ctx.tempFunctionDefsByName.entrySet()) {
+                        String fname = e.getKey();
+                        defs.put(fname, e.getValue());
+                        cache.remove(fname);
+                        FUNCTION_OWNER_BY_NAME.put(fname, userId);
+                        FUNCTION_ARITY.put(fname, ctx.tempFunctionArityByName.getOrDefault(fname, 0));
+                        FUNCTION_SOURCE_PROGRAM_BY_NAME.put(fname, sp.getName());
+                    }
+                    // Put compiled cache
+                    cache.putAll(ctx.tempCompiledFunctionsByName);
+                }
+
+                // Commit program
+                PROGRAM_OWNER_BY_NAME.put(sp.getName(), userId);
+                PROGRAMS_BY_USER.computeIfAbsent(userId, k -> new HashMap<>()).put(sp.getName(), ctx.tempProgram);
+
+                // Update usage tracking for committed items
+                if (!ctx.tempCompiledFunctionsByName.isEmpty()) {
+                    for (Map.Entry<String, Program> e : ctx.tempCompiledFunctionsByName.entrySet()) {
+                        List<String> used = extractFunctionNamesFromProgram(e.getValue());
+                        updateUsageTracking(e.getKey(), used);
+                    }
+                }
+                List<String> programUsed = extractFunctionNamesFromProgram(ctx.tempProgram);
+                updateUsageTracking(sp.getName(), programUsed);
+
+            } finally {
+                write.unlock();
+            }
+        } finally {
+            TX.remove();
+        }
+    }
+
     public static void registerProgramAsFunction(String userId, String functionName, Program p) {
         var write = REGISTRY_LOCK.writeLock();
         write.lock();
@@ -156,6 +284,33 @@ public final class FunctionRegistry {
 
     // ---- Lookup APIs ----
     public static Program getProgramByName(String name) {
+        // Check TX context first (during transactional build)
+        TxContext tx = TX.get();
+        if (tx != null) {
+            // main program in TX
+            if (name.equals(tx.programName) && tx.tempProgram != null) {
+                return new Program(tx.tempProgram);
+            }
+            // compiled functions in TX
+            Program compiled = tx.tempCompiledFunctionsByName.get(name);
+            if (compiled != null) {
+                return new Program(compiled);
+            }
+            // If definition exists in TX but not compiled yet, compile on-demand within TX
+            List<SInstruction> txDef = tx.tempFunctionDefsByName.get(name);
+            if (txDef != null) {
+                if (!BUILDING.add(name)) {
+                    throw new IllegalStateException("Recursive function reference detected: " + name);
+                }
+                try {
+                    Program program = Program.createProgram(name, txDef);
+                    tx.tempCompiledFunctionsByName.put(name, program);
+                    return new Program(program);
+                } finally {
+                    BUILDING.remove(name);
+                }
+            }
+        }
         // Fast path under read lock: check program registry first, then function cache
         var read = REGISTRY_LOCK.readLock();
         read.lock();
@@ -218,6 +373,15 @@ public final class FunctionRegistry {
     }
 
     public static int getFunctionArity(String name) {
+        // TX override
+        TxContext tx = TX.get();
+        if (tx != null) {
+            if (name.equals(tx.programName) && tx.tempProgram != null) {
+                return calculateProgramArity(tx.tempProgram);
+            }
+            Integer arity = tx.tempFunctionArityByName.get(name);
+            if (arity != null) return arity;
+        }
         // If name belongs to a user program, derive arity from its input variables (max x-index)
         var read = REGISTRY_LOCK.readLock();
         read.lock();
